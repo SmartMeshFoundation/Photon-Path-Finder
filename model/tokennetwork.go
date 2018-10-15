@@ -8,6 +8,7 @@ import (
 	"math/big"
 )
 
+//TokenNetwork token network view
 type TokenNetwork struct {
 	TokenNetworkAddress common.Address
 	ChannelID2Address map[common.Hash][2]common.Address
@@ -15,7 +16,7 @@ type TokenNetwork struct {
 	MaxRelativeFee int64
 }
 
-
+//InitTokenNetwork token network initialization
 func InitTokenNetwork(tokenNetworkAddress common.Address) (*TokenNetwork) {
 	twork := &TokenNetwork{
 		TokenNetworkAddress:   tokenNetworkAddress,
@@ -43,11 +44,9 @@ func (twork TokenNetwork)HandleChannelOpenedEvent(channelID common.Hash,particip
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelOpen)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelOpen)
 
-	//通道有向图，两条边
 	twork.PeerRelationshipGraph.AddEdge(BytesToInt(participant1.Bytes()),BytesToInt(participant2.Bytes()),100)
 	twork.PeerRelationshipGraph.AddEdge(BytesToInt(participant2.Bytes()),BytesToInt(participant1.Bytes()),100)
 
-	//建立通道,只有通道双方的地址
 	cview1.UpdateCapacity(0,big.NewInt(0),big.NewInt(0),big.NewInt(0),big.NewInt(0))
 	cview2.UpdateCapacity(0,big.NewInt(0),big.NewInt(0),big.NewInt(0),big.NewInt(0))
 
@@ -69,7 +68,6 @@ func (twork TokenNetwork)HandleChannelDeposit(channelID common.Hash,partner comm
 	participant1:=participants[0]
 	participant2:=participants[1]
 
-	//初始不知道哪一方存钱
 	cview1:=InitChannelView(channelID, participant1, participant2, totalDeposit,StateChannelDeposit)
 	cview2:=InitChannelView(channelID, participant2, participant1, totalDeposit,StateChannelDeposit)
 
@@ -77,6 +75,7 @@ func (twork TokenNetwork)HandleChannelDeposit(channelID common.Hash,partner comm
 		cview1.UpdateCapacity(0,totalDeposit,big.NewInt(0),big.NewInt(0),big.NewInt(0))
 	}else if partner==participant2{
 		cview2.UpdateCapacity(0,totalDeposit,big.NewInt(0),big.NewInt(0),big.NewInt(0))
+
 	}else {
 		fmt.Errorf("Partner in ChannelDeposit does not fit the internal channel",channelID.String())
 	}

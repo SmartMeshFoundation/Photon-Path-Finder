@@ -66,15 +66,15 @@ func (chainevent *ChainEvents) Start() error {
 		for {
 			select {
 			case blockNumber := <-chainevent.alarm.LastBlockNumberChan:
-				//chainevent.db.SaveLatestBlockNumber(blockNumber)
+				chainevent.SaveLatestBlockNumber(blockNumber)
 				chainevent.setBlockNumber(blockNumber)
 			}
 		}
 	}()
-	/*err = chainevent.be.Start(chainevent.db.GetLatestBlockNumber())
+	err = chainevent.be.Start(chainevent.GetLatestBlockNumber())
 	if err != nil {
 		log.Error(fmt.Sprintf("blockchain events start err %s", err))
-	}*/
+	}
 	go chainevent.loop()
 	return nil
 }
@@ -102,13 +102,18 @@ func (chainevent *ChainEvents) loop() {
 				return
 			}
 			chainevent.handleStateChange(st)
+		case n,ok:=<-chainevent.BlockNumberChan:
+			if !ok{
+				log.Info("BlockNumberChan closed")
+				return
+			}
+			chainevent.handleBlockNumber(n)
 		case <-chainevent.quitChan:
 			return
 		}
 	}
 }
 //handleStateChange 通道打开、通道关闭、通道存钱、通道取钱
-
 func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 	switch st2 := st.(type) {
 	case *mediatedtransfer.ContractNewChannelStateChange: //open channel event
@@ -122,6 +127,9 @@ func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 	}
 }
 
+func (chainevent *ChainEvents) handleBlockNumber(n int64) {
+
+}
 // handleNewChannelStateChange Open channel
 func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange)  {
 	tokenNetwork:=st2.TokenNetworkAddress
@@ -175,7 +183,7 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 	chainevent.tokennetork.HandleChannelClosedEvent(channelID)
 }
 
-//handleWithdrawStateChange Withdraw
+// handleWithdrawStateChange Withdraw
 func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractChannelWithdrawStateChange) {
 	tokenNetwork:=st2.TokenNetworkAddress
 	if tokenNetwork==utils.EmptyAddress{
@@ -192,6 +200,16 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 	participant1Balance:=st2.Participant1Balance
 	participant2Balance:=st2.Participant2Balance
 	chainevent.tokennetork.HandleChannelWithdawEvent(channelID,participant1,participant2,participant1Balance,participant2Balance)
+}
+
+// SaveLatestBlockNumber
+func (chainevent *ChainEvents)SaveLatestBlockNumber(blockNumber int64){
+
+}
+
+// GetLatestBlockNumber
+func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
+	return 6524830
 }
 
 func checkValidity()bool  {
