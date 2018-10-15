@@ -1,0 +1,57 @@
+# The config file format version
+version: 0
+
+registory_address: "0xd9c60c1855316eB4205097484d2C764Ac54811A3"
+
+address: "0x9bae616edff19a9c38f211d568baf24c35beecb3"
+
+keystore_path: "/home/cy/.ethereum/keystore"
+
+eth_rpc_endpoint: "ws://192.168.124.13:5555"
+
+password-file: "/home/cy/.ethereum/keystore/pwdfile"
+# The pfs specific config
+pfs:
+  # The name of the server. This is usually the domain name, e.g 'smartraiden.io', 'localhost'.
+  server_name: "localhost"
+
+# The config for ratelimited
+ratelimited:
+  # max_path_per_request
+  max_path_per_request: 5
+  #min_path_redundancy
+  min_path_redundancy: 5
+  # path_redundancy_factor
+  path_redundancy_factor: 5
+  # DiversityPenDefault
+  DiversityPenDefault: 5
+
+# The configuration for dendrite logs
+logging:
+# The logging type, only "file" is supported at the moment
+  - type: "file"
+    # The logging level, must be one of debug, info, warn, error, fatal, panic.
+    level: "info"
+    # Parameters for this type of log
+    params:
+      # File logging must be given a path to a directory. Each component will write to a different file. Logs are rotated each day and gzipped
+      path: "/home/cy/pfslog"
+
+tracing:
+  # Config for the jaeger opentracing reporter.
+  jaeger:
+    disabled: true
+
+sync:
+  max_sync_per_request: 100
+
+# The postgres connection configs for connecting to the databases e.g a postgres:// URI
+database:
+  #e.g user=pfs,pwd=123456,database=pfs_nodeinfos
+  nodeinfos: "postgres://pfs:123456@localhost/pfs_nodeinfos?sslmode=disable"
+
+# A list of application service config files to use
+application_services:
+  config_files: []
+
+

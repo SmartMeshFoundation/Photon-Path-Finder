@@ -1,0 +1,63 @@
+package routing
+
+import (
+	"github.com/gorilla/mux"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
+	"net/http"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+)
+
+func Setup(
+	apiMux *mux.Router,
+	cfg config.PathFinder,
+	balanceDB *storage.Database,
+) {
+	apiMux.Handle("/smartraiden/pathfinder/versions",
+		common.MakeExternalAPI("versions", func(req *http.Request) util.JSONResponse {
+			return util.JSONResponse{
+				Code: http.StatusOK,
+				JSON: struct {
+					Versions []string `json:"versions"`
+				}{[]string{
+					"v1",
+				}},
+			}
+		}),
+	).Methods(http.MethodGet, http.MethodOptions)
+
+	vmux := apiMux.PathPrefix("/smartraiden/pathfinder").Subrouter()
+
+	// "/balance"
+	vmux.Handle("/{peerAddress}/balance",
+		common.MakeExternalAPI("update_balance_proof", func(req *http.Request) util.JSONResponse {
+			vars := mux.Vars(req)
+			return UpdateBalanceProof(req, cfg, balanceDB, vars["peerAddress"])
+		}),
+	).Methods(http.MethodPut, http.MethodOptions)
+
+	// "/fee_rate"
+	vmux.Handle("/{peerAddress}/fee_rate",
+		common.MakeExternalAPI("set_fee_rate", func(req *http.Request) util.JSONResponse {
+			vars := mux.Vars(req)
+			return SetFeeRate(req,cfg,balanceDB, vars["peerAddress"])
+		}),
+	).Methods(http.MethodPut, http.MethodPost, http.MethodOptions)//put and post
+
+	/*// "/fee_rate"
+	vmux.Handle("/{peerAddress}/fee_rate",
+		common.MakeExternalAPI("get_fee_rate", func(req *http.Request) util.JSONResponse {
+			vars := mux.Vars(req)
+			return GetFeeRate(req, vars["peerAddress"])
+		}),
+	).Methods(http.MethodGet, http.MethodOptions)*/
+
+	// "/paths"
+	vmux.Handle("/{peerAddress}/paths",
+		common.MakeExternalAPI("get_paths", func(req *http.Request) util.JSONResponse {
+			vars := mux.Vars(req)
+			return GetPaths(req, vars["peerAddress"])
+		}),
+	).Methods(http.MethodPost, http.MethodOptions)
+}
