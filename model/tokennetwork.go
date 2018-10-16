@@ -3,20 +3,21 @@ package model
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nkbai/dijkstra"
-	"encoding/binary"
 	"fmt"
 	"math/big"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"encoding/binary"
+	"github.com/Sirupsen/logrus"
 )
 
 // TokenNetwork token network view
 type TokenNetwork struct {
 	TokenNetworkAddress   common.Address
-	ChannelID2Address     map[common.Hash][2]common.Address
+	ChannelID2Address     map[common.Hash][2]common.Address //cache key=channel_id value={0xparticipant1,0xparticipan2}
 	PeerRelationshipGraph dijkstra.Graph
 	MaxRelativeFee        int64
 	db                    *storage.Database
-	channelView           *ChannelView
+	channelViews          map[common.Address]map[common.Address]*ChannelView
 }
 
 // InitTokenNetwork token network initialization
@@ -29,10 +30,11 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 	channelID2Address := make(map[common.Hash][2]common.Address)
 	for _, channelinfo := range channelinfos {
 		if channelinfo.Status != StateChannelClose {
-			var participant = [2]common.Address{common.StringToAddress(channelinfo.Participant), common.StringToAddress(channelinfo.Partner)}
+			var participant= [2]common.Address{common.StringToAddress(channelinfo.Participant), common.StringToAddress(channelinfo.Partner)}
 			channelID2Address[common.StringToHash(channelinfo.ChannelID)] = participant
 		}
 	}
+	channelviews := make(map[common.Address]map[common.Address]*ChannelView)
 
 	twork = &TokenNetwork{
 		TokenNetworkAddress:   tokenNetworkAddress,
@@ -40,6 +42,7 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 		PeerRelationshipGraph: *dijkstra.NewEmptyGraph(),
 		MaxRelativeFee:        0,
 		db:                    db,
+		channelViews:          channelviews,
 	}
 	return
 }
@@ -50,6 +53,7 @@ func (twork *TokenNetwork)HandleChannelOpenedEvent(channelID common.Hash,partici
 	var participant = [2]common.Address{participant1, participant2}
 	twork.ChannelID2Address[channelID] = participant
 
+	//cview1:=twork.channelViews[participant1][participant2]
 
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelOpen,twork.db)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelOpen,twork.db)
@@ -127,16 +131,16 @@ func (twork *TokenNetwork)HandleChannelWithdawEvent(channelID common.Hash,
 	participant01 := participants[0]
 	participant02 := participants[1]
 	//初始不知道哪一方取钱
-	totalBalance:=participant1Balance.Add(participant1Balance,participant2Balance)
-	cview1:=InitChannelView(channelID, participant1, participant2, totalBalance,StateChannelDeposit,twork.db)
-	cview2:=InitChannelView(channelID, participant2, participant1, totalBalance,StateChannelDeposit,twork.db)
+	//totalBalance:=participant1Balance.Add(participant1Balance,participant2Balance)
+	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelWithdraw,twork.db)
+	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelWithdraw,twork.db)
 
 	if participant1 == participant01 {
-		cview1.UpdateCapacity(0,totalBalance.Sub(totalBalance,participant2Balance),big.NewInt(0),big.NewInt(0),big.NewInt(0),)
-		cview2.UpdateCapacity(0,totalBalance.Sub(totalBalance,participant1Balance),big.NewInt(0),big.NewInt(0),big.NewInt(0),)
+		cview1.UpdateCapacity(0,participant1Balance,big.NewInt(0),big.NewInt(0),big.NewInt(0),)
+		cview2.UpdateCapacity(0,participant2Balance,big.NewInt(0),big.NewInt(0),big.NewInt(0),)
 	} else if participant1 == participant02 {
-		cview1.UpdateCapacity(0,totalBalance.Sub(totalBalance,participant1Balance),big.NewInt(0),big.NewInt(0),big.NewInt(0),)
-		cview2.UpdateCapacity(0,totalBalance.Sub(totalBalance,participant2Balance),big.NewInt(0),big.NewInt(0),big.NewInt(0),)
+		cview1.UpdateCapacity(0,participant2Balance,big.NewInt(0),big.NewInt(0),big.NewInt(0),)
+		cview2.UpdateCapacity(0,participant1Balance,big.NewInt(0),big.NewInt(0),big.NewInt(0),)
 	} else {
 		err=fmt.Errorf("Partner in ChannelDeposit event does not fit the internal channel %s", channelID.String())
 	}
@@ -144,6 +148,13 @@ func (twork *TokenNetwork)HandleChannelWithdawEvent(channelID common.Hash,
 }
 
 //UpdateBalance Update Balance
+/*		err = ce.TokenNetwork.UpdateBalance(
+			r.BalanceProof.ChannelID,
+			partner,
+			r.BalanceProof.Nonce,
+			r.BalanceProof.TransferredAmount,
+			r.LocksAmount)
+*/
 func (twork *TokenNetwork)UpdateBalance(
 	channelID common.Hash,
 	singer common.Address,
@@ -160,14 +171,17 @@ func (twork *TokenNetwork)UpdateBalance(
 	} else if singer == participant2 {
 		partner = participant1
 	} else {
-		//print msg
+		logrus.Error("Balance proof signature does not match any of the participants")
+		return fmt.Errorf("Balance proof signature error")
 	}
-	//获取图
+
 	cview1 := &ChannelView{
-		SelfAddress: partner,
+		SelfAddress: singer,
+		PartnerAddress:partner,
 	}
 	cview2 := &ChannelView{
-		SelfAddress: singer,
+		SelfAddress: partner,
+		PartnerAddress:singer,
 	}
 	//更新通道双方的Capacity
 	err=cview1.UpdateCapacity(

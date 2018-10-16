@@ -123,8 +123,11 @@ func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
 }
 
 // WithdrawChannelInfoStorage Withdraw ChannelInfo Storage
-func (d *Database) WithdrawChannelInfoStorage(ctx context.Context,channelID,status,participant string,capacity interface{},)  (err error){
-	/*err=d.channelinfoStatement.updateChannelDeposit(ctx,status,channelID,participant,capacity)
-	return*/
-	return nil
+func (d *Database) WithdrawChannelInfoStorage(ctx context.Context,channelID,status,participant,partner string,participantCapacity int64) (err error) {
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
+	if err != nil {
+		return
+	}
+	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status,participant, participantCapacity)
+	return
 }

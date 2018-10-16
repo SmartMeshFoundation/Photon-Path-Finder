@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"math/big"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
 )
@@ -31,11 +29,12 @@ type lock struct {
 type balanceProofRequest struct {
 	BalanceHash  []byte       `json:"balance_hash"`
 	BalanceProof BalanceProof `json:"balance_proof"`
-	Locks        []lock       `json:"locks"`
+	//Locks        []lock       `json:"locks"`
+	LocksAmount *big.Int `json:"locks_amount"`
 }
 
 // Balance handle the request with balance proof,implements GET and POST /balance
-func UpdateBalanceProof(req *http.Request,cfg config.PathFinder,db *storage.Database,ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
+func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
 	if req.Method == http.MethodPut {
 		var r balanceProofRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
@@ -45,8 +44,8 @@ func UpdateBalanceProof(req *http.Request,cfg config.PathFinder,db *storage.Data
 
 		//validate json-input
 		var partner common.Address
-		var locksAmount *big.Int
-		partner, locksAmount, err := verifySinature(r, common.HexToAddress(peerAddress))
+		//var locksAmount *big.Int
+		partner, err := verifySinature(r, common.HexToAddress(peerAddress))
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
@@ -61,11 +60,11 @@ func UpdateBalanceProof(req *http.Request,cfg config.PathFinder,db *storage.Data
 			partner,
 			r.BalanceProof.Nonce,
 			r.BalanceProof.TransferredAmount,
-			locksAmount)
+			r.LocksAmount)
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusInternalServerError,
-				JSON: util.InvalidArgumentValue("argument was incorrect"),
+				JSON: err.Error(),//util.InvalidArgumentValue("argument was incorrect"),
 			}
 		}
 		return util.JSONResponse{

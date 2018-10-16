@@ -46,9 +46,6 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	if err != nil {
 		panic(err)
 	}*/
-	//token2TokenNetwork := make(map[common.Address]common.Address)
-	//read token2TokenNetwork from db
-	//...
 	token2TokenNetwork,err:=db.GetAllTokensStorage(nil)
 
 	return &ChainEvents{
@@ -264,8 +261,8 @@ func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
 		logrus.Error("Models (GetLatestBlockNumber) err=",err)
 	}
 	fmt.Println(number)
-	return number
-	//return 0//just test
+	//return number
+	return 0//just test
 }
 
 func checkValidity()bool  {

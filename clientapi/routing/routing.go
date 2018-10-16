@@ -31,13 +31,13 @@ func Setup(
 		}),
 	).Methods(http.MethodGet, http.MethodOptions)
 
-	vmux := apiMux.PathPrefix("/smartraiden/pathfinder").Subrouter()
+	vmux := apiMux.PathPrefix("/pathfinder").Subrouter()
 
 	// "/balance"
 	vmux.Handle("/{peerAddress}/balance",
 		common.MakeExternalAPI("update_balance_proof", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return UpdateBalanceProof(req, cfg, pfsdb,ce, vars["peerAddress"])
+			return UpdateBalanceProof(req,ce, vars["peerAddress"])
 		}),
 	).Methods(http.MethodPut, http.MethodOptions)
 
