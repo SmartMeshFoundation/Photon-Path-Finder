@@ -7,14 +7,18 @@ import (
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
 )
 
+//Setup registers HTTP handlers with the given ServeMux.
 func Setup(
 	apiMux *mux.Router,
 	cfg config.PathFinder,
-	balanceDB *storage.Database,
+	pfsdb *storage.Database,
+	ce blockchainlistener.ChainEvents,
 ) {
-	apiMux.Handle("/smartraiden/pathfinder/versions",
+	// "/versions"
+	apiMux.Handle("/pathfinder/versions",
 		common.MakeExternalAPI("versions", func(req *http.Request) util.JSONResponse {
 			return util.JSONResponse{
 				Code: http.StatusOK,
@@ -33,7 +37,7 @@ func Setup(
 	vmux.Handle("/{peerAddress}/balance",
 		common.MakeExternalAPI("update_balance_proof", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return UpdateBalanceProof(req, cfg, balanceDB, vars["peerAddress"])
+			return UpdateBalanceProof(req, cfg, pfsdb,ce, vars["peerAddress"])
 		}),
 	).Methods(http.MethodPut, http.MethodOptions)
 
@@ -41,17 +45,17 @@ func Setup(
 	vmux.Handle("/{peerAddress}/fee_rate",
 		common.MakeExternalAPI("set_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return SetFeeRate(req,cfg,balanceDB, vars["peerAddress"])
+			return SetFeeRate(req,cfg,pfsdb, vars["peerAddress"])
 		}),
 	).Methods(http.MethodPut, http.MethodPost, http.MethodOptions)//put and post
 
-	/*// "/fee_rate"
+	// "/fee_rate"
 	vmux.Handle("/{peerAddress}/fee_rate",
 		common.MakeExternalAPI("get_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
 			return GetFeeRate(req, vars["peerAddress"])
 		}),
-	).Methods(http.MethodGet, http.MethodOptions)*/
+	).Methods(http.MethodGet, http.MethodOptions)
 
 	// "/paths"
 	vmux.Handle("/{peerAddress}/paths",

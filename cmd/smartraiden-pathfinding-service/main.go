@@ -14,33 +14,33 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
+
+
 )
 
 var (
+	// httpBindAddr http listening port is 9001
 	httpBindAddr  = flag.String("http-bind-address", ":9001", "The HTTP listening port for the server")
 )
 
+// main main
 func main()  {
 	StartMain()
 }
 
-//StartMain start path finding service
+// StartMain Start path finding service
 func StartMain() {
 	cfg := basecomponent.ParseMonolithFlags()
 	base := basecomponent.NewBasePathFinder(cfg, "PathFinder")
 	defer base.Close()
 	logrus.Info("Welcome to smartraiden-path-finder,version ",base.Cfg.Version)
 	PfsDB := base.CreatePfsDB()
-	// Setup PFS service interface
-	clientapi.SetupClientAPIComponent(
-		base,
-		PfsDB,
-	)
+
 	httpHandler := common.WrapHandlerInCORS(base.APIMux)
 	http.Handle("/pathfinder", promhttp.Handler())
 	http.Handle("/", httpHandler)
 
-	// Connect to geth and listening block chain
+	// Connect to geth and listening block chain events
 	ethEndpoint:=cfg.EthRPCEndpoint
 	client,err:=helper.NewSafeClient(ethEndpoint)
 	if err!=nil{
@@ -57,9 +57,15 @@ func StartMain() {
 	if err!=nil{
 		logrus.Fatalf("privkey error :%s", err)
 	}
-	ce:=blockchainlistener.NewChainEvents(config.PrivKey,client,ethcommon.HexToAddress(base.Cfg.RegistryAddress))
+	ce:=blockchainlistener.NewChainEvents(config.PrivKey,client,ethcommon.HexToAddress(base.Cfg.RegistryAddress),PfsDB)
 	ce.Start()
-	//==============================================
+
+	// Setup PFS service interface
+	clientapi.SetupClientAPIComponent(
+		base,
+		PfsDB,
+		ce,
+	)
 
 	// Expose the PFS APIs directly,Handle http
 	go func() {
@@ -67,6 +73,6 @@ func StartMain() {
 		logrus.Fatal(http.ListenAndServe(*httpBindAddr, nil))
 
 	}()
-	// block forever to let the HTTP and HTTPS handler serve the APIs
+	// block forever to let the HTTP handler serve the APIs
 	select {}
 }

@@ -128,7 +128,6 @@ func PromptAccount(adviceAddress common.Address, keystorePath, passwordfile stri
 			data = []byte(passwordfile)
 		}
 		password := string(data)
-		password="123"
 		log.Trace(fmt.Sprintf("password is %s", password))
 		keybin, err = am.GetPrivateKey(addr, password)
 		if err != nil {

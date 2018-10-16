@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "YAcMrg+rXxTpIrMS84eAlqc0eKo=",
+			"path": "github.com/SmartMeshFoundation/SmartRaiden",
+			"revision": "3d7092b9158961075274d4a76dc3333329b6c4b1",
+			"revisionTime": "2018-10-15T06:04:29Z"
+		},
+		{
 			"checksumSHA1": "hmCSQPM6YKWXBlI+KiAhaaqTLBs=",
 			"path": "github.com/SmartMeshFoundation/SmartRaiden-Monitoring/models",
 			"revision": "c784f848636fdcd2c33853187be48244e49a1961",

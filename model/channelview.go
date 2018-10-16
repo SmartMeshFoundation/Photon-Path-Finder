@@ -4,8 +4,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"context"
-	"fmt"
 	"math/big"
+	"github.com/Sirupsen/logrus"
 )
 
 //ChannelView Unidirectional view of a bidirectional channel
@@ -37,7 +37,7 @@ const(
 )
 
 //InitChannelView
-func InitChannelView(channelID common.Hash ,participant1,participant2 common.Address,deposit *big.Int,eventTag string) (*ChannelView) {
+func InitChannelView(channelID common.Hash ,participant1,participant2 common.Address,deposit *big.Int,eventTag string,db *storage.Database) (*ChannelView) {
 	cv := &ChannelView{
 		SelfAddress:       participant1,
 		PartnerAddress:    participant2,
@@ -47,15 +47,16 @@ func InitChannelView(channelID common.Hash ,participant1,participant2 common.Add
 		LockedAmount:      big.NewInt(0),
 		RrelativeFee:      big.NewInt(0),
 		Capacity:          deposit,
-		Status:             eventTag,
+		Status:            eventTag,
 		ChannelID:         channelID,
 		BalanceProofNonce: 0,
+		db:                *db,
 	}
 	return cv
 }
 
-//UpdateCapacity
-func (cv ChannelView)UpdateCapacity(
+//UpdateCapacity refush channel status and capacity
+func (cv *ChannelView)UpdateCapacity(
 	nonce int64,
 	deposit *big.Int,
 	transferredAmount *big.Int,
@@ -64,11 +65,14 @@ func (cv ChannelView)UpdateCapacity(
 	)(err error) {
 	switch cv.Status {
 	case StateChannelOpen:
-		err = cv.db.CreateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
+		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateChannelDeposit:
-		if nonce != 0 && nonce > cv.BalanceProofNonce {
+		/*if nonce != 0 && nonce > cv.BalanceProofNonce {
 			cv.BalanceProofNonce = nonce
-		}
+		} else {
+			log.Warn("Balance proof nonce must increase.")
+			return
+		}*/
 		if deposit.Uint64() != 0 {
 			cv.Deposit = deposit
 		}
@@ -86,16 +90,14 @@ func (cv ChannelView)UpdateCapacity(
 		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
 		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)
 
-		err = cv.db.UpdateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.Capacity)
+		err = cv.db.UpdateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(),cv.PartnerAddress.String(), cv.Capacity.Int64())
 	case StateChannelWithdraw:
 		err = cv.db.WithdrawChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), deposit)
 	case StateChannelClose:
-		err = cv.db.CreateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
+		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	}
-	//Refresh memory
-	//..
 	if err != nil {
-		fmt.Println("failed to update capacity")
+		logrus.Warnf("Failed to update capacity,err=%s", err)
 	}
 	return
 }
