@@ -164,7 +164,7 @@ func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.Cont
 		return
 	}
 
-	logrus.Debugf("Received ChannelOpened event for token network %s",tokenNetwork.String())
+	logrus.Info("Received ChannelOpened event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier.ChannelIdentifier
 	participant1:=st2.Participant1
@@ -172,7 +172,7 @@ func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.Cont
 
 	err:=chainevent.TokenNetwork.HandleChannelOpenedEvent(channelID,participant1,participant2)
 	if err!=nil{
-		logrus.Warningf("Handle channel open event error,err=%s",err)
+		logrus.Warn("Handle channel open event error,err=",err)
 	}
 
 }
@@ -187,10 +187,9 @@ func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.C
 		return
 	}
 
-	logrus.Debugf("Received ChannelDeposit event for token network %s",tokenNetwork.String())
+	logrus.Info("Received ChannelDeposit event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier
-	//nonce:=st2. todo where is the nonce
 	participantAddress:=st2.ParticipantAddress
 	totalDeposit:=st2.Balance
 	err:=chainevent.TokenNetwork.HandleChannelDepositEvent(channelID,participantAddress,totalDeposit)
@@ -210,7 +209,7 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 		return
 	}
 
-	logrus.Debugf("Received ChannelClosed event for token network %s",tokenNetwork.String())
+	logrus.Info("Received ChannelClosed event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier
 	err:=chainevent.TokenNetwork.HandleChannelClosedEvent(channelID)
@@ -229,7 +228,7 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 		return
 	}
 
-	logrus.Debugf("Received ChannelWithdraw event for token network %s",tokenNetwork.String())
+	logrus.Info("Received ChannelWithdraw event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier.ChannelIdentifier
 	participant1:=st2.Participant1
@@ -238,7 +237,7 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 	participant2Balance:=st2.Participant2Balance
 	err:=chainevent.TokenNetwork.HandleChannelWithdawEvent(channelID,participant1,participant2,participant1Balance,participant2Balance)
 	if err!=nil{
-		logrus.Warningf("Handle channel withdaw event error,err=%s",err)
+		logrus.Warn("Handle channel withdaw event error,err=",err)
 	}
 }
 
@@ -246,7 +245,7 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 func (chainevent *ChainEvents)SaveLatestBlockNumber(blockNumber int64){
 	err:=chainevent.db.SaveLatestBlockNumberStorage(nil,blockNumber)
 	if err!=nil{
-		logrus.Errorf("Models (SaveLatestBlockNumber) err=%s",err)
+		logrus.Error("Models (SaveLatestBlockNumber) err=",err)
 	}
 }
 
@@ -254,7 +253,7 @@ func (chainevent *ChainEvents)SaveLatestBlockNumber(blockNumber int64){
 func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
 	number,err:=chainevent.db.GetLatestBlockNumberStorage(nil)
 	if err != nil {
-		logrus.Errorf("Models (GetLatestBlockNumber) err=%s",err)
+		logrus.Error("Models (GetLatestBlockNumber) err=",err)
 	}
 	fmt.Println(number)
 	//return number

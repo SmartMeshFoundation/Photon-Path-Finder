@@ -97,7 +97,7 @@ func (cv *ChannelView)UpdateCapacity(
 		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	}
 	if err != nil {
-		logrus.Warnf("Failed to update capacity,err=%s", err)
+		logrus.Warn("Failed to update capacity,err=", err)
 	}
 	return
 }

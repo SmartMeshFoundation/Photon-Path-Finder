@@ -14,8 +14,6 @@ import (
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
-
-
 )
 
 var (
@@ -50,12 +48,12 @@ func StartMain() {
 	address,privkeyBin,err:=accounts.PromptAccount(address,base.Cfg.KeystorePath,base.Cfg.PasswordFile)
 
 	if err!=nil{
-		logrus.Fatalf("error :%s", err)
+		logrus.Fatal("error :", err)
 	}
 	config.Address=address
 	config.PrivKey,err=crypto.ToECDSA(privkeyBin)
 	if err!=nil{
-		logrus.Fatalf("privkey error :%s", err)
+		logrus.Fatal("privkey error :", err)
 	}
 	ce:=blockchainlistener.NewChainEvents(config.PrivKey,client,ethcommon.HexToAddress(base.Cfg.RegistryAddress),PfsDB)
 	ce.Start()

@@ -38,15 +38,6 @@ func (bpf *BasePathFinder) Close() error {
 	return bpf.tracerCloser.Close()
 }
 
-//
-/*func (bpf *BasePathFinder) CreateHTTPAppServiceAPIs() error {
-	if bpf.APIMux.Path("/smartraiden/pathfinder")==nil{
-		log.Error(fmt.Sprintf("failed to create service ,check your listening port"))
-		return fmt.Errorf("failed to create service")
-	}
-
-	return nil
-}*/
 
 // CreateDeviceDB creates a new instance of the balance database. Should only be called once per component.
 func (bpf *BasePathFinder) CreatePfsDB() *storage.Database {

@@ -14,22 +14,22 @@ import (
 type BalanceProof struct {
 	Nonce             int64       `json:"nonce"`
 	ChannelID         common.Hash `json:"channel_id"`
-	TransferredAmount *big.Int       `json:"transferred_amount"`
+	TransferredAmount *big.Int    `json:"transferred_amount"`
 	LocksRoot         common.Hash `json:"locksroot"`
 	AdditionalHash    common.Hash `json:"additional_hash"`
-	Signature         []byte `json:"signature"`
+	Signature         []byte      `json:"signature"`
 }
 
 //lock is the json request for BalanceProof
 type lock struct {
-	LockedAmount *big.Int         `json:"locked_amount"`
-	Expriation   *big.Int         `json:"expiration"`
+	LockedAmount *big.Int    `json:"locked_amount"`
+	Expriation   *big.Int    `json:"expiration"`
 	SecretHash   common.Hash `json:"secret_hash"`
 }
 
 //balanceProofRequest is the json request for BalanceProof
 type balanceProofRequest struct {
-	BalanceHash  []byte  `json:"balance_hash"`
+	BalanceHash  []byte       `json:"balance_hash"`
 	BalanceProof BalanceProof `json:"balance_proof"`
 	Locks        []lock       `json:"locks"`
 }
@@ -46,8 +46,8 @@ func UpdateBalanceProof(req *http.Request,cfg config.PathFinder,db *storage.Data
 		//validate json-input
 		var partner common.Address
 		var locksAmount *big.Int
-		partner,locksAmount,err:= verifySinature(r,common.HexToAddress(peerAddress))
-		if err!=nil{
+		partner, locksAmount, err := verifySinature(r, common.HexToAddress(peerAddress))
+		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
 				JSON: util.BadJSON("peerAddress must be provided"),
@@ -56,22 +56,22 @@ func UpdateBalanceProof(req *http.Request,cfg config.PathFinder,db *storage.Data
 
 		util.GetLogger(req.Context()).WithField("balance_proof", r.BalanceHash).Info("Processing balance_proof request")
 
-		ce.TokenNetwork.UpdateBalance(
+		err = ce.TokenNetwork.UpdateBalance(
 			r.BalanceProof.ChannelID,
 			partner,
 			r.BalanceProof.Nonce,
 			r.BalanceProof.TransferredAmount,
 			locksAmount)
-
-		return util.JSONResponse{
-			Code: http.StatusBadRequest,
-			JSON: util.InvalidArgumentValue("argument was incorrect"),
+		if err != nil {
+			return util.JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: util.InvalidArgumentValue("argument was incorrect"),
+			}
 		}
-		//write db
-		/*return util.JSONResponse{
+		return util.JSONResponse{
 			Code: http.StatusOK,
-			JSON: "ok",
-		}*/
+			JSON: util.InvalidArgumentValue("ok"),
+		}
 	}
 	return util.JSONResponse{
 		Code: http.StatusMethodNotAllowed,
