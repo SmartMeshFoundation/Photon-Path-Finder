@@ -2,17 +2,18 @@ package storage
 
 import (
 	"database/sql"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
+	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"context"
 	_ "github.com/lib/pq"
-	//"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/model"
+	"github.com/ethereum/go-ethereum/common"
 )
 // Database Data base
 type Database struct {
 	db *sql.DB
-	common.PartitionOffsetStatements
+	xcommon.PartitionOffsetStatements
 	latestBlockNumberStatement latestBlockNumberStatements
-	channelinfoStatement channelInfoStatements
+	channelinfoStatement       channelInfoStatements
+	tokensStatement            tokensStatements
 }
 
 // ChannelInfo db-type as channel info
@@ -25,6 +26,9 @@ type ChannelInfo struct {
 	PartnerCapacity     int64
 }
 
+//AddressMap is token address to mananger address
+type AddressMap map[common.Address]common.Address
+
 // NewDatabase creates a new accounts and profiles database
 func NewDatabase(dataSourceName string) (*Database, error) {
 	var db *sql.DB
@@ -32,7 +36,7 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
 		return nil, err
 	}
-	partitions := common.PartitionOffsetStatements{}
+	partitions := xcommon.PartitionOffsetStatements{}
 	if err = partitions.Prepare(db, "pfs"); err != nil {
 		return nil, err
 	}
@@ -47,13 +51,31 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	if err = cis.prepare(db); err != nil {
 		return nil, err
 	}
+	//channel-info-db
+	tss := tokensStatements{}
+	if err = tss.prepare(db); err != nil {
+		return nil, err
+	}
 
-	return &Database{db, partitions, lbs, cis}, nil
+	return &Database{db, partitions, lbs, cis,tss}, nil
 }
 
 // SaveLatestBlockNumberStorage Save Latest BlockNumber Storage
 func (d *Database) SaveLatestBlockNumberStorage(ctx context.Context,lastestblocknum int64)  (err error){
 	err=d.latestBlockNumberStatement.updatLatestBlockNumber(ctx,lastestblocknum)
+	return
+}
+
+// SaveTokensStorage Save Latest Tokens Storage
+func (d *Database) SaveTokensStorage(ctx context.Context,token,tokennetwork string)  (err error) {
+	err = d.tokensStatement.insertTokens(ctx, token, tokennetwork)
+	return
+}
+
+// GetAllTokensStorage Get All Tokens Storage
+func (d *Database) GetAllTokensStorage(ctx context.Context)  (token2TokenNetwork AddressMap,err error) {
+	token2TokenNetwork = make(map[common.Address]common.Address)
+	token2TokenNetwork, err = d.tokensStatement.selectTokens(ctx)
 	return
 }
 

@@ -67,12 +67,12 @@ func (cv *ChannelView)UpdateCapacity(
 	case StateChannelOpen:
 		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateChannelDeposit:
-		/*if nonce != 0 && nonce > cv.BalanceProofNonce {
+		if nonce != 0 && nonce > cv.BalanceProofNonce {
 			cv.BalanceProofNonce = nonce
 		} else {
-			log.Warn("Balance proof nonce must increase.")
+			logrus.Warn("Balance proof nonce must increase.")
 			return
-		}*/
+		}
 		if deposit.Uint64() != 0 {
 			cv.Deposit = deposit
 		}
@@ -85,7 +85,6 @@ func (cv *ChannelView)UpdateCapacity(
 		if lockedAmount.Uint64() != 0 {
 			cv.LockedAmount = lockedAmount
 		}
-		//cv.Capacity=cv.Deposit. - (cv.TransferredAmount + cv.LockedAmount) + cv.ReceivedAmount
 		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
 		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
 		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)

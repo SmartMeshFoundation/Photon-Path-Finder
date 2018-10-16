@@ -46,9 +46,10 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	if err != nil {
 		panic(err)
 	}*/
-	token2TokenNetwork := make(map[common.Address]common.Address)
+	//token2TokenNetwork := make(map[common.Address]common.Address)
 	//read token2TokenNetwork from db
 	//...
+	token2TokenNetwork,err:=db.GetAllTokensStorage(nil)
 
 	return &ChainEvents{
 		client:          client,
@@ -124,7 +125,7 @@ func (chainevent *ChainEvents) loop() {
 		}
 	}
 }
-//handleStateChange 通道打开、通道关闭、通道存钱、通道取钱
+// handleStateChange 通道打开、通道关闭、通道存钱、通道取钱
 func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 	switch st2 := st.(type) {
 	case *mediatedtransfer.ContractNewChannelStateChange: //open channel event
@@ -136,13 +137,20 @@ func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 	case *mediatedtransfer.ContractChannelWithdrawStateChange: //withdaw event
 		chainevent.handleWithdrawStateChange(st2)
 	case *mediatedtransfer.ContractTokenAddedStateChange:
-		chainevent.be.TokenNetworks[st2.TokenNetworkAddress] = true
+		//chainevent.be.TokenNetworks[st2.TokenNetworkAddress] = true
+		chainevent.handleTokenAddedStateChange(st2)
+	}
+}
 
+// handleTokenAddedStateChange Token added
+func (chainevent *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.ContractTokenAddedStateChange) {
+	err := chainevent.db.SaveTokensStorage(nil, st2.TokenAddress.String(), st2.TokenNetworkAddress.String())
+	if err != nil {
+		logrus.Error("Handle token added state change event error,err=", err)
 	}
 }
 
 func (chainevent *ChainEvents) handleBlockNumber(n int64) {
-
 }
 
 // existTokenNetwork
@@ -194,7 +202,7 @@ func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.C
 	totalDeposit:=st2.Balance
 	err:=chainevent.TokenNetwork.HandleChannelDepositEvent(channelID,participantAddress,totalDeposit)
 	if err!=nil{
-		logrus.Warningf("Handle channel deposit event error,err=%s",err)
+		logrus.Warn("Handle channel deposit event error,err=",err)
 	}
 }
 
@@ -214,7 +222,7 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 	channelID:=st2.ChannelIdentifier
 	err:=chainevent.TokenNetwork.HandleChannelClosedEvent(channelID)
 	if err!=nil{
-		logrus.Warningf("Handle channel close event error,err=%s",err)
+		logrus.Warn("Handle channel close event error,err=",err)
 	}
 }
 
@@ -256,8 +264,8 @@ func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
 		logrus.Error("Models (GetLatestBlockNumber) err=",err)
 	}
 	fmt.Println(number)
-	//return number
-	return 0//just test
+	return number
+	//return 0//just test
 }
 
 func checkValidity()bool  {
