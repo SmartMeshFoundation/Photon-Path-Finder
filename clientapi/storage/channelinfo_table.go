@@ -26,12 +26,12 @@ CREATE TABLE IF NOT EXISTS tb_channel_info_0(
 const (
 	// createChannelInfoSQL sql for create-ChannelInfo
 	createChannelInfoSQL = "" +
-		"INSERT INTO tb_channel_info_0(channel_id,ts,status,participant,partner,participant_capacity,partner_capacity) VALUES(" +
-		"$1,$2,$3,$4,$5,$6,$7) "
+		"INSERT INTO tb_channel_info_0(channel_id,ts,status,participant,partner,participant_capacity,partner_capacity,addr_index) VALUES(" +
+		"$1,$2,$3,$4,$5,$6,$7,$8) "
 
 	// selectAllChannelInfoSQL sql for select-AllChannelInfo
 	selectAllChannelInfoSQL = "" +
-		"SELECT channel_id,status,participant,partner,participant_capacity,partner_capacity FROM tb_channel_info_0 ORDER BY ts DESC"
+		"SELECT channel_id,status,participant,partner,participant_capacity,partner_capacity,addr_index FROM tb_channel_info_0 ORDER BY ts DESC"
 
 	// selectChanneCountByChannelIDSQL sql for select-ChanneCount-ByChannelID
 	selectChanneCountByChannelIDSQL = "" +
@@ -102,7 +102,7 @@ func (s *channelInfoStatements) selectChannelCountByChannelID(ctx context.Contex
 
 // createChannelInfo insert data
 func (s *channelInfoStatements) initChannelInfo(ctx context.Context,
-	channeID, status, participant, partner string, participantCapacity, partnerCapacity int64,
+	channeID, status, participant, partner string, participantCapacity, partnerCapacity int64,addrIndex int,
 ) (err error) {
 	timeMs := time.Now().UnixNano() / 1000000
 
@@ -112,7 +112,7 @@ func (s *channelInfoStatements) initChannelInfo(ctx context.Context,
 	}
 	if count == 0 {
 		stmt := s.createChannelInfoStmt
-		_, err = stmt.Exec(channeID, timeMs, status, participant, partner, participantCapacity, partnerCapacity)
+		_, err = stmt.Exec(channeID, timeMs, status, participant, partner, participantCapacity, partnerCapacity,addrIndex)
 	}
 	return
 }
@@ -158,7 +158,7 @@ func (s *channelInfoStatements) selectAllChannelInfo(ctx context.Context) (Chann
 	defer rows.Close()
 	for rows.Next() {
 		var c ChannelInfo
-		err = rows.Scan(&c.ChannelID, &c.Status, &c.Participant, &c.Partner, &c.ParticipantCapacity, &c.PartnerCapacity)
+		err = rows.Scan(&c.ChannelID, &c.Status, &c.Participant, &c.Partner, &c.ParticipantCapacity, &c.PartnerCapacity,&c.IndesOfPeerAddress)
 		if err != nil {
 			return
 		}

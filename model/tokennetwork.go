@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math/big"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
-	"encoding/binary"
 	"github.com/sirupsen/logrus"
+	"encoding/binary"
 )
 
 // TokenNetwork token network view
@@ -18,6 +18,7 @@ type TokenNetwork struct {
 	MaxRelativeFee        int64
 	db                    *storage.Database
 	channelViews          map[common.Address]map[common.Address]*ChannelView
+	GPeerAddress2Index    map[common.Address]int
 }
 
 // InitTokenNetwork token network initialization
@@ -28,11 +29,15 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 		return
 	}
 	channelID2Address := make(map[common.Hash][2]common.Address)
+
+	gPeerAddress2Index:=make(map[common.Address]int)
 	for _, channelinfo := range channelinfos {
 		if channelinfo.Status != StateChannelClose {
 			var participant= [2]common.Address{common.StringToAddress(channelinfo.Participant), common.StringToAddress(channelinfo.Partner)}
 			channelID2Address[common.StringToHash(channelinfo.ChannelID)] = participant
 		}
+		gpeerAddr:=common.StringToAddress(channelinfo.Participant)
+		gPeerAddress2Index[gpeerAddr]=channelinfo.IndesOfPeerAddress
 	}
 	channelviews := make(map[common.Address]map[common.Address]*ChannelView)
 
@@ -43,6 +48,7 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 		MaxRelativeFee:        0,
 		db:                    db,
 		channelViews:          channelviews,
+		GPeerAddress2Index:    gPeerAddress2Index,
 	}
 	return
 }
@@ -58,8 +64,8 @@ func (twork *TokenNetwork)HandleChannelOpenedEvent(channelID common.Hash,partici
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelOpen,twork.db)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelOpen,twork.db)
 
-	twork.PeerRelationshipGraph.AddEdge(BytesToInt(participant1.Bytes()),BytesToInt(participant2.Bytes()),100)
-	twork.PeerRelationshipGraph.AddEdge(BytesToInt(participant2.Bytes()),BytesToInt(participant1.Bytes()),100)
+	twork.PeerRelationshipGraph.AddEdge(twork.GPeerAddress2Index[participant1],twork.GPeerAddress2Index[participant2],100)
+	twork.PeerRelationshipGraph.AddEdge(twork.GPeerAddress2Index[participant2],twork.GPeerAddress2Index[participant1],100)
 
 	cview1.UpdateCapacity(0,big.NewInt(0),big.NewInt(0),big.NewInt(0),big.NewInt(0))
 	cview2.UpdateCapacity(0,big.NewInt(0),big.NewInt(0),big.NewInt(0),big.NewInt(0))
@@ -104,9 +110,9 @@ func (twork *TokenNetwork)HandleChannelClosedEvent(channelID common.Hash) (err e
 	var participants = twork.ChannelID2Address[channelID]
 	participant1:=participants[0]
 	participant2:=participants[1]
-	twork.PeerRelationshipGraph.RemoveEdge(BytesToInt(participant1.Bytes()),BytesToInt(participant2.Bytes()))
-	twork.PeerRelationshipGraph.RemoveEdge(BytesToInt(participant2.Bytes()),BytesToInt(participant1.Bytes()))
 
+	twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant1],twork.GPeerAddress2Index[participant2])
+	twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant2],twork.GPeerAddress2Index[participant1])
 	//标记通道禁用
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelClose,twork.db)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelClose,twork.db)
@@ -131,7 +137,6 @@ func (twork *TokenNetwork)HandleChannelWithdawEvent(channelID common.Hash,
 	participant01 := participants[0]
 	participant02 := participants[1]
 	//初始不知道哪一方取钱
-	//totalBalance:=participant1Balance.Add(participant1Balance,participant2Balance)
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelWithdraw,twork.db)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelWithdraw,twork.db)
 
@@ -194,6 +199,18 @@ func (twork *TokenNetwork)UpdateBalance(
 	return
 }
 
+type pathStru struct {
+
+}
+
+// pathResult is the json response for GetPaths
+type pathResult struct {
+	PathID  int      `json:"path_id"`
+	PathHop int      `json:"path_hop"`
+	fee     int64    `json:"fee"`
+	Result  []string `json:"result"`
+}
+
 func (twork *TokenNetwork)GetPahts(
 	source common.Address,
 	target common.Address,
@@ -201,9 +218,50 @@ func (twork *TokenNetwork)GetPahts(
 	limitPaths int,
 	sortDemand string,
 	) {
-	//twork.PeerRelationshipGraph.AllShortestPath()
+	xsource := twork.GPeerAddress2Index[source]
+	xtarget := twork.GPeerAddress2Index[target]
+
+	/*//test case:
+	gMapToIndex := make(map[common.Address]int)
+	index1 := len(gMapToIndex)
+	fmt.Println(index1)
+	gMapToIndex[common.HexToAddress("0xc67f23CE04ca5E8DD9f2E1B5eD4FaD877f79267A")] = index1
+
+	index2 := len(gMapToIndex)
+	fmt.Println(index2)
+	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216174")] = index2
+
+	index3 := len(gMapToIndex)
+	fmt.Println(index3)
+	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216188")] = index3
+
+	xsource = 1
+	xtarget = 4
+	twork.PeerRelationshipGraph.AddEdge(0, 1, 100)
+	twork.PeerRelationshipGraph.AddEdge(1, 0, 100)
+
+	twork.PeerRelationshipGraph.AddEdge(1, 2, 50)
+	twork.PeerRelationshipGraph.AddEdge(2, 1, 50)
+
+	twork.PeerRelationshipGraph.AddEdge(2, 3, 10)
+	twork.PeerRelationshipGraph.AddEdge(3, 2, 10)
+
+	twork.PeerRelationshipGraph.AddEdge(1, 3, 10)
+	twork.PeerRelationshipGraph.AddEdge(3, 1, 10)
+
+	twork.PeerRelationshipGraph.AddEdge(3, 4, 10)
+	twork.PeerRelationshipGraph.AddEdge(4, 3, 10)
+
+	twork.PeerRelationshipGraph.RemoveEdge(1, 0)
+	twork.PeerRelationshipGraph.RemoveEdge(0, 1)*/
+
+	result := twork.PeerRelationshipGraph.AllShortestPath(xsource, xtarget)
+
+	fmt.Println(result)
+
 	return
 }
+
 func BytesToInt(buf []byte) int {
 	return int(binary.BigEndian.Uint32(buf))
 }

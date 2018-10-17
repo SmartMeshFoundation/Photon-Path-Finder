@@ -82,13 +82,13 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 // GetFeeRate reponse fee_rate data
 func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
 	if req.Method == http.MethodPost {
-		var r SetFeeRateRequest
+		var r GetFeeRateRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
 		if resErr != nil {
 			return *resErr
 		}
 
-		feerate, effitime, err := feeRateDB.GetLastestRateFeeStorage(nil, r.ChannelID.String(), peerAddress)
+		feerate, effitime, err := feeRateDB.GetLastestRateFeeStorage(nil, r.ChannelID[0].String(), peerAddress)
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusNotFound,
@@ -96,13 +96,13 @@ func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string
 			}
 		}
 		reslut0 := &FeeRateInfo{
-			ChannelID:     r.ChannelID,
+			ChannelID:     r.ChannelID[0],
 			PeerAddress:   common.HexToAddress(peerAddress),
 			FeeRate:       feerate,
 			EffectiveTime: effitime,
 		}
 		resultMap := make(map[common.Hash]*FeeRateInfo)
-		resultMap[r.ChannelID] = reslut0
+		resultMap[r.ChannelID[0]] = reslut0
 		reslut := &GetFeeRateResponse{
 			Result: resultMap,
 		}

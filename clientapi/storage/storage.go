@@ -27,6 +27,7 @@ type ChannelInfo struct {
 	Partner             string
 	ParticipantCapacity int64
 	PartnerCapacity     int64
+	IndesOfPeerAddress  int
 }
 
 //AddressMap is token address to mananger address
@@ -105,14 +106,14 @@ func (d *Database) GetLatestBlockNumberStorage(ctx context.Context) (lastestnum 
 }
 
 // InitChannelInfoStorage Init ChannelInfo Storage
-func (d *Database) InitChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string) (err error) {
-	err = d.channelinfoStatement.initChannelInfo(nil, channelID, status, participant, partner, 0, 0)
+func (d *Database) InitChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string,addrIndex int) (err error) {
+	err = d.channelinfoStatement.initChannelInfo(nil, channelID, status, participant, partner, 0, 0,addrIndex)
 	return
 }
 
 // UpdateChannelStatusStorage Update ChannelStatus Storage
 func (d *Database) UpdateChannelStatusStorage(ctx context.Context, channelID, status, participant, partner string) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
 	if err != nil {
 		return
 	}
@@ -123,7 +124,7 @@ func (d *Database) UpdateChannelStatusStorage(ctx context.Context, channelID, st
 // UpdateChannelInfoStorage Update ChannelInfo Storage
 func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
 	channelID, status, participant, partner string, participantCapacity int64) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
 	if err != nil {
 		return
 	}
@@ -133,7 +134,7 @@ func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
 
 // WithdrawChannelInfoStorage Withdraw ChannelInfo Storage
 func (d *Database) WithdrawChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string, participantCapacity int64) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
 	if err != nil {
 		return
 	}
