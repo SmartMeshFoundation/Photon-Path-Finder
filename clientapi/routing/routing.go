@@ -47,7 +47,7 @@ func Setup(
 			vars := mux.Vars(req)
 			return SetFeeRate(req,cfg,pfsdb, vars["peerAddress"])
 		}),
-	).Methods(http.MethodPut, http.MethodPost, http.MethodOptions)//put and post
+	).Methods(http.MethodPut, http.MethodOptions)//put and post
 
 	// "/fee_rate"
 	vmux.Handle("/{peerAddress}/fee_rate",

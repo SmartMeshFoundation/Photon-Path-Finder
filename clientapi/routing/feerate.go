@@ -39,7 +39,7 @@ type FeeRateInfo struct {
 // SetFeeRate save request data of set_fee_rate
 func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
 
-	if req.Method != http.MethodPost || req.Method != http.MethodPut {
+	if req.Method != http.MethodPut {
 		return util.JSONResponse{
 			Code: http.StatusMethodNotAllowed,
 			JSON: util.NotFound("Bad method"),
@@ -82,13 +82,6 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 // GetFeeRate reponse fee_rate data
 func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
 	if req.Method == http.MethodPost {
-		if common.IsHexAddress(peerAddress) {
-			return util.JSONResponse{
-				Code: http.StatusBadRequest,
-				JSON: util.BadJSON("peer address must be provided"),
-			}
-		}
-
 		var r SetFeeRateRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
 		if resErr != nil {
