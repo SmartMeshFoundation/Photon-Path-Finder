@@ -53,7 +53,7 @@ func Setup(
 	vmux.Handle("/{peerAddress}/fee_rate",
 		common.MakeExternalAPI("get_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return GetFeeRate(req, vars["peerAddress"])
+			return GetFeeRate(req,pfsdb, vars["peerAddress"])
 		}),
 	).Methods(http.MethodGet, http.MethodOptions)
 

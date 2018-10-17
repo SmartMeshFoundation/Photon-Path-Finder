@@ -8,6 +8,11 @@ import (
 	"fmt"
 )
 
+// verifySinature verify balance proof sinature and caller's sinature
+// 1\verify bob's balance proof sinature
+// 2\verify alice(caller)'s infomation's sinature
+// 3\Balance_Proof_Hash	(nonce,transferred_amount,channel_id,locksroot,additional_hash)
+// 4\Message_Hash		(nonce,transferred_amount,channel_id,locksroot,additional_hash,locks_amount)
 func verifySinature(bpr balanceProofRequest ,peerAddress common.Address) (partner common.Address,err error) {
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, bpr.BalanceProof.Nonce)             //nonce
@@ -42,4 +47,22 @@ func verifySinature(bpr balanceProofRequest ,peerAddress common.Address) (partne
 		return balanceProofSigner, err
 	}
 	return balanceProofSigner, nil
+}
+
+// verifySinatureFeeRate verify Fee_rate sinature
+// 1\verify alice(caller)'s sinature
+// 2\Balance_Proof_Hash	(channel_id,fee_rate)
+func verifySinatureFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address) (err error) {
+	tmpBuf := new(bytes.Buffer)
+	_, err = tmpBuf.Write(sfr.ChannelID[:])                   //channel_id
+	err = binary.Write(tmpBuf, binary.BigEndian, sfr.FeeRate) //fee_rate
+
+	feeRateHash := utils.Sha3(tmpBuf.Bytes())
+	feeRateHashSignature := sfr.Signature
+	feeRateSigner, err := utils.Ecrecover(feeRateHash, feeRateHashSignature)
+	if feeRateSigner != peerAddress {
+		err = fmt.Errorf("Invalid signature")
+		return err
+	}
+	return nil
 }

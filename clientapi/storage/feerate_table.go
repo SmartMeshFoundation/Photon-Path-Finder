@@ -1,31 +1,38 @@
 package storage
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
 
-const feeRateSchema  = `
-CREATE TABLE IF NOT EXISTS tb_feerate(
-	id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	channe_id TEST NOT NULL,
-	peer_address TEST NOT NULL,
-	fee_rate TEST NOT NULL,
-	effitime BIGINT NOT NULL,
+	"time"
+
+	log "github.com/sirupsen/logrus"
+)
+
+//feeRateSchema create tb_fee_rate
+const feeRateSchema = `
+CREATE TABLE IF NOT EXISTS tb_fee_rate(
+	id	BIGSERIAL NOT NULL PRIMARY KEY,
+	channel_id TEXT NOT NULL,
+	peer_address TEXT NOT NULL,
+	fee_rate TEXT NOT NULL,
+	effitime BIGINT NOT NULL
 );
-CREATE SCHEMA_NAME 
 `
-const insertFeeRateSQL=""+
-	"INSERT INTO tb_feerate(channel_id,peer_address,fee_rate,effitime) VALUES(" +
-	"$1,$2,$3,$4,$5)"
 
-const selectFeeRateSQL=""+
-	"SELECT TOP(1) FROM tb_feerate WHERE channel_id=$1 and peer_address=$2 ORDER BY effitime DESC"
+// insertFeeRateSQL sql for insert-FeeRate
+const insertFeeRateSQL = "" +
+	"INSERT INTO tb_fee_rate(channel_id,peer_address,fee_rate,effitime) VALUES(" +
+	"$1,$2,$3,$4)"
 
-//获取所有的表，包括新建的tb_balance_1,tb_balance_2...
-const selectAllTableNameByServer="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+// selectFeeRateSQL sql for select-FeeRate
+const selectLatestFeeRateSQL = "" +
+	"SELECT fee_rate,effitime FROM tb_fee_rate WHERE channel_id=$1 and peer_address=$2 ORDER BY effitime DESC LIMIT 1"
 
 // balanceStatements interactive with db-operation
 type feeRateStatements struct {
-	insertFeeRateStmt             *sql.Stmt
-	selectFeeRateByChannelIDAndAddrStmt  *sql.Stmt
+	insertFeeRateStmt *sql.Stmt
+	selectFeeRateStmt *sql.Stmt
 }
 
 // prepare prepare tb_balance
@@ -37,8 +44,32 @@ func (s *feeRateStatements) prepare(db *sql.DB) (err error) {
 	if s.insertFeeRateStmt, err = db.Prepare(insertFeeRateSQL); err != nil {
 		return
 	}
-	if s.selectFeeRateByChannelIDAndAddrStmt, err = db.Prepare(selectFeeRateSQL); err != nil {
+	if s.selectFeeRateStmt, err = db.Prepare(selectLatestFeeRateSQL); err != nil {
 		return
+	}
+	return
+}
+
+// insertFeeRate insert data
+func (s *feeRateStatements) insertFeeRate(ctx context.Context,
+	channeID, peerAddress, feeRate string,
+) (err error) {
+	timeMs := time.Now().UnixNano() / 1000000
+	stmt := s.insertFeeRateStmt
+	_, err = stmt.Exec(channeID, peerAddress, feeRate, timeMs)
+
+	return
+}
+
+// selectLatestFeeRate select data
+func (s *feeRateStatements) selectLatestFeeRate(ctx context.Context, channeID, peerAddress string) (
+	feeRate string, effitime int64, err error) {
+	stmt := s.selectFeeRateStmt
+	err = stmt.QueryRow(channeID, peerAddress).Scan(&feeRate, &effitime)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			log.WithError(err).Error("Unable to retrieve tLatestFeeRate from the db")
+		}
 	}
 	return
 }

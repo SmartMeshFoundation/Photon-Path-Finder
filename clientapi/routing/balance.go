@@ -49,7 +49,7 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents, pee
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
-				JSON: util.BadJSON("peerAddress must be provided"),
+				JSON: err.Error(),//util.BadJSON("peerAddress must be provided"),
 			}
 		}
 
@@ -64,12 +64,12 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents, pee
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusInternalServerError,
-				JSON: err.Error(),//util.InvalidArgumentValue("argument was incorrect"),
+				JSON: util.InvalidArgumentValue(err.Error()),
 			}
 		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
-			JSON: util.InvalidArgumentValue("ok"),
+			JSON: util.OkJSON("true"),
 		}
 	}
 	return util.JSONResponse{

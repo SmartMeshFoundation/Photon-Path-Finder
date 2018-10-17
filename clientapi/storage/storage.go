@@ -1,12 +1,14 @@
 package storage
 
 import (
-	"database/sql"
-	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"context"
-	_ "github.com/lib/pq"
+	"database/sql"
+
+	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
+	_ "github.com/lib/pq"
 )
+
 // Database Data base
 type Database struct {
 	db *sql.DB
@@ -14,6 +16,7 @@ type Database struct {
 	latestBlockNumberStatement latestBlockNumberStatements
 	channelinfoStatement       channelInfoStatements
 	tokensStatement            tokensStatements
+	feereteStatement           feeRateStatements
 }
 
 // ChannelInfo db-type as channel info
@@ -51,42 +54,46 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	if err = cis.prepare(db); err != nil {
 		return nil, err
 	}
-	//channel-info-db
+	//token-db
 	tss := tokensStatements{}
 	if err = tss.prepare(db); err != nil {
 		return nil, err
 	}
-
-	return &Database{db, partitions, lbs, cis,tss}, nil
+	//fee-rate-db
+	frs := feeRateStatements{}
+	if err = frs.prepare(db); err != nil {
+		return nil, err
+	}
+	return &Database{db, partitions, lbs, cis, tss, frs}, nil
 }
 
 // SaveLatestBlockNumberStorage Save Latest BlockNumber Storage
-func (d *Database) SaveLatestBlockNumberStorage(ctx context.Context,lastestblocknum int64)  (err error){
-	err=d.latestBlockNumberStatement.updatLatestBlockNumber(ctx,lastestblocknum)
+func (d *Database) SaveLatestBlockNumberStorage(ctx context.Context, lastestblocknum int64) (err error) {
+	err = d.latestBlockNumberStatement.updatLatestBlockNumber(ctx, lastestblocknum)
 	return
 }
 
 // SaveTokensStorage Save Latest Tokens Storage
-func (d *Database) SaveTokensStorage(ctx context.Context,token,tokennetwork string)  (err error) {
+func (d *Database) SaveTokensStorage(ctx context.Context, token, tokennetwork string) (err error) {
 	err = d.tokensStatement.insertTokens(ctx, token, tokennetwork)
 	return
 }
 
 // GetAllTokensStorage Get All Tokens Storage
-func (d *Database) GetAllTokensStorage(ctx context.Context)  (token2TokenNetwork AddressMap,err error) {
+func (d *Database) GetAllTokensStorage(ctx context.Context) (token2TokenNetwork AddressMap, err error) {
 	token2TokenNetwork = make(map[common.Address]common.Address)
 	token2TokenNetwork, err = d.tokensStatement.selectTokens(ctx)
 	return
 }
 
 // GetAllChannelHistoryStorage Get All ChannelHistory Storage
-func (d *Database) GetAllChannelHistoryStorage(ctx context.Context)  (ChannelInfos []ChannelInfo ,err error){
-	 ChannelInfos,err=d.channelinfoStatement.selectAllChannelInfo(ctx)
-	 return
+func (d *Database) GetAllChannelHistoryStorage(ctx context.Context) (ChannelInfos []ChannelInfo, err error) {
+	ChannelInfos, err = d.channelinfoStatement.selectAllChannelInfo(ctx)
+	return
 }
 
 // GetLatestBlockNumberStorage Get Latest BlockNumber Storage
-func (d *Database) GetLatestBlockNumberStorage(ctx context.Context)  (lastestnum int64, err error) {
+func (d *Database) GetLatestBlockNumberStorage(ctx context.Context) (lastestnum int64, err error) {
 	lastestnum, err = d.latestBlockNumberStatement.selectLatestBlockNumber(ctx)
 	if lastestnum == -1 {
 		err = d.latestBlockNumberStatement.insertLatestBlockNumber(ctx, 0)
@@ -96,38 +103,50 @@ func (d *Database) GetLatestBlockNumberStorage(ctx context.Context)  (lastestnum
 }
 
 // InitChannelInfoStorage Init ChannelInfo Storage
-func (d *Database) InitChannelInfoStorage(ctx context.Context,channelID,status,participant,partner string)  (err error){
-	err=d.channelinfoStatement.initChannelInfo(nil,channelID,status,participant,partner,0,0,)
+func (d *Database) InitChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string) (err error) {
+	err = d.channelinfoStatement.initChannelInfo(nil, channelID, status, participant, partner, 0, 0)
 	return
 }
 
 // UpdateChannelStatusStorage Update ChannelStatus Storage
-func (d *Database) UpdateChannelStatusStorage(ctx context.Context,channelID,status,participant,partner string)  (err error){
-	err=d.InitChannelInfoStorage(ctx,channelID,status,participant,partner)
-	if err!=nil{
+func (d *Database) UpdateChannelStatusStorage(ctx context.Context, channelID, status, participant, partner string) (err error) {
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
+	if err != nil {
 		return
 	}
-	err=d.channelinfoStatement.updateChannelStatus(ctx,status,channelID)
+	err = d.channelinfoStatement.updateChannelStatus(ctx, status, channelID)
 	return
 }
 
 // UpdateChannelInfoStorage Update ChannelInfo Storage
 func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
-	channelID,status,participant ,partner string,participantCapacity int64)  (err error) {
+	channelID, status, participant, partner string, participantCapacity int64) (err error) {
 	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
 	if err != nil {
 		return
 	}
-	err=d.channelinfoStatement.updateChannelDeposit(ctx,channelID,status,participant,participantCapacity)
+	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status, participant, participantCapacity)
 	return
 }
 
 // WithdrawChannelInfoStorage Withdraw ChannelInfo Storage
-func (d *Database) WithdrawChannelInfoStorage(ctx context.Context,channelID,status,participant,partner string,participantCapacity int64) (err error) {
+func (d *Database) WithdrawChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string, participantCapacity int64) (err error) {
 	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner)
 	if err != nil {
 		return
 	}
-	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status,participant, participantCapacity)
+	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status, participant, participantCapacity)
+	return
+}
+
+// SaveRateFeeStorage Save Rate Fee Storage
+func (d *Database) SaveRateFeeStorage(ctx context.Context, channelID, peerAddress, feeRate string) (err error) {
+	err = d.feereteStatement.insertFeeRate(ctx, channelID, peerAddress, feeRate)
+	return
+}
+
+// GetLastestRateFeeStorage Save Rate Fee Storage
+func (d *Database) GetLastestRateFeeStorage(ctx context.Context, channelID, peerAddress string) (feeRate string, effitime int64, err error) {
+	feeRate, effitime, err = d.feereteStatement.selectLatestFeeRate(ctx, channelID, peerAddress)
 	return
 }

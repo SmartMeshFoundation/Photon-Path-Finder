@@ -9,7 +9,7 @@ import (
 )
 
 // feeRateRequest is the json request for GetPaths
-type feeRateRequest struct {
+type feeRateRequest1 struct {
 	PeerFrom   string   `json:"peer_from"`
 	PeerTo     string   `json:"peer_to"`
 	LimitPaths int      `json:"limit_paths"`

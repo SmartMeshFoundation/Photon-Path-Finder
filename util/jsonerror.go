@@ -11,6 +11,11 @@ type PfsError struct {
 	Err     string `json:"error"`
 }
 
+// Unknown is an unexpected error
+func Unknown(msg string) *PfsError {
+	return &PfsError{"M_UNKNOWN", msg}
+}
+
 // Error system error
 func (e *PfsError) Error() string {
 	return fmt.Sprintf("%s: %s", e.ErrCode, e.Err)
@@ -24,9 +29,9 @@ func InternalServerError() JSONResponse {
 	}
 }
 
-// Unknown is an unexpected error
-func Unknown(msg string) *PfsError {
-	return &PfsError{"M_UNKNOWN", msg}
+// OkJSON is a result of no-error
+func OkJSON(msg string) *PfsError {
+	return &PfsError{"M_OK", msg}
 }
 
 // Forbidden is an error when the client tries to access a resource
