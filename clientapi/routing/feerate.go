@@ -63,9 +63,9 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 
 	util.GetLogger(req.Context()).WithField("set_fee_rate", r.Signature).Info("Processing set_fee_rate request")
 
-	var channelid = r.ChannelID
-	var peeraddress = peerAddress
-	var feerate= r.FeeRate
+	var channelid= r.ChannelID
+	var peeraddress= peerAddress
+	var feerate = r.FeeRate
 	err = feeRateDB.SaveRateFeeStorage(nil, channelid.String(), peeraddress, feerate)
 	if err != nil {
 		return util.JSONResponse{
@@ -77,13 +77,12 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 		Code: http.StatusOK,
 		JSON: util.OkJSON("true"),
 	}
-
 }
 
 // GetFeeRate reponse fee_rate data
 func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
-	if req.Method==http.MethodGet{
-		if common.IsHexAddress(peerAddress){
+	if req.Method == http.MethodPost {
+		if common.IsHexAddress(peerAddress) {
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
 				JSON: util.BadJSON("peer address must be provided"),
@@ -96,27 +95,27 @@ func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string
 			return *resErr
 		}
 
-		feerate,effitime,err:=feeRateDB.GetLastestRateFeeStorage(nil,r.ChannelID.String(),peerAddress)
-		if err!=nil{
+		feerate, effitime, err := feeRateDB.GetLastestRateFeeStorage(nil, r.ChannelID.String(), peerAddress)
+		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusNotFound,
 				JSON: util.NotFound("any fee-rate data found"),
 			}
 		}
-		reslut0:=&FeeRateInfo{
+		reslut0 := &FeeRateInfo{
 			ChannelID:     r.ChannelID,
 			PeerAddress:   common.HexToAddress(peerAddress),
-			FeeRate:feerate,
+			FeeRate:       feerate,
 			EffectiveTime: effitime,
 		}
-		resultMap:=make(map[common.Hash]*FeeRateInfo)
-		resultMap[r.ChannelID]=reslut0
-		reslut:=&GetFeeRateResponse{
-			Result:resultMap,
+		resultMap := make(map[common.Hash]*FeeRateInfo)
+		resultMap[r.ChannelID] = reslut0
+		reslut := &GetFeeRateResponse{
+			Result: resultMap,
 		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
-			JSON: reslut,//util.OkJSON("true"),
+			JSON: reslut, //util.OkJSON("true"),
 		}
 	}
 

@@ -66,3 +66,22 @@ func verifySinatureFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address) (e
 	}
 	return nil
 }
+
+//verifySinaturePaths signature=caller
+func verifySinaturePaths(pr pathRequest,peerAddress common.Address) (err error)  {
+	tmpBuf := new(bytes.Buffer)
+	_,err=tmpBuf.Write(pr.PeerFrom[:])//peer_from
+	_,err=tmpBuf.Write(pr.PeerTo[:])//peer_to
+	err = binary.Write(tmpBuf, binary.BigEndian, pr.LimitPaths) //limit_paths
+	err = binary.Write(tmpBuf, binary.BigEndian, pr.SendAmount) //send_amount
+	err = binary.Write(tmpBuf, binary.BigEndian, pr.SortDemand) //send_amount
+
+	pathHash:=utils.Sha3(tmpBuf.Bytes())
+	pathSignature:=pr.Sinature
+	pathSigner,err:=utils.Ecrecover(pathHash,pathSignature)
+	if pathSigner!=peerAddress{
+		err = fmt.Errorf("Invalid signature")
+		return err
+	}
+	return nil
+}

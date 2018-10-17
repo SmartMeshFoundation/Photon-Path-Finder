@@ -47,7 +47,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		panic(err)
 	}*/
 	token2TokenNetwork,err:=db.GetAllTokensStorage(nil)
-
+	fmt.Printf("token2TokenNetwork startup=%s",utils.StringInterface(token2TokenNetwork,2))
 	return &ChainEvents{
 		client:          client,
 		be:              blockchain.NewBlockChainEvents(client, bcs, token2TokenNetwork),

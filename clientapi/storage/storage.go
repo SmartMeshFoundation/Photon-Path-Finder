@@ -67,11 +67,7 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	return &Database{db, partitions, lbs, cis, tss, frs}, nil
 }
 
-// SaveLatestBlockNumberStorage Save Latest BlockNumber Storage
-func (d *Database) SaveLatestBlockNumberStorage(ctx context.Context, lastestblocknum int64) (err error) {
-	err = d.latestBlockNumberStatement.updatLatestBlockNumber(ctx, lastestblocknum)
-	return
-}
+
 
 // SaveTokensStorage Save Latest Tokens Storage
 func (d *Database) SaveTokensStorage(ctx context.Context, token, tokennetwork string) (err error) {
@@ -89,6 +85,12 @@ func (d *Database) GetAllTokensStorage(ctx context.Context) (token2TokenNetwork 
 // GetAllChannelHistoryStorage Get All ChannelHistory Storage
 func (d *Database) GetAllChannelHistoryStorage(ctx context.Context) (ChannelInfos []ChannelInfo, err error) {
 	ChannelInfos, err = d.channelinfoStatement.selectAllChannelInfo(ctx)
+	return
+}
+
+// SaveLatestBlockNumberStorage Save Latest BlockNumber Storage
+func (d *Database) SaveLatestBlockNumberStorage(ctx context.Context, lastestblocknum int64) (err error) {
+	err = d.latestBlockNumberStatement.updatLatestBlockNumber(ctx, lastestblocknum)
 	return
 }
 

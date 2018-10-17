@@ -194,6 +194,15 @@ func (twork *TokenNetwork)UpdateBalance(
 	return
 }
 
+func (twork *TokenNetwork)GetPahts(
+	source common.Address,
+	target common.Address,
+	value *big.Int,
+	limitPaths int,
+	sortDemand string,
+	) {
+	return
+}
 func BytesToInt(buf []byte) int {
 	return int(binary.BigEndian.Uint32(buf))
 }

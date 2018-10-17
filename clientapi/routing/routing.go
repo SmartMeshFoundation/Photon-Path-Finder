@@ -55,13 +55,13 @@ func Setup(
 			vars := mux.Vars(req)
 			return GetFeeRate(req,pfsdb, vars["peerAddress"])
 		}),
-	).Methods(http.MethodGet, http.MethodOptions)
+	).Methods(http.MethodPost, http.MethodOptions)
 
 	// "/paths"
 	vmux.Handle("/{peerAddress}/paths",
 		common.MakeExternalAPI("get_paths", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return GetPaths(req, vars["peerAddress"])
+			return GetPaths(req, ce,vars["peerAddress"])
 		}),
 	).Methods(http.MethodPost, http.MethodOptions)
 }
