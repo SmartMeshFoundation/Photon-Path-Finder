@@ -10,6 +10,7 @@ keystore_path: "/home/cy/.ethereum/keystore"
 eth_rpc_endpoint: "ws://192.168.124.13:5555"
 
 password-file: "/home/cy/.ethereum/keystore/pass"
+
 # The pfs specific config
 pfs:
   # The name of the server. This is usually the domain name, e.g 'smartraiden.io', 'localhost'.

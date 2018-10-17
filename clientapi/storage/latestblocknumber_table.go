@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS tb_latest_block_number(
 const(
 	// insertLatestBlockNumberSQL sql
 	insertLatestBlockNumberSQL = ""+
-		"INSERT INTO tb_latest_block_number(latest_block_number) VALUES(0)"
+		"INSERT INTO tb_latest_block_number(latest_block_number) VALUES($1)"
 
 	// updatLatestBlockNumberSQL sql
 	updatLatestBlockNumberSQL = ""+
@@ -56,7 +56,7 @@ func (s *latestBlockNumberStatements) prepare(db *sql.DB) (err error) {
 func (s *latestBlockNumberStatements)insertLatestBlockNumber(ctx context.Context,latestBlockNum int64,
 ) (err error) {
 	stmt := s.insertLatestBlockNumberStmt
-	_, err = stmt.ExecContext(ctx, latestBlockNum)
+	_, err = stmt.Exec(latestBlockNum)
 	if err != nil {
 		return err
 	}

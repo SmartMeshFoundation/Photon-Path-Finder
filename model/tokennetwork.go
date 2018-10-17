@@ -148,13 +148,6 @@ func (twork *TokenNetwork)HandleChannelWithdawEvent(channelID common.Hash,
 }
 
 //UpdateBalance Update Balance
-/*		err = ce.TokenNetwork.UpdateBalance(
-			r.BalanceProof.ChannelID,
-			partner,
-			r.BalanceProof.Nonce,
-			r.BalanceProof.TransferredAmount,
-			r.LocksAmount)
-*/
 func (twork *TokenNetwork)UpdateBalance(
 	channelID common.Hash,
 	singer common.Address,
