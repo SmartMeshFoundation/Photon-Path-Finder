@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"encoding/binary"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // TokenNetwork token network view

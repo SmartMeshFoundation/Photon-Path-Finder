@@ -5,7 +5,7 @@ import (
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"context"
 	"math/big"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 //ChannelView Unidirectional view of a bidirectional channel

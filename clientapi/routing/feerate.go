@@ -86,13 +86,37 @@ func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string
 		if common.IsHexAddress(peerAddress){
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
-				JSON: util.BadJSON("peerAddress must be provided"),
+				JSON: util.BadJSON("peer address must be provided"),
 			}
 		}
 
+		var r SetFeeRateRequest
+		resErr := util.UnmarshalJSONRequest(req, &r)
+		if resErr != nil {
+			return *resErr
+		}
+
+		feerate,effitime,err:=feeRateDB.GetLastestRateFeeStorage(nil,r.ChannelID.String(),peerAddress)
+		if err!=nil{
+			return util.JSONResponse{
+				Code: http.StatusNotFound,
+				JSON: util.NotFound("any fee-rate data found"),
+			}
+		}
+		reslut0:=&FeeRateInfo{
+			ChannelID:     r.ChannelID,
+			PeerAddress:   common.HexToAddress(peerAddress),
+			FeeRate:feerate,
+			EffectiveTime: effitime,
+		}
+		resultMap:=make(map[common.Hash]*FeeRateInfo)
+		resultMap[r.ChannelID]=reslut0
+		reslut:=&GetFeeRateResponse{
+			Result:resultMap,
+		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
-			JSON: util.InvalidArgumentValue("true"),
+			JSON: reslut,//util.OkJSON("true"),
 		}
 	}
 
