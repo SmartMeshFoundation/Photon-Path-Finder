@@ -23,11 +23,16 @@ const(
 	// selectLatestBlockNumberSQL sql
 	selectAllTokensSQL=""+
 		"SELECT token,token_network FROM tb_tokens"
+	// selectCountTokenSQL
+	selectCountTokenSQL=""+
+		"SELECT COUNT(*) FROM tb_tokens where token=$1"
+
 )
 // latestBlockNumberStatements interactive with db-operation
 type tokensStatements struct {
-	insertTokensStmt    *sql.Stmt
-	selectAllTokensStmt *sql.Stmt
+	insertTokensStmt     *sql.Stmt
+	selectAllTokensStmt  *sql.Stmt
+	selectCountTokenStmt *sql.Stmt
 }
 
 // prepare prepare tb_latest_block_number
@@ -42,16 +47,27 @@ func (s *tokensStatements) prepare(db *sql.DB) (err error) {
 	if s.selectAllTokensStmt, err = db.Prepare(selectAllTokensSQL); err != nil {
 		return
 	}
+	if s.selectCountTokenStmt, err = db.Prepare(selectCountTokenSQL); err != nil {
+		return
+	}
 	return
 }
 
 // insertTokens save token2tokennetwork
 func (s *tokensStatements)insertTokens(ctx context.Context,token,tokenNetwork string,
 ) (err error) {
-	stmt := s.insertTokensStmt
-	_, err = stmt.Exec(token,tokenNetwork)
-	if err != nil {
+	stmt0:=s.selectCountTokenStmt
+	var tokencount int
+	err = stmt0.QueryRow(token).Scan(&tokencount)
+	if err!=nil{
 		return err
+	}
+	if tokencount==0 {
+		stmt := s.insertTokensStmt
+		_, err = stmt.Exec(token, tokenNetwork)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -68,7 +84,7 @@ func (s *tokensStatements)selectTokens(ctx context.Context) (addressmap AddressM
 
 	for rows.Next() {
 		var token, tokenNetwork string
-		err = stmt.QueryRow().Scan(&token, &tokenNetwork)
+		err = rows.Scan(&token, &tokenNetwork)
 		if err != nil {
 			return
 		}

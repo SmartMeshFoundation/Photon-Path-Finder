@@ -32,10 +32,10 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 
 	gPeerAddress2Index:=make(map[common.Address]int)
 	for _, channelinfo := range channelinfos {
-		if channelinfo.Status != StateChannelClose {
+		//if channelinfo.Status != StateChannelClose {
 			var participant= [2]common.Address{common.StringToAddress(channelinfo.Participant), common.StringToAddress(channelinfo.Partner)}
 			channelID2Address[common.StringToHash(channelinfo.ChannelID)] = participant
-		}
+		//}
 		gpeerAddr:=common.StringToAddress(channelinfo.Participant)
 		gPeerAddress2Index[gpeerAddr]=channelinfo.IndesOfPeerAddress
 	}
@@ -58,8 +58,6 @@ func (twork *TokenNetwork)HandleChannelOpenedEvent(channelID common.Hash,partici
 
 	var participant = [2]common.Address{participant1, participant2}
 	twork.ChannelID2Address[channelID] = participant
-
-	//cview1:=twork.channelViews[participant1][participant2]
 
 	cview1:=InitChannelView(channelID, participant1, participant2, big.NewInt(0),StateChannelOpen,twork.db)
 	cview2:=InitChannelView(channelID, participant2, participant1, big.NewInt(0),StateChannelOpen,twork.db)

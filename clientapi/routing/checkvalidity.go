@@ -141,7 +141,7 @@ func signDataForBalanceProof(req *http.Request,cfg config.PathFinder,peerAddress
 	}
 	return util.JSONResponse{
 		Code: http.StatusOK,
-		JSON: common.BytesToHash(signature).String(),
+		JSON: signature,
 	}
 }
 
@@ -191,7 +191,7 @@ func signDataForBalanceProofMessage(req *http.Request,cfg config.PathFinder,peer
 	}
 	return util.JSONResponse{
 		Code: http.StatusOK,
-		JSON: common.BytesToHash(signature).String(),
+		JSON: signature,
 	}
 }
 
@@ -237,7 +237,7 @@ func signDataForSetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	}
 	return util.JSONResponse{
 		Code: http.StatusOK,
-		JSON: common.BytesToHash(signature).String(),
+		JSON: signature,
 	}
 }
 
