@@ -11,11 +11,11 @@ import (
 //balanceProof is the json request for BalanceProof
 type BalanceProof struct {
 	Nonce             int64       `json:"nonce"`
-	ChannelID         common.Hash `json:"channel_id"`
 	TransferredAmount *big.Int    `json:"transferred_amount"`
+	ChannelID         common.Hash `json:"channel_id"`
 	LocksRoot         common.Hash `json:"locksroot"`
 	AdditionalHash    common.Hash `json:"additional_hash"`
-	Signature         []byte      `json:"signature"`
+	Signature         common.Hash `json:"signature"`
 }
 
 //lock is the json request for BalanceProof
@@ -27,7 +27,7 @@ type lock struct {
 
 //balanceProofRequest is the json request for BalanceProof
 type balanceProofRequest struct {
-	BalanceHash  []byte       `json:"balance_hash"`
+	BalanceHash  common.Hash  `json:"balance_hash"`
 	BalanceProof BalanceProof `json:"balance_proof"`
 	//Locks        []lock       `json:"locks"`
 	LocksAmount *big.Int `json:"locks_amount"`

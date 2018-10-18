@@ -12,12 +12,12 @@ import (
 
 // pathRequest is the json request for GetPaths
 type pathRequest struct {
-	PeerFrom   common.Address   `json:"peer_from"`
-	PeerTo     common.Address   `json:"peer_to"`
-	LimitPaths int      `json:"limit_paths"`
-	SendAmount *big.Int `json:"send_amount"`
-	SortDemand string   `json:"sort_demand"`
-	Sinature   []byte   `json:"signature"`
+	PeerFrom   common.Address `json:"peer_from"`
+	PeerTo     common.Address `json:"peer_to"`
+	LimitPaths int            `json:"limit_paths"`
+	SendAmount *big.Int       `json:"send_amount"`
+	SortDemand string         `json:"sort_demand"`
+	Sinature   common.Hash    `json:"signature"`
 }
 
 /*// pathResult is the json response for GetPaths
