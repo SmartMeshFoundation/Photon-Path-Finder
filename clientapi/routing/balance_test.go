@@ -22,7 +22,7 @@ func TestUpdateBalanceProof(t *testing.T) {
 	}
 
 	bpr := &balanceProofRequest{
-		BalanceHash:  common.StringToHash("0x0000000000000000000000000000000000000000000000000000000000000000").Bytes(),
+		BalanceSignature:  common.StringToHash("0x0000000000000000000000000000000000000000000000000000000000000000").Bytes(),
 		BalanceProof: *bp,
 		LocksAmount:  big.NewInt(1),
 	}

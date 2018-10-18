@@ -15,7 +15,7 @@ type BalanceProof struct {
 	ChannelID         common.Hash `json:"channel_id"`
 	LocksRoot         common.Hash `json:"locksroot"`
 	AdditionalHash    common.Hash `json:"additional_hash"`
-	Signature         common.Hash `json:"signature"`
+	Signature         []byte      `json:"signature"`
 }
 
 //lock is the json request for BalanceProof
@@ -27,14 +27,14 @@ type lock struct {
 
 //balanceProofRequest is the json request for BalanceProof
 type balanceProofRequest struct {
-	BalanceHash  common.Hash  `json:"balance_hash"`
-	BalanceProof BalanceProof `json:"balance_proof"`
+	BalanceSignature []byte       `json:"balance_signature"`
+	BalanceProof     BalanceProof `json:"balance_proof"`
 	//Locks        []lock       `json:"locks"`
 	LocksAmount *big.Int `json:"locks_amount"`
 }
 
 // Balance handle the request with balance proof,implements GET and POST /balance
-func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
+func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress string) util.JSONResponse {
 	if req.Method == http.MethodPut {
 		var r balanceProofRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
@@ -44,16 +44,30 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents, pee
 
 		//validate json-input
 		var partner common.Address
-		//var locksAmount *big.Int
-		partner, err := verifySinature(r, common.HexToAddress(peerAddress))
-		if err != nil {
+		if _,exist:=ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID];!exist{
 			return util.JSONResponse{
-				Code: http.StatusBadRequest,
-				JSON: err.Error(),//util.BadJSON("peerAddress must be provided"),
+				Code: http.StatusInternalServerError,
+				JSON: "Unknown channel",
 			}
 		}
 
-		util.GetLogger(req.Context()).WithField("balance_proof", r.BalanceHash).Info("Processing balance_proof request")
+		for _,partnerx:=range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]{
+			if partnerx!=common.HexToAddress(peerAddress){
+				partner=partnerx
+				break
+			}
+		}
+
+		//var locksAmount *big.Int
+		err := verifySinature(&r, common.HexToAddress(peerAddress),partner)
+		if err != nil {
+			return util.JSONResponse{
+				Code: http.StatusBadRequest,
+				JSON: err.Error(),
+			}
+		}
+
+		util.GetLogger(req.Context()).WithField("balance_proof", r.BalanceSignature).Info("Processing balance_proof request")
 
 		err = ce.TokenNetwork.UpdateBalance(
 			r.BalanceProof.ChannelID,

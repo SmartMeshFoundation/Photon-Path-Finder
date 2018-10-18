@@ -12,7 +12,7 @@ import (
 type SetFeeRateRequest struct {
 	ChannelID common.Hash `json:"channel_id"`
 	FeeRate   string      `json:"fee_rate"`
-	Signature common.Hash      `json:"signature"`
+	Signature common.Hash `json:"signature"`
 }
 
 // GetFeeRateRequest is the json request for GetFeeRate
