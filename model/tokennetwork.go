@@ -208,7 +208,7 @@ type pathResult struct {
 	PathID  int      `json:"path_id"`
 	PathHop int      `json:"path_hop"`
 	fee     int64    `json:"fee"`
-	Result  []string `json:"result"`
+	Result  []int `json:"result"`
 }
 
 func (twork *TokenNetwork)GetPahts(
@@ -217,7 +217,7 @@ func (twork *TokenNetwork)GetPahts(
 	value *big.Int,
 	limitPaths int,
 	sortDemand string,
-	) {
+	) (pathinfos []interface{}){
 	xsource := twork.GPeerAddress2Index[source]
 	xtarget := twork.GPeerAddress2Index[target]
 
@@ -226,40 +226,39 @@ func (twork *TokenNetwork)GetPahts(
 	index1 := len(gMapToIndex)
 	fmt.Println(index1)
 	gMapToIndex[common.HexToAddress("0xc67f23CE04ca5E8DD9f2E1B5eD4FaD877f79267A")] = index1
-
 	index2 := len(gMapToIndex)
 	fmt.Println(index2)
 	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216174")] = index2
-
 	index3 := len(gMapToIndex)
 	fmt.Println(index3)
 	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216188")] = index3
-
-	xsource = 1
-	xtarget = 4
+	xsource = 0
+	xtarget = 5
 	twork.PeerRelationshipGraph.AddEdge(0, 1, 100)
 	twork.PeerRelationshipGraph.AddEdge(1, 0, 100)
-
 	twork.PeerRelationshipGraph.AddEdge(1, 2, 50)
 	twork.PeerRelationshipGraph.AddEdge(2, 1, 50)
-
 	twork.PeerRelationshipGraph.AddEdge(2, 3, 10)
 	twork.PeerRelationshipGraph.AddEdge(3, 2, 10)
-
 	twork.PeerRelationshipGraph.AddEdge(1, 3, 10)
 	twork.PeerRelationshipGraph.AddEdge(3, 1, 10)
-
-	twork.PeerRelationshipGraph.AddEdge(3, 4, 10)
-	twork.PeerRelationshipGraph.AddEdge(4, 3, 10)
-
-	twork.PeerRelationshipGraph.RemoveEdge(1, 0)
-	twork.PeerRelationshipGraph.RemoveEdge(0, 1)*/
-
+	twork.PeerRelationshipGraph.AddEdge(4, 5, 10)
+	twork.PeerRelationshipGraph.AddEdge(5, 4, 10)
+	//twork.PeerRelationshipGraph.RemoveEdge(1, 0)
+	//twork.PeerRelationshipGraph.RemoveEdge(0, 1)
+	*/
 	result := twork.PeerRelationshipGraph.AllShortestPath(xsource, xtarget)
-
-	fmt.Println(result)
-
-	return
+	var pathInfos []interface{}
+	for k,pathSlice:=range result {
+		sinPathInfo := &pathResult{}
+		sinPathInfo.PathID = k
+		sinPathInfo.PathHop = len(pathSlice) - 2
+		sinPathInfo.fee = 20
+		sinPathInfo.Result = pathSlice
+		pathInfos=append(pathInfos, sinPathInfo)
+	}
+	//fmt.Println(result)
+	return pathInfos
 }
 
 func BytesToInt(buf []byte) int {

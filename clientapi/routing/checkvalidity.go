@@ -6,6 +6,10 @@ import (
 	"encoding/binary"
 	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"fmt"
+	"net/http"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // verifySinature verify balance proof sinature and caller's sinature
@@ -84,4 +88,55 @@ func verifySinaturePaths(pr pathRequest,peerAddress common.Address) (err error) 
 		return err
 	}
 	return nil
+}
+
+// SignData signature data,just for test
+func SignDataForBalanceProof(req *http.Request,peerAddress string)  util.JSONResponse {
+	if req.Method != http.MethodPost {
+		return util.JSONResponse{
+			Code: http.StatusMethodNotAllowed,
+			JSON: util.NotFound("Bad method"),
+		}
+	}
+	var r BalanceProof
+	resErr := util.UnmarshalJSONRequest(req, &r)
+	if resErr != nil {
+		return *resErr
+	}
+
+	var signature []byte
+	tmpBuf := new(bytes.Buffer)
+	err := binary.Write(tmpBuf, binary.BigEndian, r.Nonce)
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.TransferredAmount))
+	_, err = tmpBuf.Write(r.ChannelID[:])
+	_, err = tmpBuf.Write(r.LocksRoot[:])
+	_, err = tmpBuf.Write(r.AdditionalHash[:])
+
+	accmanager := accounts.NewAccountManager("/home/cy/.ethereum/keystore")
+	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
+	if err!=nil{
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	privateKey,err:=crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+
+	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
+	if err!=nil{
+		return util.JSONResponse{
+			Code: http.StatusExpectationFailed,
+			JSON: util.NotFound("Sign data err"),
+		}
+	}
+	return util.JSONResponse{
+		Code: http.StatusOK,
+		JSON: common.BytesToHash(signature).String(),
+	}
 }

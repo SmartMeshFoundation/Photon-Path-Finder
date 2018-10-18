@@ -49,13 +49,13 @@ func GetPaths(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress st
 		}
 
 		//verify caller's sinature
-		/*err:=verifySinaturePaths(r,common.HexToAddress(peerAddress))
+		err:=verifySinaturePaths(r,common.HexToAddress(peerAddress))
 		if err!=nil{
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
 				JSON: err.Error(),
 			}
-		}*/
+		}
 
 		var peerFrom =r.PeerFrom
 		var peerTo    =r.PeerTo
@@ -63,7 +63,11 @@ func GetPaths(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress st
 		var sendAmount=r.SendAmount
 		var sortDemand =r.SortDemand
 
-		ce.TokenNetwork.GetPahts(peerFrom,peerTo,sendAmount,limitPaths,sortDemand)
+		pathResult:=ce.TokenNetwork.GetPahts(peerFrom,peerTo,sendAmount,limitPaths,sortDemand)
+		return util.JSONResponse{
+			Code: http.StatusOK,
+			JSON: pathResult, //util.OkJSON("true"),
+		}
 	}
 	return util.JSONResponse{
 		Code: http.StatusMethodNotAllowed,

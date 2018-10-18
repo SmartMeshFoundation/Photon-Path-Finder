@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS tb_channel_info_0(
 	partner TEXT NOT NULL,
 	participant_capacity BIGINT NOT NULL,
 	partner_capacity BIGINT NOT NULL,
-	feerate TEXT NOT NULL DEFAULT 0
+	feerate TEXT NOT NULL DEFAULT 0,
+	addr_index INT NOT NULL DEFAULT 0
 );
 `
 
