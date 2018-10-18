@@ -47,6 +47,10 @@ const (
 	updateChannelDepositSQL = "" +
 		"UPDATE tb_channel_info_0 SET ts = $1 ,status = $2 ,participant_capacity=$3 WHERE channel_id = $4 AND participant=$5 "
 
+	// updateChannelDepositSQL sql for update-ChannelDeposit
+	updateBalanceProofSQL = "" +
+		"UPDATE tb_channel_info_0 SET ts = $1 ,status = $2 ,participant_capacity=participant_capacity+$3 WHERE channel_id = $4 AND participant=$5 "
+
 	/*updateChannelInfo  = ""+
 	"UPDATE tb_channel_info SET ts = $1 ,status = $2 ,participant_capacity = $3,partner_capacity = $4 WHERE channel_id = $5 AND " +
 	"participant = $6 AND partner = $7 "*/
@@ -59,6 +63,7 @@ type channelInfoStatements struct {
 	updateChannelDepositStmt          *sql.Stmt
 	selectChannelCountByChannelIDStmt *sql.Stmt
 	selectAllChannelInfoStmt          *sql.Stmt
+	updateBalanceProofStmt            *sql.Stmt
 }
 
 // prepare prepare tb_balance
@@ -81,6 +86,9 @@ func (s *channelInfoStatements) prepare(db *sql.DB) (err error) {
 		return
 	}
 	if s.selectAllChannelInfoStmt, err = db.Prepare(selectAllChannelInfoSQL); err != nil {
+		return
+	}
+	if s.updateBalanceProofStmt, err = db.Prepare(updateBalanceProofSQL); err != nil {
 		return
 	}
 
@@ -128,12 +136,25 @@ func (s *channelInfoStatements) updateChannelStatus(ctx context.Context,
 	return
 }
 
-// updateBalance update data
+// updateChannelDeposit update data
 func (s *channelInfoStatements) updateChannelDeposit(ctx context.Context,
 	channeID, status, participant string, participantCapacity int64,
 ) (err error) {
 	timeMs := time.Now().UnixNano() / 1000000
 	stmt := s.updateChannelDepositStmt
+	_, err = stmt.Exec(
+		timeMs, status, participantCapacity,
+		channeID, participant,
+	)
+	return
+}
+
+// updateChannelDeposit update data
+func (s *channelInfoStatements) updateBalanceProof(ctx context.Context,
+	channeID, status, participant string, participantCapacity int64,
+) (err error) {
+	timeMs := time.Now().UnixNano() / 1000000
+	stmt := s.updateBalanceProofStmt
 	_, err = stmt.Exec(
 		timeMs, status, participantCapacity,
 		channeID, participant,

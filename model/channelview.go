@@ -34,6 +34,8 @@ const(
 	StateChannelWithdraw="withdraw"
 	//StateChannelOpen event type of ChannelClose
 	StateChannelClose="close"
+	//StateChannelOpen event type of ChannelClose
+	StateUpdateBalance="updatebalance"
 )
 
 //InitChannelView
@@ -88,12 +90,28 @@ func (cv *ChannelView)UpdateCapacity(
 		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
 		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
 		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)
-
 		err = cv.db.UpdateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
 	case StateChannelWithdraw:
 		err = cv.db.WithdrawChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), deposit.Int64())
 	case StateChannelClose:
 		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
+	case StateUpdateBalance:
+		if deposit.Uint64() != 0 {
+			cv.Deposit = deposit
+		}
+		if transferredAmount.Uint64() != 0 {
+			cv.TransferredAmount = transferredAmount
+		}
+		if receivedAmount.Uint64() != 0 {
+			cv.ReceivedAmount = receivedAmount
+		}
+		if lockedAmount.Uint64() != 0 {
+			cv.LockedAmount = lockedAmount
+		}
+		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
+		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
+		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)
+		err = cv.db.UpdateBalanceProofStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
 	}
 	if err != nil {
 		logrus.Warn("Failed to update capacity,err=", err)

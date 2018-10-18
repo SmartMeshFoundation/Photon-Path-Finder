@@ -132,6 +132,17 @@ func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
 	return
 }
 
+// UpdateBalanceProofStorage Update balance proof Storage
+func (d *Database) UpdateBalanceProofStorage(ctx context.Context,
+	channelID, status, participant, partner string, participantCapacity int64) (err error) {
+	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
+	if err != nil {
+		return
+	}
+	err = d.channelinfoStatement.updateBalanceProof(ctx, channelID, status, participant, participantCapacity)
+	return
+}
+
 // WithdrawChannelInfoStorage Withdraw ChannelInfo Storage
 func (d *Database) WithdrawChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string, participantCapacity int64) (err error) {
 	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)

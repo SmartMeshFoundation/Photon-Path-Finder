@@ -42,10 +42,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	if registry == nil {
 		logrus.Panic("Register token network error : cannot get registry")
 	}
-	/*secretRegistryAddress, err := registry.GetContract().SecretRegistryAddress(nil)
-	if err != nil {
-		panic(err)
-	}*/
+
 	token2TokenNetwork,err:=db.GetAllTokensStorage(nil)
 	fmt.Printf("token2TokenNetwork startup=%s",utils.StringInterface(token2TokenNetwork,2))
 	return &ChainEvents{
@@ -162,13 +159,6 @@ func (chainevent *ChainEvents)existTokenNetwork(channelID common.Hash) bool{
 func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange)  {
 	tokenNetwork:=st2.TokenNetworkAddress
 
-	if tokenNetwork==utils.EmptyAddress{
-		return
-	}
-	if !checkValidity(){
-		return
-	}
-
 	logrus.Info("Received ChannelOpened event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier.ChannelIdentifier
@@ -185,12 +175,6 @@ func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.Cont
 // handleDepositStateChange deposit
 func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractBalanceStateChange) {
 	tokenNetwork:=st2.TokenNetworkAddress
-	if tokenNetwork==utils.EmptyAddress{
-		return
-	}
-	if !checkValidity(){
-		return
-	}
 
 	logrus.Info("Received ChannelDeposit event for token network ",tokenNetwork.String())
 
@@ -207,13 +191,6 @@ func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.C
 func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractClosedStateChange) {
 	tokenNetwork:=st2.TokenNetworkAddress
 
-	if tokenNetwork==utils.EmptyAddress{
-		return
-	}
-	if !checkValidity(){
-		return
-	}
-
 	logrus.Info("Received ChannelClosed event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier
@@ -226,12 +203,6 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 // handleWithdrawStateChange Withdraw
 func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractChannelWithdrawStateChange) {
 	tokenNetwork:=st2.TokenNetworkAddress
-	if tokenNetwork==utils.EmptyAddress{
-		return
-	}
-	if !checkValidity(){
-		return
-	}
 
 	logrus.Info("Received ChannelWithdraw event for token network ",tokenNetwork.String())
 
@@ -265,10 +236,6 @@ func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
 	return 0//just test
 }
 
-func checkValidity()bool  {
-	//...
-	return true
-}
 
 
 

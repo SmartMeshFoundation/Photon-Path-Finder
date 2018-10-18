@@ -153,7 +153,7 @@ func (twork *TokenNetwork)HandleChannelWithdawEvent(channelID common.Hash,
 //UpdateBalance Update Balance
 func (twork *TokenNetwork)UpdateBalance(
 	channelID common.Hash,
-	singer common.Address,
+	signer common.Address,
 	nonce int64,
 	transferredAmount *big.Int,
 	lockedAmount *big.Int,
@@ -162,24 +162,20 @@ func (twork *TokenNetwork)UpdateBalance(
 	participant1 := twork.ChannelID2Address[channelID][0]
 	participant2 := twork.ChannelID2Address[channelID][1]
 
-	if singer == participant1 {
+	if signer == participant1 {
 		partner = participant2
-	} else if singer == participant2 {
+	} else if signer == participant2 {
 		partner = participant1
 	} else {
 		logrus.Error("Balance proof signature does not match any of the participants")
 		return fmt.Errorf("Balance proof signature error")
 	}
 
-	cview1 := &ChannelView{
-		SelfAddress: singer,
-		PartnerAddress:partner,
-	}
-	cview2 := &ChannelView{
-		SelfAddress: partner,
-		PartnerAddress:singer,
-	}
+	cview1:=InitChannelView(channelID, signer, partner, big.NewInt(0),StateUpdateBalance,twork.db)
+	cview2:=InitChannelView(channelID, partner, signer, big.NewInt(0),StateUpdateBalance,twork.db)
+
 	//更新通道双方的Capacity
+
 	err=cview1.UpdateCapacity(
 		nonce,
 		big.NewInt(0),
