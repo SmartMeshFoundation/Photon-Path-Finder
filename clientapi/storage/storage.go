@@ -7,6 +7,8 @@ import (
 	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
 	_ "github.com/lib/pq"
+	"time"
+	"sort"
 )
 
 // Database Data base
@@ -21,17 +23,32 @@ type Database struct {
 
 // ChannelInfo db-type as channel info
 type ChannelInfo struct {
-	ChannelID           string
-	Status              string
-	Participant         string
-	Partner             string
-	ParticipantCapacity int64
-	PartnerCapacity     int64
-	IndesOfPeerAddress  int
+	Token            string
+	ChannelID        string
+	ChannelStatus    string
+	Partipant1       string
+	Partipant2       string
+	P1Status         string
+	P1Transferamount int64
+	P1Nonce          int
+	P1Lockedamount   int64
+	P1Deposit        int64
+	P1Balance        int64
+	P2Status         string
+	P2Transferamount int64
+	P2Nonce          int
+	P2Lockedamount   int64
+	P2Deposit        int64
+	P2Balance        int64
 }
+
+// Timestamp for last operation time in db
+var Timestamp=time.Now().UnixNano() / 1000000
 
 //AddressMap is token address to mananger address
 type AddressMap map[common.Address]common.Address
+
+var TokenNetwork2TokenMap map[common.Address]common.Address
 
 // NewDatabase creates a new accounts and profiles database
 func NewDatabase(dataSourceName string) (*Database, error) {
@@ -65,6 +82,9 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	if err = frs.prepare(db); err != nil {
 		return nil, err
 	}
+
+	TokenNetwork2TokenMap=make(map[common.Address]common.Address)
+
 	return &Database{db, partitions, lbs, cis, tss, frs}, nil
 }
 
@@ -106,50 +126,77 @@ func (d *Database) GetLatestBlockNumberStorage(ctx context.Context) (lastestnum 
 }
 
 // InitChannelInfoStorage Init ChannelInfo Storage
-func (d *Database) InitChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string,addrIndex int) (err error) {
-	err = d.channelinfoStatement.initChannelInfo(nil, channelID, status, participant, partner, 0, 0,addrIndex)
+func (d *Database) InitChannelInfoStorage(ctx context.Context, token,channelID, partipant1, partipant2 string) (err error) {
+	//default p1=0xaa p2=0xbb
+	partipantPairs:=[]string{partipant1,partipant2}
+	sort.Strings(partipantPairs)
+
+	err = d.channelinfoStatement.initChannelInfo(nil, token,channelID, "createchannel", partipantPairs[0], partipantPairs[1],
+		"online",0,0,0,0,0,
+		"online",0,0,0,0,0)
 	return
 }
 
+
 // UpdateChannelStatusStorage Update ChannelStatus Storage
-func (d *Database) UpdateChannelStatusStorage(ctx context.Context, channelID, status, participant, partner string) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
+func (d *Database) UpdateChannelStatusStorage(ctx context.Context, token,channelID, channelStatus ,participant, partner string) (err error) {
+	err = d.InitChannelInfoStorage(ctx, token,channelID, participant, partner)
 	if err != nil {
 		return
 	}
-	err = d.channelinfoStatement.updateChannelStatus(ctx, status, channelID)
+	err = d.channelinfoStatement.updateChannelStatus(ctx, channelStatus, channelID)
 	return
 }
 
 // UpdateChannelInfoStorage Update ChannelInfo Storage
-func (d *Database) UpdateChannelInfoStorage(ctx context.Context,
-	channelID, status, participant, partner string, participantCapacity int64) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
+func (d *Database) UpdateChannelDepostiStorage(ctx context.Context,token,
+	channelID, status, participant, partner string, participantDeposit int64) (err error) {
+	err = d.InitChannelInfoStorage(ctx, token,channelID, participant, partner)
 	if err != nil {
 		return
 	}
-	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status, participant, participantCapacity)
-	return
-}
-
-// UpdateBalanceProofStorage Update balance proof Storage
-func (d *Database) UpdateBalanceProofStorage(ctx context.Context,
-	channelID, status, participant, partner string, participantCapacity int64) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
-	if err != nil {
-		return
-	}
-	err = d.channelinfoStatement.updateBalanceProof(ctx, channelID, status, participant, participantCapacity)
+	fieldIndex:=DbFideldIndex(participant,partner)
+	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status, participant, participantDeposit,fieldIndex)
 	return
 }
 
 // WithdrawChannelInfoStorage Withdraw ChannelInfo Storage
-func (d *Database) WithdrawChannelInfoStorage(ctx context.Context, channelID, status, participant, partner string, participantCapacity int64) (err error) {
-	err = d.InitChannelInfoStorage(ctx, channelID, status, participant, partner,0)
+func (d *Database) WithdrawChannelInfoStorage(ctx context.Context, token,channelID, status, participant, partner string, participantCapacity int64) (err error) {
+	err = d.InitChannelInfoStorage(ctx, token, channelID, participant, partner)
 	if err != nil {
 		return
 	}
-	err = d.channelinfoStatement.updateChannelDeposit(ctx, channelID, status, participant, participantCapacity)
+	fieldIndex := DbFideldIndex(participant, partner)
+	err = d.channelinfoStatement.updateChannelWithdraw(ctx, channelID, status, participant, participantCapacity, fieldIndex)
+	return
+}
+
+// DbFideldIndex get index of partipantPairs
+func DbFideldIndex(participant, partner string) int {
+	var fieldIndex = 1
+	partipantPairs:=[]string{participant,partner}
+	sort.Strings(partipantPairs)
+	if common.HexToAddress(participant) != common.HexToAddress(partipantPairs[0]) {
+		fieldIndex = 2
+	}
+	return fieldIndex
+}
+
+// UpdateBalanceProofStorage Update balance proof Storage
+func (d *Database) UpdateBalanceProofStorage(ctx context.Context,token,
+	channelID, status, participant, partner string, transferredAmount,receivedAmount,lockedAmount int64,participantNonce int) (err error) {
+	err = d.InitChannelInfoStorage(ctx, token,channelID, participant, partner)
+	if err != nil {
+		return
+	}
+	fieldIndex := DbFideldIndex(participant, partner)
+	err = d.channelinfoStatement.updateBalanceProof(ctx, channelID, status, participant, transferredAmount,receivedAmount,lockedAmount,participantNonce,fieldIndex)
+	return
+}
+
+//GetTokenByChannelID Get token by channelID
+func (d* Database)GetTokenByChannelID(ctx context.Context,channelID string) (token string,err error) {
+	token,err=d.channelinfoStatement.selectTokenByChannelID(ctx,channelID)
 	return
 }
 

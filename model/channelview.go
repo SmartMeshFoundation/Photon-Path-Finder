@@ -10,6 +10,7 @@ import (
 
 //ChannelView Unidirectional view of a bidirectional channel
 type ChannelView struct {
+	Token             common.Address
 	SelfAddress       common.Address
 	PartnerAddress    common.Address
 	Deposit           *big.Int
@@ -18,11 +19,18 @@ type ChannelView struct {
 	LockedAmount      *big.Int
 	RrelativeFee      *big.Int
 	Capacity          *big.Int
-	Status             string
+	Status            string
 	ChannelID         common.Hash
-	BalanceProofNonce int64
+	BalanceProofNonce *PeerNonce
 	db                storage.Database
 	ctx               context.Context
+}
+
+//PeerNonce peer's nonce in which channel
+type PeerNonce struct {
+	PeerAddress common.Address
+	ChannelID   common.Hash
+	Nonce       int
 }
 
 const(
@@ -39,8 +47,9 @@ const(
 )
 
 //InitChannelView
-func InitChannelView(channelID common.Hash ,participant1,participant2 common.Address,deposit *big.Int,eventTag string,db *storage.Database) (*ChannelView) {
+func InitChannelView(token common.Address,channelID common.Hash ,participant1,participant2 common.Address,deposit *big.Int,eventTag string,balanceProofNonce *PeerNonce ,db *storage.Database) (*ChannelView) {
 	cv := &ChannelView{
+		Token:             token,
 		SelfAddress:       participant1,
 		PartnerAddress:    participant2,
 		Deposit:           deposit,
@@ -51,7 +60,7 @@ func InitChannelView(channelID common.Hash ,participant1,participant2 common.Add
 		Capacity:          deposit,
 		Status:            eventTag,
 		ChannelID:         channelID,
-		BalanceProofNonce: 0,
+		BalanceProofNonce: balanceProofNonce,
 		db:                *db,
 	}
 	return cv
@@ -59,7 +68,7 @@ func InitChannelView(channelID common.Hash ,participant1,participant2 common.Add
 
 //UpdateCapacity refush channel status and capacity
 func (cv *ChannelView)UpdateCapacity(
-	nonce int64,
+	nonce int,
 	deposit *big.Int,
 	transferredAmount *big.Int,
 	receivedAmount *big.Int,
@@ -67,36 +76,22 @@ func (cv *ChannelView)UpdateCapacity(
 	)(err error) {
 	switch cv.Status {
 	case StateChannelOpen:
-		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
+		err = cv.db.UpdateChannelStatusStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateChannelDeposit:
-		/*if nonce != 0 && nonce > cv.BalanceProofNonce {
-			cv.BalanceProofNonce = nonce
-		} else {
-			logrus.Warn("Balance proof nonce must increase.")
-			return
-		}*/
-		if deposit.Uint64() != 0 {
-			cv.Deposit = deposit
-		}
-		if transferredAmount.Uint64() != 0 {
-			cv.TransferredAmount = transferredAmount
-		}
-		if receivedAmount.Uint64() != 0 {
-			cv.ReceivedAmount = receivedAmount
-		}
-		if lockedAmount.Uint64() != 0 {
-			cv.LockedAmount = lockedAmount
-		}
-		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
-		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
-		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)
-		err = cv.db.UpdateChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
+		err = cv.db.UpdateChannelDepostiStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
 	case StateChannelWithdraw:
-		err = cv.db.WithdrawChannelInfoStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), deposit.Int64())
+		err = cv.db.WithdrawChannelInfoStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), deposit.Int64())
 	case StateChannelClose:
-		err = cv.db.UpdateChannelStatusStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
+		err = cv.db.UpdateChannelStatusStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateUpdateBalance:
-		if deposit.Uint64() != 0 {
+		/*if nonce != 0 {
+			if nonce <= cv.BalanceProofNonce.Nonce {
+				logrus.Warn("Balance proof nonce must increase.")
+				return
+			}
+			cv.BalanceProofNonce.Nonce = nonce
+		}*/
+		/*if deposit.Uint64() != 0 {
 			cv.Deposit = deposit
 		}
 		if transferredAmount.Uint64() != 0 {
@@ -110,11 +105,18 @@ func (cv *ChannelView)UpdateCapacity(
 		}
 		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
 		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
-		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)
-		err = cv.db.UpdateBalanceProofStorage(nil, cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
+		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)*/
+		err = cv.db.UpdateBalanceProofStorage(nil,cv.Token.String(),
+			cv.ChannelID.String(),
+			cv.Status,
+			cv.SelfAddress.String(),
+			cv.PartnerAddress.String(),
+			transferredAmount.Int64(),receivedAmount.Int64(),lockedAmount.Int64(),
+			nonce,
+		)
 	}
 	if err != nil {
-		logrus.Warn("Failed to update capacity,err=", err)
+		logrus.Warn("Failed to update capacity,err=",cv.Status)
 	}
 	return
 }

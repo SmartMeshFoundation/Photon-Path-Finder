@@ -69,6 +69,7 @@ func (s *tokensStatements)insertTokens(ctx context.Context,token,tokenNetwork st
 			return err
 		}
 	}
+	TokenNetwork2TokenMap[common.HexToAddress(tokenNetwork)]=common.HexToAddress(token)
 	return nil
 }
 
@@ -88,6 +89,7 @@ func (s *tokensStatements)selectTokens(ctx context.Context) (addressmap AddressM
 		if err != nil {
 			return
 		}
+		TokenNetwork2TokenMap[common.HexToAddress(tokenNetwork)]=common.HexToAddress(token)
 		addressmap[common.HexToAddress(token)] = common.HexToAddress(tokenNetwork)
 	}
 	return

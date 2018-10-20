@@ -165,7 +165,7 @@ func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.Cont
 	participant1:=st2.Participant1
 	participant2:=st2.Participant2
 
-	err:=chainevent.TokenNetwork.HandleChannelOpenedEvent(channelID,participant1,participant2)
+	err:=chainevent.TokenNetwork.HandleChannelOpenedEvent(tokenNetwork,channelID,participant1,participant2)
 	if err!=nil{
 		logrus.Warn("Handle channel open event error,err=",err)
 	}
@@ -181,7 +181,8 @@ func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.C
 	channelID:=st2.ChannelIdentifier
 	participantAddress:=st2.ParticipantAddress
 	totalDeposit:=st2.Balance
-	err:=chainevent.TokenNetwork.HandleChannelDepositEvent(channelID,participantAddress,totalDeposit)
+	fmt.Println("Received ChannelDeposit data: %s",utils.StringInterface(st2,2))
+	err:=chainevent.TokenNetwork.HandleChannelDepositEvent(tokenNetwork,channelID,participantAddress,totalDeposit)
 	if err!=nil{
 		logrus.Warn("Handle channel deposit event error,err=",err)
 	}
@@ -194,7 +195,7 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 	logrus.Info("Received ChannelClosed event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier
-	err:=chainevent.TokenNetwork.HandleChannelClosedEvent(channelID)
+	err:=chainevent.TokenNetwork.HandleChannelClosedEvent(tokenNetwork,channelID)
 	if err!=nil{
 		logrus.Warn("Handle channel close event error,err=",err)
 	}
@@ -211,7 +212,8 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 	participant2:=st2.Participant2
 	participant1Balance:=st2.Participant1Balance
 	participant2Balance:=st2.Participant2Balance
-	err:=chainevent.TokenNetwork.HandleChannelWithdawEvent(channelID,participant1,participant2,participant1Balance,participant2Balance)
+	fmt.Println("Received ChannelWithdraw data: %s",utils.StringInterface(st2,2))
+	err:=chainevent.TokenNetwork.HandleChannelWithdrawEvent(tokenNetwork,channelID,participant1,participant2,participant1Balance,participant2Balance)
 	if err!=nil{
 		logrus.Warn("Handle channel withdaw event error,err=",err)
 	}

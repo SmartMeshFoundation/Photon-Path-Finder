@@ -145,7 +145,7 @@ func signDataForBalanceProof(req *http.Request,cfg config.PathFinder,peerAddress
 	}
 }
 
-// SignData signature data,just for test
+// signDataForBalanceProofMessage signature data,just for test
 func signDataForBalanceProofMessage(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
 	if req.Method != http.MethodPost {
 		return util.JSONResponse{

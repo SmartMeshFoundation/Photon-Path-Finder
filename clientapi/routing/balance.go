@@ -10,7 +10,7 @@ import (
 
 //balanceProof is the json request for BalanceProof
 type BalanceProof struct {
-	Nonce             int64       `json:"nonce"`
+	Nonce             int       `json:"nonce"`
 	TransferredAmount *big.Int    `json:"transferred_amount"`
 	ChannelID         common.Hash `json:"channel_id"`
 	LocksRoot         common.Hash `json:"locksroot"`
@@ -41,9 +41,7 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peer
 		if resErr != nil {
 			return *resErr
 		}
-
 		//validate json-input
-		var partner common.Address
 		if _,exist:=ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID];!exist{
 			return util.JSONResponse{
 				Code: http.StatusInternalServerError,
@@ -51,9 +49,10 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peer
 			}
 		}
 
-		for _,partnerx:=range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]{
-			if partnerx!=common.HexToAddress(peerAddress){
-				partner=partnerx
+		var partner common.Address
+		for _,xpartner:=range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]{
+			if xpartner!=common.HexToAddress(peerAddress){
+				partner=xpartner
 				break
 			}
 		}
