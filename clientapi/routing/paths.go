@@ -17,7 +17,7 @@ type pathRequest struct {
 	LimitPaths int            `json:"limit_paths"`
 	SendAmount *big.Int       `json:"send_amount"`
 	SortDemand string         `json:"sort_demand"`
-	Sinature   common.Hash    `json:"signature"`
+	Sinature   []byte    `json:"signature"`
 }
 
 /*// pathResult is the json response for GetPaths

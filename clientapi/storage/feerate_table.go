@@ -3,9 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-
-	"time"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,7 +51,7 @@ func (s *feeRateStatements) prepare(db *sql.DB) (err error) {
 func (s *feeRateStatements) insertFeeRate(ctx context.Context,
 	channeID, peerAddress, feeRate string,
 ) (err error) {
-	timeMs := time.Now().UnixNano() / 1000000
+	timeMs := Timestamp
 	stmt := s.insertFeeRateStmt
 	_, err = stmt.Exec(channeID, peerAddress, feeRate, timeMs)
 
@@ -67,8 +64,9 @@ func (s *feeRateStatements) selectLatestFeeRate(ctx context.Context, channeID, p
 	stmt := s.selectFeeRateStmt
 	err = stmt.QueryRow(channeID, peerAddress).Scan(&feeRate, &effitime)
 	if err != nil {
-		if err != sql.ErrNoRows {
+		if err == sql.ErrNoRows {
 			log.WithError(err).Error("Unable to retrieve tLatestFeeRate from the db")
+			return "0",0 ,nil
 		}
 	}
 	return

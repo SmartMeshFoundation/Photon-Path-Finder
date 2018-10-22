@@ -3,7 +3,6 @@ package routing
 import (
 	"net/http"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -12,14 +11,15 @@ import (
 type SetFeeRateRequest struct {
 	ChannelID common.Hash `json:"channel_id"`
 	FeeRate   string      `json:"fee_rate"`
-	Signature common.Hash `json:"signature"`
+	Signature []byte `json:"signature"`
 }
 
 // GetFeeRateRequest is the json request for GetFeeRate
 // Reponse all data of fee rate if channel_id is null
 type GetFeeRateRequest struct {
 	ObtainObj common.Address `json:"obtain_obj"`
-	ChannelID []common.Hash  `json:"channel_id"`
+	ChannelID common.Hash    `json:"channel_id"`
+	Signature []byte         `json:"signature"`
 }
 
 // GetFeeRateRequest is the json request for GetFeeRate
@@ -37,7 +37,7 @@ type FeeRateInfo struct {
 
 
 // SetFeeRate save request data of set_fee_rate
-func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
+func SetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string) util.JSONResponse {
 
 	if req.Method != http.MethodPut {
 		return util.JSONResponse{
@@ -53,7 +53,7 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 	}
 
 	//validate json-input
-	err := verifySinatureFeeRate(r, common.HexToAddress(peerAddress))
+	err := verifySinatureSetFeeRate(r, common.HexToAddress(peerAddress))
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusBadRequest,
@@ -64,9 +64,9 @@ func SetFeeRate(req *http.Request,cfg config.PathFinder,feeRateDB *storage.Datab
 	util.GetLogger(req.Context()).WithField("set_fee_rate", r.Signature).Info("Processing set_fee_rate request")
 
 	var channelid= r.ChannelID
-	var peeraddress= peerAddress
+	//var peeraddress= peerAddress
 	var feerate = r.FeeRate
-	err = feeRateDB.SaveRateFeeStorage(nil, channelid.String(), peeraddress, feerate)
+	err = feeRateDB.SaveRateFeeStorage(nil, channelid.String(), common.HexToAddress(peerAddress).String(), feerate)
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusInternalServerError,
@@ -88,7 +88,15 @@ func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string
 			return *resErr
 		}
 
-		feerate, effitime, err := feeRateDB.GetLastestRateFeeStorage(nil, r.ChannelID[0].String(), peerAddress)
+		err := verifySinatureGetFeeRate(r,common.HexToAddress(peerAddress))
+		if err != nil {
+			return util.JSONResponse{
+				Code: http.StatusBadRequest,
+				JSON: err.Error(),
+			}
+		}
+
+		feerate, effitime, err := feeRateDB.GetLastestRateFeeStorage(nil, r.ChannelID.String(), r.ObtainObj.String())
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusNotFound,
@@ -96,19 +104,19 @@ func GetFeeRate(req *http.Request,feeRateDB *storage.Database,peerAddress string
 			}
 		}
 		reslut0 := &FeeRateInfo{
-			ChannelID:     r.ChannelID[0],
+			ChannelID:     r.ChannelID,
 			PeerAddress:   common.HexToAddress(peerAddress),
 			FeeRate:       feerate,
 			EffectiveTime: effitime,
 		}
 		resultMap := make(map[common.Hash]*FeeRateInfo)
-		resultMap[r.ChannelID[0]] = reslut0
+		resultMap[r.ChannelID] = reslut0
 		reslut := &GetFeeRateResponse{
 			Result: resultMap,
 		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
-			JSON: reslut, //util.OkJSON("true"),
+			JSON: reslut,
 		}
 	}
 

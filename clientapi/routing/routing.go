@@ -42,15 +42,15 @@ func Setup(
 	).Methods(http.MethodPut, http.MethodOptions)
 
 	// "/fee_rate"
-	vmux.Handle("/{peerAddress}/fee_rate",
+	vmux.Handle("/{peerAddress}/set_fee_rate",
 		common.MakeExternalAPI("set_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return SetFeeRate(req, cfg, pfsdb, vars["peerAddress"])
+			return SetFeeRate(req, pfsdb, vars["peerAddress"])
 		}),
 	).Methods(http.MethodPut, http.MethodOptions)
 
 	// "/fee_rate"
-	vmux.Handle("/{peerAddress}/fee_rate",
+	vmux.Handle("/{peerAddress}/get_fee_rate",
 		common.MakeExternalAPI("get_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
 			return GetFeeRate(req, pfsdb, vars["peerAddress"])
@@ -82,10 +82,18 @@ func Setup(
 	).Methods(http.MethodPost, http.MethodOptions)
 
 	// "/calc_signature_balance_proof"
-	vmux.Handle("/{peerAddress}/calc_signature_fee",
-		common.MakeExternalAPI("calc_signature_fee_for_test", func(req *http.Request) util.JSONResponse {
+	vmux.Handle("/{peerAddress}/calc_signature_set_fee",
+		common.MakeExternalAPI("calc_signature_setfee_for_test", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
 			return signDataForSetFee(req, cfg, vars["peerAddress"])
+		}),
+	).Methods(http.MethodPost, http.MethodOptions)
+
+	// "/calc_signature_balance_proof"
+	vmux.Handle("/{peerAddress}/calc_signature_get_fee",
+		common.MakeExternalAPI("calc_signature_getfee_for_test", func(req *http.Request) util.JSONResponse {
+			vars := mux.Vars(req)
+			return signDataForGetFee(req, cfg, vars["peerAddress"])
 		}),
 	).Methods(http.MethodPost, http.MethodOptions)
 }

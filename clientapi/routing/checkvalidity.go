@@ -60,19 +60,33 @@ func verifySinature(bpr * balanceProofRequest ,peerAddress common.Address,partne
 	return  nil
 }
 
-// verifySinatureFeeRate verify Fee_rate sinature
-// 1\verify alice(caller)'s sinature
-// 2\Balance_Proof_Hash	(channel_id,fee_rate)
-func verifySinatureFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address) (err error) {
+// verifySinatureSetFeeRate verify Fee_rate sinature
+func verifySinatureSetFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
-	_, err = tmpBuf.Write(sfr.ChannelID[:])                   //channel_id
-	err = binary.Write(tmpBuf, binary.BigEndian, sfr.FeeRate) //fee_rate
+	_, err = tmpBuf.Write(sfr.ChannelID[:])    //channel_id
+	_, err = tmpBuf.Write([]byte(sfr.FeeRate)) //fee_rate
 
 	feeRateHash := utils.Sha3(tmpBuf.Bytes())
 	feeRateHashSignature := sfr.Signature
-	feeRateSigner, err := utils.Ecrecover(feeRateHash, feeRateHashSignature.Bytes())
+	feeRateSigner, err := utils.Ecrecover(feeRateHash, feeRateHashSignature)
 	if feeRateSigner != peerAddress {
-		err = fmt.Errorf("Invalid signature")
+		err = fmt.Errorf("Invalid signature of set fee_rate")
+		return err
+	}
+	return nil
+}
+
+// verifySinatureGetFeeRate verify Fee_rate sinature
+func verifySinatureGetFeeRate(sfr GetFeeRateRequest,peerAddress common.Address) (err error) {
+	tmpBuf := new(bytes.Buffer)
+	_, err = tmpBuf.Write(sfr.ObtainObj[:]) //obtain_obj
+	_, err = tmpBuf.Write(sfr.ChannelID[:]) //channel_id
+
+	feeRateHash := utils.Sha3(tmpBuf.Bytes())
+	feeRateHashSignature := sfr.Signature
+	feeRateSigner, err := utils.Ecrecover(feeRateHash, feeRateHashSignature)
+	if feeRateSigner != peerAddress {
+		err = fmt.Errorf("Invalid signature of get fee_rate")
 		return err
 	}
 	return nil
@@ -89,7 +103,7 @@ func verifySinaturePaths(pr pathRequest,peerAddress common.Address) (err error) 
 
 	pathHash:=utils.Sha3(tmpBuf.Bytes())
 	pathSignature:=pr.Sinature
-	pathSigner,err:=utils.Ecrecover(pathHash,pathSignature.Bytes())
+	pathSigner,err:=utils.Ecrecover(pathHash,pathSignature)
 	if pathSigner!=peerAddress{
 		err = fmt.Errorf("Invalid signature")
 		return err
@@ -211,7 +225,53 @@ func signDataForSetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	var signature []byte
 	tmpBuf := new(bytes.Buffer)
 	_, err:= tmpBuf.Write(r.ChannelID[:])
-	_, err = tmpBuf.Write(utils.StringToBytes(r.FeeRate))
+	_, err = tmpBuf.Write([]byte(r.FeeRate))
+
+	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
+	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
+	if err!=nil{
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	privateKey,err:=crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
+	if err!=nil{
+		return util.JSONResponse{
+			Code: http.StatusExpectationFailed,
+			JSON: util.NotFound("Sign data err"),
+		}
+	}
+	return util.JSONResponse{
+		Code: http.StatusOK,
+		JSON: signature,
+	}
+}
+
+// SignData signature data(balance proof),just for test
+func signDataForGetFee(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
+	if req.Method != http.MethodPost {
+		return util.JSONResponse{
+			Code: http.StatusMethodNotAllowed,
+			JSON: util.NotFound("Bad method"),
+		}
+	}
+	var r GetFeeRateRequest
+	resErr := util.UnmarshalJSONRequest(req, &r)
+	if resErr != nil {
+		return *resErr
+	}
+	var signature []byte
+	tmpBuf := new(bytes.Buffer)
+	_, err:= tmpBuf.Write(r.ObtainObj[:])
+	_, err= tmpBuf.Write(r.ChannelID[:])
 
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")

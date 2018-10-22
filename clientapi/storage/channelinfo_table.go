@@ -7,43 +7,6 @@ import (
 	"fmt"
 )
 
-/*
-token
-channelID
-partipant1
-participant2
-p1_transferamount
-p1_nonce
-p1_lockedamount
-p1_deposit
-p1_balance
-
-p2_transferamount
-p2_nonce
-p2_lockedamount
-p2_deposit
-p2_balance
-*/
-
-/*// channelInfoSchema create tb_channel_info
-const channelInfoSchema = `
-CREATE TABLE IF NOT EXISTS tb_channel_info_0(
-    id	BIGSERIAL NOT NULL PRIMARY KEY,
-	channel_id TEXT NOT NULL,
-	ts  BIGINT NOT NULL,
-	status	TEXT NOT NULL,
-	participant TEXT NOT NULL,
-	partner TEXT NOT NULL,
-	participant_capacity BIGINT NOT NULL,
-	partner_capacity BIGINT NOT NULL,
-	feerate TEXT NOT NULL DEFAULT 0,
-	addr_index INT NOT NULL DEFAULT 0,
-	participant_nonce INT NOT NULL DEFAULT 0,
-	last_deposit BIGINT NOT NULL DEFAULT 0,
-	last_transamount BIGINT NOT NULL DEFAULT 0,
-	last_lockamount BIGINT NOT NULL DEFAULT 0
-);
-`*/
 // channelInfoSchema create tb_channel_info
 const channelInfoSchema = `
 CREATE TABLE IF NOT EXISTS tb_channel_info(
@@ -107,6 +70,16 @@ const (
 		"SELECT token FROM tb_channel_info WHERE " +
 		"channel_id = $1 "
 
+	// selectNonceByChannelID1SQL sql for select-nonce-ByChannelID
+	selectNonceByChannelID1SQL = "" +
+		"SELECT p1_nonce FROM tb_channel_info WHERE " +
+		"channel_id = $1 AND participant1=$2 "
+
+	// selectNonceByChannelID1SQL sql for select-nonce-ByChannelID
+	selectNonceByChannelID2SQL = "" +
+		"SELECT p2_nonce FROM tb_channel_info WHERE " +
+		"channel_id = $1 AND participant2=$2 "
+
 	// updateChannelStatusSQL sql for update-hannelStatus
 	updateChannelStatusSQL = "" +
 		"UPDATE tb_channel_info SET ts = $1 ,channel_status = $2 WHERE channel_id = $3 "
@@ -153,16 +126,18 @@ const (
 
 // balanceStatements interactive with db-operation
 type channelInfoStatements struct {
-	createChannelInfoStmt             *sql.Stmt
-	updateChannelStatusStmt           *sql.Stmt
-	updateChannelDeposit1Stmt         *sql.Stmt
-	updateChannelDeposit2Stmt         *sql.Stmt
-	selectTokenByChannelIDStmt *sql.Stmt
-	selectAllChannelInfoStmt          *sql.Stmt
-	updateBalanceProof1Stmt            *sql.Stmt
-	updateBalanceProof2Stmt            *sql.Stmt
-	updateChannelWithdraw1Stmt        *sql.Stmt
-	updateChannelWithdraw2Stmt        *sql.Stmt
+	createChannelInfoStmt       *sql.Stmt
+	updateChannelStatusStmt     *sql.Stmt
+	updateChannelDeposit1Stmt   *sql.Stmt
+	updateChannelDeposit2Stmt   *sql.Stmt
+	selectTokenByChannelIDStmt  *sql.Stmt
+	selectAllChannelInfoStmt    *sql.Stmt
+	updateBalanceProof1Stmt     *sql.Stmt
+	updateBalanceProof2Stmt     *sql.Stmt
+	updateChannelWithdraw1Stmt  *sql.Stmt
+	updateChannelWithdraw2Stmt  *sql.Stmt
+	selectNonceByChannelID1Stmt *sql.Stmt
+	selectNonceByChannelID2Stmt *sql.Stmt
 }
 
 
@@ -202,11 +177,17 @@ func (s *channelInfoStatements) prepare(db *sql.DB) (err error) {
 	if s.updateChannelWithdraw2Stmt, err = db.Prepare(updateChannelWithdraw2SQL); err != nil {
 		return
 	}
+	if s.selectNonceByChannelID1Stmt, err = db.Prepare(selectNonceByChannelID1SQL); err != nil {
+		return
+	}
+	if s.selectNonceByChannelID2Stmt, err = db.Prepare(selectNonceByChannelID2SQL); err != nil {
+		return
+	}
 
 	return
 }
 
-// selectChannelCountByChannelID select data
+// selectTokenByChannelID select data
 func (s *channelInfoStatements) selectTokenByChannelID(ctx context.Context, channeID string) (
 	token string,err error) {
 	stmt := s.selectTokenByChannelIDStmt
@@ -220,26 +201,29 @@ func (s *channelInfoStatements) selectTokenByChannelID(ctx context.Context, chan
 	return
 }
 
-/*type ChannelInfo1 struct {
-	token            string
-	channelID        string
-	channelStatus    string
-	partipant1       string
-	partipant2       string
-	p1Status         string
-	p1Transferamount int64
-	p1Nonce          int
-	p1Lockedamount   int64
-	p1Deposit        int64
-	p1Balance        int64
-	p2Status         string
-	p2Transferamount int64
-	p2Nonce          int
-	p2Lockedamount   int64
-	p2Deposit        int64
-	p2Balance        int64
-}*/
-// createChannelInfo insert data
+// selectOldNonceByChannelID get peer's nonce in some channel
+func (s *channelInfoStatements) selectOldNonceByChannelID(ctx context.Context, channeID,peerAddress string,pIndex int) (
+	nonce int,err error) {
+	var stmt *sql.Stmt
+	if pIndex==1{
+		stmt = s.selectNonceByChannelID1Stmt
+	}else if pIndex==2{
+		stmt = s.selectNonceByChannelID2Stmt
+	}else {
+		err=fmt.Errorf("An error occurred in querying nonce, channel_id=%s ,peer_address=%s",channeID,peerAddress)
+		return
+	}
+	err = stmt.QueryRow(channeID,peerAddress).Scan(&nonce)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.WithError(err).Error("Unable to retrieve last nonce from the db")
+			return 0, nil
+		}
+	}
+	return
+}
+
+// initChannelInfo init db
 func (s *channelInfoStatements) initChannelInfo(ctx context.Context,token,channelID,channelStatus,partipant1,partipant2 string,
 	p1Status string,p1Transferamount int64,p1Nonce int,p1Lockedamount,p1Deposit,p1Balance int64,
 	p2Status string,p2Transferamount int64,p2Nonce int,p2Lockedamount,p2Deposit,p2Balance int64,
@@ -289,7 +273,7 @@ func (s *channelInfoStatements) updateChannelDeposit(ctx context.Context,
 	return
 }
 
-// updateChannelDeposit update data
+// updateChannelWithdraw update data
 func (s *channelInfoStatements) updateChannelWithdraw(ctx context.Context,
 	channeID, status, participant string, participantWithdraw int64,pIndex int,
 ) (err error) {
@@ -310,8 +294,7 @@ func (s *channelInfoStatements) updateChannelWithdraw(ctx context.Context,
 	return
 }
 
-// updateChannelDeposit update data
-// todo
+// updateBalanceProof update balance
 func (s *channelInfoStatements) updateBalanceProof(ctx context.Context,
 	channeID, status, participant string, transferredAmount,receivedAmount,lockedAmount int64,participantNonce ,pIndex int,
 ) (err error) {
@@ -333,7 +316,7 @@ func (s *channelInfoStatements) updateBalanceProof(ctx context.Context,
 	return
 }
 
-// selectChannelCountByChannelID select data
+// selectAllChannelInfo select data
 func (s *channelInfoStatements) selectAllChannelInfo(ctx context.Context) (ChannelInfos []ChannelInfo, err error) {
 	stmt := s.selectAllChannelInfoStmt
 	rows, err := stmt.Query()

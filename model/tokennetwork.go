@@ -19,7 +19,6 @@ type TokenNetwork struct {
 	db                    *storage.Database
 	channelViews          map[common.Address]map[common.Address]*ChannelView
 	GPeerAddress2Index    map[common.Address]int
-	PeerNonceMap          map[common.Address][]*PeerNonce
 }
 
 // InitTokenNetwork token network initialization
@@ -31,7 +30,6 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 	}
 	channelID2Address := make(map[common.Hash][2]common.Address)
 	gPeerAddress2Index := make(map[common.Address]int)
-	peerNonceMap := make(map[common.Address][]*PeerNonce)
 	var addrIndex = -1
 	for _, channelinfo := range channelinfos {
 		//if channelinfo.Status != StateChannelClose {
@@ -46,9 +44,6 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 		gPeerAddress2Index[peerAddr1] = addrIndex
 		addrIndex++
 		gPeerAddress2Index[peerAddr1] = addrIndex
-
-		peerNonceMap[peerAddr1] = append(peerNonceMap[peerAddr1], &PeerNonce{peerAddr1, channelID, channelinfo.P1Nonce})
-		peerNonceMap[peerAddr1] = append(peerNonceMap[peerAddr2], &PeerNonce{peerAddr2, channelID, channelinfo.P2Nonce})
 	}
 	channelviews := make(map[common.Address]map[common.Address]*ChannelView)
 
@@ -60,7 +55,6 @@ func InitTokenNetwork(tokenNetworkAddress common.Address,db *storage.Database) (
 		db:                    db,
 		channelViews:          channelviews,
 		GPeerAddress2Index:    gPeerAddress2Index,
-		PeerNonceMap:          peerNonceMap,
 	}
 	return
 }
@@ -215,21 +209,18 @@ func (twork *TokenNetwork)UpdateBalance(
 	}
 
 	var oldNonce int
-	for _,v:=range twork.PeerNonceMap[signer]{
-		if v.ChannelID==channelID{
-			oldNonce=v.Nonce
-			break
-		}
+	oldNonce,err=twork.db.GetLastNonceByChannel(nil,channelID.String(),signer.String(),partner.String())
+	if err!=nil{
+		return fmt.Errorf("Can not validate nonce(internal error),nonce=%s",nonce)
 	}
 	//token和通道是一一对应的
 	cview := InitChannelView(common.HexToAddress(token),channelID, signer, partner, big.NewInt(0), StateUpdateBalance, nil, twork.db)
-	//cview2 := InitChannelView(common.HexToAddress(token),channelID, partner, signer, big.NewInt(0), StateUpdateBalance, twork.PeerNonceMap[partner], twork.db)
 
 	if nonce <= oldNonce {
 		logrus.Error("Outdated balance proof.")
 		return
 	}
-	//更新通道双方的Capacity
+
 	err = cview.UpdateCapacity(
 		nonce,
 		big.NewInt(0),
@@ -237,15 +228,10 @@ func (twork *TokenNetwork)UpdateBalance(
 		big.NewInt(0),
 		lockedAmount,
 	)
-
 	if err != nil {
 		logrus.Error("Update balance proof error,err=", err.Error())
 	}
 	return
-}
-
-type pathStru struct {
-
 }
 
 // pathResult is the json response for GetPaths

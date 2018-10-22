@@ -82,13 +82,9 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	if err = frs.prepare(db); err != nil {
 		return nil, err
 	}
-
 	TokenNetwork2TokenMap=make(map[common.Address]common.Address)
-
 	return &Database{db, partitions, lbs, cis, tss, frs}, nil
 }
-
-
 
 // SaveTokensStorage Save Latest Tokens Storage
 func (d *Database) SaveTokensStorage(ctx context.Context, token, tokennetwork string) (err error) {
@@ -197,6 +193,13 @@ func (d *Database) UpdateBalanceProofStorage(ctx context.Context,token,
 //GetTokenByChannelID Get token by channelID
 func (d* Database)GetTokenByChannelID(ctx context.Context,channelID string) (token string,err error) {
 	token,err=d.channelinfoStatement.selectTokenByChannelID(ctx,channelID)
+	return
+}
+
+//GetLastNonceByChannelAndPeer
+func (d* Database)GetLastNonceByChannel(ctx context.Context,channelID ,peerAddress,partner string) (nonce int,err error) {
+	fieldIndex := DbFideldIndex(peerAddress, partner)
+	nonce,err=d.channelinfoStatement.selectOldNonceByChannelID(ctx,channelID,peerAddress,fieldIndex)
 	return
 }
 
