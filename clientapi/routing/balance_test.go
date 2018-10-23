@@ -1,14 +1,14 @@
 package routing
 
 import (
-	"testing"
-	"net/http"
-	"math/big"
-	"github.com/ethereum/go-ethereum/common"
-	"encoding/json"
 	"bytes"
-	"io/ioutil"
+	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"io/ioutil"
+	"math/big"
+	"net/http"
+	"testing"
 )
 
 func TestUpdateBalanceProof(t *testing.T) {
@@ -22,9 +22,9 @@ func TestUpdateBalanceProof(t *testing.T) {
 	}
 
 	bpr := &balanceProofRequest{
-		BalanceSignature:  common.StringToHash("0x0000000000000000000000000000000000000000000000000000000000000000").Bytes(),
-		BalanceProof: *bp,
-		LocksAmount:  big.NewInt(1),
+		BalanceSignature: common.StringToHash("0x0000000000000000000000000000000000000000000000000000000000000000").Bytes(),
+		BalanceProof:     *bp,
+		LocksAmount:      big.NewInt(1),
 	}
 
 	httpurl := "http://localhost:9001/pathfinder/0xc67f23CE04ca5E8DD9f2E1B5eD4FaD877f79267A/balance"
@@ -40,8 +40,14 @@ func TestUpdateBalanceProof(t *testing.T) {
 			t.Errorf("Marshal json error: %s", err)
 		}
 		req, err = http.NewRequest("PUT", httpurl, bytes.NewBuffer(jsonStr))
+		if err != nil {
+			t.Errorf("error: %s", err)
+		}
 	} else {
 		req, err = http.NewRequest("PUT", httpurl, nil)
+		if err != nil {
+			t.Errorf("error: %s", err)
+		}
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connection", "close")

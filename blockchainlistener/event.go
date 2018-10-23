@@ -138,6 +138,8 @@ func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 
 // handleTokenAddedStateChange Token added
 func (chainevent *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.ContractTokenAddedStateChange) {
+	logrus.Info("Received TokenAddedStateChange event for token ", st2.TokenAddress.String())
+	fmt.Println(fmt.Sprintf("Received TokenAddedStateChange data: %s", utils.StringInterface(st2, 2)))
 	err := chainevent.db.SaveTokensStorage(nil, st2.TokenAddress.String(), st2.TokenNetworkAddress.String())
 	if err != nil {
 		logrus.Error("Handle token added state change event error,err=", err)
@@ -164,7 +166,7 @@ func (chainevent *ChainEvents)handleChainChannelOpend(st2 *mediatedtransfer.Cont
 	channelID:=st2.ChannelIdentifier.ChannelIdentifier
 	participant1:=st2.Participant1
 	participant2:=st2.Participant2
-
+	fmt.Println(fmt.Sprintf("Received ChannelOpened data: %s",utils.StringInterface(st2,2)))
 	err:=chainevent.TokenNetwork.HandleChannelOpenedEvent(tokenNetwork,channelID,participant1,participant2)
 	if err!=nil{
 		logrus.Warn("Handle channel open event error,err=",err)
@@ -181,7 +183,7 @@ func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.C
 	channelID:=st2.ChannelIdentifier
 	participantAddress:=st2.ParticipantAddress
 	totalDeposit:=st2.Balance
-	fmt.Println("Received ChannelDeposit data: %s",utils.StringInterface(st2,2))
+	fmt.Println(fmt.Sprintf("Received ChannelDeposit data: %s",utils.StringInterface(st2,2)))
 	err:=chainevent.TokenNetwork.HandleChannelDepositEvent(tokenNetwork,channelID,participantAddress,totalDeposit)
 	if err!=nil{
 		logrus.Warn("Handle channel deposit event error,err=",err)
@@ -195,6 +197,7 @@ func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.Co
 	logrus.Info("Received ChannelClosed event for token network ",tokenNetwork.String())
 
 	channelID:=st2.ChannelIdentifier
+	fmt.Println(fmt.Sprintf("Received ChannelClosed data: %s",utils.StringInterface(st2,2)))
 	err:=chainevent.TokenNetwork.HandleChannelClosedEvent(tokenNetwork,channelID)
 	if err!=nil{
 		logrus.Warn("Handle channel close event error,err=",err)
@@ -212,7 +215,7 @@ func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.C
 	participant2:=st2.Participant2
 	participant1Balance:=st2.Participant1Balance
 	participant2Balance:=st2.Participant2Balance
-	fmt.Println("Received ChannelWithdraw data: %s",utils.StringInterface(st2,2))
+	fmt.Println(fmt.Sprintf("Received ChannelWithdraw data: %s",utils.StringInterface(st2,2)))
 	err:=chainevent.TokenNetwork.HandleChannelWithdrawEvent(tokenNetwork,channelID,participant1,participant2,participant1Balance,participant2Balance)
 	if err!=nil{
 		logrus.Warn("Handle channel withdaw event error,err=",err)

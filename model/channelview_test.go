@@ -1,10 +1,11 @@
 package model
 
 import (
-	"testing"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
-	"math/big"
 	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 )
 
 func TestInitChannelView(t *testing.T) {
@@ -16,8 +17,8 @@ func TestChannelView_UpdateCapacity(t *testing.T) {
 	xamount := big.NewInt(0)
 
 	oldChannelView := &ChannelView{
-		SelfAddress:       utils.EmptyAddress,
-		PartnerAddress:    utils.EmptyAddress,
+		SelfAddress:       utils.NewRandomAddress(),
+		PartnerAddress:    utils.NewRandomAddress(),
 		Deposit:           xdeposit,
 		TransferredAmount: xamount,
 		ReceivedAmount:    big.NewInt(0),
@@ -26,25 +27,17 @@ func TestChannelView_UpdateCapacity(t *testing.T) {
 		Capacity:          xdeposit,
 		Status:            StateUpdateBalance,
 		ChannelID:         utils.NewRandomHash(),
-		BalanceProofNonce: 0,
+		BalanceProofNonce: &PeerNonce{utils.NewRandomAddress(), utils.NewRandomHash(), 50},
 	}
-	fmt.Printf("test ChannelView: %s",utils.StringInterface(oldChannelView,1))
+	fmt.Printf("test ChannelView: %s", utils.StringInterface(oldChannelView, 1))
 
 	var nonce = 0
-	var deposit= big.NewInt(0)
+	var deposit = big.NewInt(0)
 	var transferredAmount = big.NewInt(0)
 	var receivedAmount = big.NewInt(0)
 	var lockedAmount = big.NewInt(0)
-	err:=oldChannelView.UpdateCapacity(nonce,deposit,transferredAmount,receivedAmount,lockedAmount)
-	if err!=nil{
-		fmt.Printf("TestChannelView_UpdateCapacity err=%s",err)
+	err := oldChannelView.UpdateCapacity(nonce, deposit, transferredAmount, receivedAmount, lockedAmount)
+	if err != nil {
+		fmt.Printf("TestChannelView_UpdateCapacity err=%s", err)
 	}
 }
-/*
-func (cv *ChannelView)UpdateCapacity(
-	nonce int,
-	deposit *big.Int,
-	transferredAmount *big.Int,
-	receivedAmount *big.Int,
-	lockedAmount *big.Int,
-	)(err error)*/

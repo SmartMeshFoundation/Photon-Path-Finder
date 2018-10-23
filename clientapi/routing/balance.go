@@ -1,16 +1,18 @@
 package routing
 
 import (
-	"net/http"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"fmt"
 	"math/big"
+	"net/http"
+
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-//balanceProof is the json request for BalanceProof
+// BalanceProof is the json request for BalanceProof
 type BalanceProof struct {
-	Nonce             int       `json:"nonce"`
+	Nonce             int         `json:"nonce"`
 	TransferredAmount *big.Int    `json:"transferred_amount"`
 	ChannelID         common.Hash `json:"channel_id"`
 	LocksRoot         common.Hash `json:"locksroot"`
@@ -33,8 +35,8 @@ type balanceProofRequest struct {
 	LocksAmount *big.Int `json:"locks_amount"`
 }
 
-// Balance handle the request with balance proof,implements GET and POST /balance
-func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress string) util.JSONResponse {
+// UpdateBalanceProof handle the request with balance proof,implements GET and POST /balance
+func UpdateBalanceProof(req *http.Request, ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
 	if req.Method == http.MethodPut {
 		var r balanceProofRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
@@ -42,23 +44,23 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peer
 			return *resErr
 		}
 		//validate json-input
-		if _,exist:=ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID];!exist{
+		if _, exist := ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]; !exist {
 			return util.JSONResponse{
 				Code: http.StatusInternalServerError,
-				JSON: "Unknown channel",
+				JSON: fmt.Sprintf("Unknown channel,channel_id=%s", r.BalanceProof.ChannelID.String()),
 			}
 		}
 
 		var partner common.Address
-		for _,xpartner:=range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]{
-			if xpartner!=common.HexToAddress(peerAddress){
-				partner=xpartner
+		for _, xpartner := range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID] {
+			if xpartner != common.HexToAddress(peerAddress) {
+				partner = xpartner
 				break
 			}
 		}
 
 		//var locksAmount *big.Int
-		err := verifySinature(&r, common.HexToAddress(peerAddress),partner)
+		err := verifySinature(&r, common.HexToAddress(peerAddress), partner)
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusBadRequest,
@@ -90,4 +92,3 @@ func UpdateBalanceProof(req *http.Request,ce blockchainlistener.ChainEvents,peer
 		JSON: util.NotFound("Bad method"),
 	}
 }
-

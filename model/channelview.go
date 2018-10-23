@@ -1,10 +1,11 @@
 package model
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"context"
 	"math/big"
+
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,21 +34,21 @@ type PeerNonce struct {
 	Nonce       int
 }
 
-const(
-	//StateChannelOpen event type of ChannelOpen
-	StateChannelOpen  ="open"
-	//StateChannelDeposit event type of ChannelDeposit
-	StateChannelDeposit="deposit"
-	///StateChannelWithdraw event type of ChannelWithdraw
-	StateChannelWithdraw="withdraw"
-	//StateChannelOpen event type of ChannelClose
-	StateChannelClose="close"
-	//StateChannelOpen event type of ChannelClose
-	StateUpdateBalance="updatebalance"
+const (
+	// StateChannelOpen event type of ChannelOpen
+	StateChannelOpen = "open"
+	// StateChannelDeposit event type of ChannelDeposit
+	StateChannelDeposit = "deposit"
+	// StateChannelWithdraw event type of ChannelWithdraw
+	StateChannelWithdraw = "withdraw"
+	// StateChannelClose event type of ChannelClose
+	StateChannelClose = "close"
+	// StateUpdateBalance event type of UpdateBalance
+	StateUpdateBalance = "updatebalance"
 )
 
-//InitChannelView
-func InitChannelView(token common.Address,channelID common.Hash ,participant1,participant2 common.Address,deposit *big.Int,eventTag string,balanceProofNonce *PeerNonce ,db *storage.Database) (*ChannelView) {
+//InitChannelView some channel view
+func InitChannelView(token common.Address, channelID common.Hash, participant1, participant2 common.Address, deposit *big.Int, eventTag string, balanceProofNonce *PeerNonce, db *storage.Database) *ChannelView {
 	cv := &ChannelView{
 		Token:             token,
 		SelfAddress:       participant1,
@@ -67,18 +68,18 @@ func InitChannelView(token common.Address,channelID common.Hash ,participant1,pa
 }
 
 //UpdateCapacity refush channel status and capacity
-func (cv *ChannelView)UpdateCapacity(
+func (cv *ChannelView) UpdateCapacity(
 	nonce int,
 	deposit *big.Int,
 	transferredAmount *big.Int,
 	receivedAmount *big.Int,
 	lockedAmount *big.Int,
-	)(err error) {
+) (err error) {
 	switch cv.Status {
 	case StateChannelOpen:
 		err = cv.db.UpdateChannelStatusStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateChannelDeposit:
-		err = cv.db.UpdateChannelDepostiStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
+		err = cv.db.UpdateChannelDepositStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), cv.Capacity.Int64())
 	case StateChannelWithdraw:
 		err = cv.db.WithdrawChannelInfoStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String(), deposit.Int64())
 	case StateChannelClose:
@@ -106,17 +107,17 @@ func (cv *ChannelView)UpdateCapacity(
 		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
 		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
 		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)*/
-		err = cv.db.UpdateBalanceProofStorage(nil,cv.Token.String(),
+		err = cv.db.UpdateBalanceProofStorage(nil, cv.Token.String(),
 			cv.ChannelID.String(),
 			cv.Status,
 			cv.SelfAddress.String(),
 			cv.PartnerAddress.String(),
-			transferredAmount.Int64(),receivedAmount.Int64(),lockedAmount.Int64(),
+			transferredAmount.Int64(), receivedAmount.Int64(), lockedAmount.Int64(),
 			nonce,
 		)
 	}
 	if err != nil {
-		logrus.Warn("Failed to update capacity,err=",cv.Status)
+		logrus.Warn("Failed to update capacity,err=", cv.Status)
 	}
 	return
 }

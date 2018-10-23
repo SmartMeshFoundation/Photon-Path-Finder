@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
-	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 //feeRateSchema create tb_fee_rate
@@ -51,7 +51,7 @@ func (s *feeRateStatements) prepare(db *sql.DB) (err error) {
 func (s *feeRateStatements) insertFeeRate(ctx context.Context,
 	channeID, peerAddress, feeRate string,
 ) (err error) {
-	timeMs := Timestamp
+	timeMs := time.Now().UnixNano() / 1000000
 	stmt := s.insertFeeRateStmt
 	_, err = stmt.Exec(channeID, peerAddress, feeRate, timeMs)
 
@@ -65,8 +65,8 @@ func (s *feeRateStatements) selectLatestFeeRate(ctx context.Context, channeID, p
 	err = stmt.QueryRow(channeID, peerAddress).Scan(&feeRate, &effitime)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.WithError(err).Error("Unable to retrieve tLatestFeeRate from the db")
-			return "0",0 ,nil
+			//log.WithError(err).Error("Unable to retrieve tLatestFeeRate from the db")
+			return "0", 0, nil
 		}
 	}
 	return

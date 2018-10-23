@@ -1,14 +1,15 @@
 package routing
 
 import (
-	"testing"
-	"net/http"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"bytes"
+	"net/http"
+	"testing"
+
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestSetFeeRate(t *testing.T) {
@@ -19,7 +20,7 @@ func TestSetFeeRate(t *testing.T) {
 	signature1 := "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 	peeraddress := "0xc67f23ce04ca5e8dd9f2e1b5ed4fad877f79267a"
-	httpUrl := "http://127..1:9001/pathfinder/" + peeraddress + "/set_fee_rate"
+	httpURL := "http://127.0.0.1:9001/pathfinder/" + peeraddress + "/set_fee_rate"
 	/*var req *http.Request
 	var feeRateDB *storage.Database*/
 
@@ -35,10 +36,10 @@ func TestSetFeeRate(t *testing.T) {
 	}
 	var response0 *util.JSONResponse
 	var response1 *util.JSONResponse
-	_, err0 := MakeRequest("PUT", httpUrl, request0, response0)
-	_, err1 := MakeRequest("PUT", httpUrl, request1, response1)
-	fmt.Println(err0,response0)
-	fmt.Println(err1,response1)
+	_, err0 := MakeRequest("PUT", httpURL, request0, response0)
+	_, err1 := MakeRequest("PUT", httpURL, request1, response1)
+	fmt.Println(err0, response0)
+	fmt.Println(err1, response1)
 }
 
 func MakeRequest(method string, httpURL string, reqBody interface{}, resBody interface{}) ([]byte, error) {
@@ -55,7 +56,6 @@ func MakeRequest(method string, httpURL string, reqBody interface{}, resBody int
 	} else {
 		req, err = http.NewRequest(method, httpURL, nil)
 	}
-	//log.Trace(fmt.Sprintf("matrix url:%s,req:%s", httpURL, reqBody))
 	if err != nil {
 		return nil, err
 	}
@@ -69,29 +69,6 @@ func MakeRequest(method string, httpURL string, reqBody interface{}, resBody int
 		return nil, err
 	}
 	contents, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	if res.StatusCode/100 != 2 {
-		var wrap error
-		var respErr RespError
-		err = json.Unmarshal(contents, &respErr)
-		if err != nil {
-			return nil, err
-		}
-		if respErr.ErrCode != "" {
-			wrap = respErr
-		}
-		msg := "Failed to " + method + " JSON to " + req.URL.Path
-		if wrap == nil {
-			msg = msg + ": " + string(contents)
-		}
-		return contents, HTTPError{
-			Code:         res.StatusCode,
-			Message:      msg,
-			WrappedError: wrap,
-		}
-	}
 	if err != nil {
 		return nil, err
 	}

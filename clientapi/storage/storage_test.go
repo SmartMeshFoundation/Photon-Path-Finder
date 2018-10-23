@@ -1,15 +1,17 @@
 package storage
 
 import (
-	"testing"
+	"bytes"
 	"database/sql"
-	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/SmartMeshFoundation/SmartRaidenbai/utils"
 	"fmt"
+	"testing"
+
+	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
+	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-func setupDb(t *testing.T) (*Database) {
+func setupDb(t *testing.T) *Database {
 	var dataSourceName = "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
 	var db *sql.DB
 	var err error
@@ -36,8 +38,8 @@ func setupDb(t *testing.T) (*Database) {
 	if err = frs.prepare(db); err != nil {
 		return nil
 	}
-	TokenNetwork2TokenMap=make(map[common.Address]common.Address)
-	if err!=nil{
+	TokenNetwork2TokenMap = make(map[common.Address]common.Address)
+	if err != nil {
 		t.Error(err)
 	}
 	return &Database{db, partitions, lbs, cis, tss, frs}
@@ -53,19 +55,79 @@ func TestNewDatabase(t *testing.T) {
 
 func TestDatabase_SaveTokensStorage(t *testing.T) {
 	db := setupDb(t)
-	token:=utils.EmptyAddress.String()
-	tokennetwork:=utils.EmptyAddress.String()
-	err:=db.SaveTokensStorage(nil,token,tokennetwork)
-	if err!=nil{
+	token := utils.NewRandomAddress()
+	tokennetwork := utils.NewRandomAddress()
+	err := db.SaveTokensStorage(nil, token.String(), tokennetwork.String())
+	if err != nil {
 		t.Error(err)
+	}
+	fmt.Println(tokennetwork)
+	tm, err := db.GetAllTokensStorage(nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !bytes.Equal(tm[token].Bytes(), tokennetwork.Bytes()) {
+		t.Error("save failed")
 	}
 }
 
 func TestDatabase_GetAllTokensStorage(t *testing.T) {
 	db := setupDb(t)
-	tokenmap,err:=db.GetAllTokensStorage(nil)
-	if err!=nil{
+	tokenmap, err := db.GetAllTokensStorage(nil)
+	if err != nil {
 		t.Error(err)
 	}
 	fmt.Println(tokenmap)
+}
+
+func TestDatabase_GetAllChannelHistoryStorage(t *testing.T) {
+	db := setupDb(t)
+	cis, err := db.GetAllChannelHistoryStorage(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(cis)
+}
+
+func TestDatabase_SaveLatestBlockNumberStorage(t *testing.T) {
+	db := setupDb(t)
+	err := db.SaveLatestBlockNumberStorage(nil, 555)
+	if err != nil {
+		t.Error(err)
+	}
+	num, err := db.GetLatestBlockNumberStorage(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if num != 555 {
+		t.Error("get LatestBlockNumber failed")
+	}
+}
+
+//func (d *Database) InitChannelInfoStorage(ctx context.Context, token, channelID, partipant1, partipant2 string) (err error) {
+func TestDatabase_InitChannelInfoStorage(t *testing.T) {
+	db := setupDb(t)
+	token := utils.NewRandomAddress().String()
+	channelID := utils.NewRandomHash().String()
+	partipant1 := utils.NewRandomAddress().String()
+	partipant2 := utils.NewRandomAddress().String()
+	err := db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+//func (d *Database) UpdateChannelStatusStorage(ctx context.Context, token, channelID, channelStatus, participant, partner string) (err error) {
+func TestDatabase_UpdateChannelStatusStorage(t *testing.T) {
+	db := setupDb(t)
+	token := utils.NewRandomAddress().String()
+	channelID := utils.NewRandomHash().String()
+	channelStatus := "close"
+	participant := utils.NewRandomAddress().String()
+	partner := utils.NewRandomAddress().String()
+	err := db.UpdateChannelStatusStorage(nil, token, channelID, channelStatus, participant, partner)
+	if err != nil {
+		t.Error(err)
+	}
 }

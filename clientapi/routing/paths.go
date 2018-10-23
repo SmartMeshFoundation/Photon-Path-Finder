@@ -1,13 +1,14 @@
 package routing
 
 import (
-	"net/http"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"math/big"
+	"net/http"
 	"regexp"
-	"github.com/nkbai/dijkstra"
-	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/nkbai/dijkstra"
 )
 
 // pathRequest is the json request for GetPaths
@@ -17,7 +18,7 @@ type pathRequest struct {
 	LimitPaths int            `json:"limit_paths"`
 	SendAmount *big.Int       `json:"send_amount"`
 	SortDemand string         `json:"sort_demand"`
-	Sinature   []byte    `json:"signature"`
+	Sinature   []byte         `json:"signature"`
 }
 
 /*// pathResult is the json response for GetPaths
@@ -34,11 +35,12 @@ type Graph struct {
 	//BalanceProof balanceProof
 }
 
-var(
+var (
 	validAddressRegex = regexp.MustCompile(`^@(0x[0-9a-f]{40})`)
 )
+
 // GetPaths handle the request with GetPaths,implements POST /paths
-func GetPaths(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress string) util.JSONResponse {
+func GetPaths(req *http.Request, ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
 	//	vmux.Handle("/{peerAddress}/paths",
 	if req.Method == http.MethodPost {
 
@@ -57,13 +59,19 @@ func GetPaths(req *http.Request,ce blockchainlistener.ChainEvents,peerAddress st
 			}
 		}
 
-		var peerFrom= r.PeerFrom
-		var peerTo= r.PeerTo
+		var peerFrom = r.PeerFrom
+		var peerTo = r.PeerTo
 		var limitPaths = r.LimitPaths
 		var sendAmount = r.SendAmount
-		var sortDemand= r.SortDemand
+		var sortDemand = r.SortDemand
 
-		pathResult := ce.TokenNetwork.GetPahts(peerFrom, peerTo, sendAmount, limitPaths, sortDemand)
+		pathResult, err := ce.TokenNetwork.GetPaths(peerFrom, peerTo, sendAmount, limitPaths, sortDemand)
+		if err != nil {
+			return util.JSONResponse{
+				Code: http.StatusInternalServerError,
+				JSON: err.Error(),
+			}
+		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
 			JSON: pathResult, //util.OkJSON("true"),

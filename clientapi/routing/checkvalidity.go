@@ -1,17 +1,19 @@
 package routing
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/binary"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
+	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"crypto/ecdsa"
 )
 
 // verifySinature verify balance proof sinature and caller's sinature
@@ -19,7 +21,7 @@ import (
 // 2\verify alice(caller)'s infomation's sinature
 // 3\Balance_Proof_Hash	(nonce,transferred_amount,channel_id,locksroot,additional_hash)
 // 4\Message_Hash		(nonce,transferred_amount,channel_id,locksroot,additional_hash,locks_amount)
-func verifySinature(bpr * balanceProofRequest ,peerAddress common.Address,partner common.Address) (err error) {
+func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partner common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, bpr.BalanceProof.Nonce)             //nonce
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.BalanceProof.TransferredAmount)) //transferred_amount
@@ -30,13 +32,13 @@ func verifySinature(bpr * balanceProofRequest ,peerAddress common.Address,partne
 	balanceProofHash := utils.Sha3(tmpBuf.Bytes())
 	balanceProofSignature := bpr.BalanceProof.Signature
 	balanceProofSigner, err := utils.Ecrecover(balanceProofHash, balanceProofSignature)
-	if err!=nil{
+	if err != nil {
 		err = fmt.Errorf("Illegal balance proof signature")
-		return  err
+		return err
 	}
 	if balanceProofSigner != partner {
 		err = fmt.Errorf("Illegal balance proof signature,must give partner's balance proof")
-		return  err
+		return err
 	}
 
 	//The data size in communication may be very large.
@@ -47,7 +49,7 @@ func verifySinature(bpr * balanceProofRequest ,peerAddress common.Address,partne
 
 		locksAmount.Add(locksAmount, lock.LockedAmount)
 	}*/
-	_,err=tmpBuf.Write(bpr.BalanceProof.Signature)
+	_, err = tmpBuf.Write(bpr.BalanceProof.Signature)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.LocksAmount)) //locks_amount
 
 	messageHash := utils.Sha3(tmpBuf.Bytes())
@@ -55,13 +57,13 @@ func verifySinature(bpr * balanceProofRequest ,peerAddress common.Address,partne
 	signer, err := utils.Ecrecover(messageHash, messageSignature)
 	if signer != peerAddress {
 		err = fmt.Errorf("Illegal signature of balance message")
-		return  err
+		return err
 	}
-	return  nil
+	return nil
 }
 
 // verifySinatureSetFeeRate verify Fee_rate sinature
-func verifySinatureSetFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address) (err error) {
+func verifySinatureSetFeeRate(sfr SetFeeRateRequest, peerAddress common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	_, err = tmpBuf.Write(sfr.ChannelID[:])    //channel_id
 	_, err = tmpBuf.Write([]byte(sfr.FeeRate)) //fee_rate
@@ -77,7 +79,7 @@ func verifySinatureSetFeeRate(sfr SetFeeRateRequest ,peerAddress common.Address)
 }
 
 // verifySinatureGetFeeRate verify Fee_rate sinature
-func verifySinatureGetFeeRate(sfr GetFeeRateRequest,peerAddress common.Address) (err error) {
+func verifySinatureGetFeeRate(sfr GetFeeRateRequest, peerAddress common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	_, err = tmpBuf.Write(sfr.ObtainObj[:]) //obtain_obj
 	_, err = tmpBuf.Write(sfr.ChannelID[:]) //channel_id
@@ -93,18 +95,18 @@ func verifySinatureGetFeeRate(sfr GetFeeRateRequest,peerAddress common.Address) 
 }
 
 //verifySinaturePaths signature=caller
-func verifySinaturePaths(pr pathRequest,peerAddress common.Address) (err error)  {
+func verifySinaturePaths(pr pathRequest, peerAddress common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
-	_,err=tmpBuf.Write(pr.PeerFrom[:])//peer_from
-	_,err=tmpBuf.Write(pr.PeerTo[:])//peer_to
+	_, err = tmpBuf.Write(pr.PeerFrom[:])                       //peer_from
+	_, err = tmpBuf.Write(pr.PeerTo[:])                         //peer_to
 	err = binary.Write(tmpBuf, binary.BigEndian, pr.LimitPaths) //limit_paths
-	err = binary.Write(tmpBuf, binary.BigEndian, pr.SendAmount) //send_amount
-	err = binary.Write(tmpBuf, binary.BigEndian, pr.SortDemand) //send_amount
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(pr.SendAmount)) //send_amount
+	_, err = tmpBuf.Write([]byte(pr.SortDemand))                //send_amount
 
-	pathHash:=utils.Sha3(tmpBuf.Bytes())
-	pathSignature:=pr.Sinature
-	pathSigner,err:=utils.Ecrecover(pathHash,pathSignature)
-	if pathSigner!=peerAddress{
+	pathHash := utils.Sha3(tmpBuf.Bytes())
+	pathSignature := pr.Sinature
+	pathSigner, err := utils.Ecrecover(pathHash, pathSignature)
+	if pathSigner != peerAddress {
 		err = fmt.Errorf("Invalid signature")
 		return err
 	}
@@ -112,7 +114,55 @@ func verifySinaturePaths(pr pathRequest,peerAddress common.Address) (err error) 
 }
 
 // SignData signature data,just for test
-func signDataForBalanceProof(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
+func signDataForPath(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
+	if req.Method != http.MethodPost {
+		return util.JSONResponse{
+			Code: http.StatusMethodNotAllowed,
+			JSON: util.NotFound("Bad method"),
+		}
+	}
+	var r pathRequest
+	resErr := util.UnmarshalJSONRequest(req, &r)
+	if resErr != nil {
+		return *resErr
+	}
+	var signature []byte
+	tmpBuf := new(bytes.Buffer)
+	_, err := tmpBuf.Write(r.PeerFrom[:])
+	_, err = tmpBuf.Write(r.PeerTo[:])
+	err = binary.Write(tmpBuf, binary.BigEndian, r.LimitPaths)
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.SendAmount))
+	_, err = tmpBuf.Write([]byte(r.SortDemand))
+	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
+	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	privateKey, err := crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusExpectationFailed,
+			JSON: util.NotFound("Sign data err"),
+		}
+	}
+	return util.JSONResponse{
+		Code: http.StatusOK,
+		JSON: signature,
+	}
+}
+
+// SignData signature data,just for test
+func signDataForBalanceProof(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
 	if req.Method != http.MethodPost {
 		return util.JSONResponse{
 			Code: http.StatusMethodNotAllowed,
@@ -133,21 +183,21 @@ func signDataForBalanceProof(req *http.Request,cfg config.PathFinder,peerAddress
 	_, err = tmpBuf.Write(r.AdditionalHash[:])
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err!=nil{
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey,err:=crypto.ToECDSA(privkeybin)
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusInternalServerError,
 			JSON: err.Error(),
 		}
 	}
-	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
-	if err!=nil{
+	privateKey, err := crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
+	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusExpectationFailed,
 			JSON: util.NotFound("Sign data err"),
@@ -160,7 +210,7 @@ func signDataForBalanceProof(req *http.Request,cfg config.PathFinder,peerAddress
 }
 
 // signDataForBalanceProofMessage signature data,just for test
-func signDataForBalanceProofMessage(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
+func signDataForBalanceProofMessage(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
 	if req.Method != http.MethodPost {
 		return util.JSONResponse{
 			Code: http.StatusMethodNotAllowed,
@@ -183,21 +233,21 @@ func signDataForBalanceProofMessage(req *http.Request,cfg config.PathFinder,peer
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.LocksAmount))
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err!=nil{
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey,err:=crypto.ToECDSA(privkeybin)
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusInternalServerError,
 			JSON: err.Error(),
 		}
 	}
-	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
-	if err!=nil{
+	privateKey, err := crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
+	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusExpectationFailed,
 			JSON: util.NotFound("Sign data err"),
@@ -210,7 +260,7 @@ func signDataForBalanceProofMessage(req *http.Request,cfg config.PathFinder,peer
 }
 
 // SignData signature data(balance proof),just for test
-func signDataForSetFee(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
+func signDataForSetFee(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
 	if req.Method != http.MethodPost {
 		return util.JSONResponse{
 			Code: http.StatusMethodNotAllowed,
@@ -222,28 +272,35 @@ func signDataForSetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	if resErr != nil {
 		return *resErr
 	}
+	_, err := strconv.ParseFloat(r.FeeRate, 32)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusBadRequest,
+			JSON: util.InvalidArgumentValue("fee_rate must be a floating number(character string) from 0 to 1."),
+		}
+	}
 	var signature []byte
 	tmpBuf := new(bytes.Buffer)
-	_, err:= tmpBuf.Write(r.ChannelID[:])
+	_, err = tmpBuf.Write(r.ChannelID[:])
 	_, err = tmpBuf.Write([]byte(r.FeeRate))
 
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err!=nil{
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey,err:=crypto.ToECDSA(privkeybin)
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusInternalServerError,
 			JSON: err.Error(),
 		}
 	}
-	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
-	if err!=nil{
+	privateKey, err := crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
+	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusExpectationFailed,
 			JSON: util.NotFound("Sign data err"),
@@ -255,8 +312,8 @@ func signDataForSetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	}
 }
 
-// SignData signature data(balance proof),just for test
-func signDataForGetFee(req *http.Request,cfg config.PathFinder,peerAddress string)  util.JSONResponse {
+// signDataForGetFee signature data(balance proof),just for test
+func signDataForGetFee(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
 	if req.Method != http.MethodPost {
 		return util.JSONResponse{
 			Code: http.StatusMethodNotAllowed,
@@ -270,26 +327,26 @@ func signDataForGetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	}
 	var signature []byte
 	tmpBuf := new(bytes.Buffer)
-	_, err:= tmpBuf.Write(r.ObtainObj[:])
-	_, err= tmpBuf.Write(r.ChannelID[:])
+	_, err := tmpBuf.Write(r.ObtainObj[:])
+	_, err = tmpBuf.Write(r.ChannelID[:])
 
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err!=nil{
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey,err:=crypto.ToECDSA(privkeybin)
 	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusInternalServerError,
 			JSON: err.Error(),
 		}
 	}
-	signature, err = utils.SignData(privateKey,tmpBuf.Bytes())
-	if err!=nil{
+	privateKey, err := crypto.ToECDSA(privkeybin)
+	if err != nil {
+		return util.JSONResponse{
+			Code: http.StatusInternalServerError,
+			JSON: err.Error(),
+		}
+	}
+	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
+	if err != nil {
 		return util.JSONResponse{
 			Code: http.StatusExpectationFailed,
 			JSON: util.NotFound("Sign data err"),
@@ -301,21 +358,21 @@ func signDataForGetFee(req *http.Request,cfg config.PathFinder,peerAddress strin
 	}
 }
 
-// SignData signature data,just for test
-func SignDataForBalanceProof0(peerKey *ecdsa.PrivateKey,r *BalanceProof)  (err error) {
+// SignDataForBalanceProof0 signature data,just for test
+func SignDataForBalanceProof0(peerKey *ecdsa.PrivateKey, r *BalanceProof) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, r.Nonce)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.TransferredAmount))
 	_, err = tmpBuf.Write(r.ChannelID[:])
 	_, err = tmpBuf.Write(r.LocksRoot[:])
 	_, err = tmpBuf.Write(r.AdditionalHash[:])
-	r.Signature, err = utils.SignData(peerKey,tmpBuf.Bytes())
+	r.Signature, err = utils.SignData(peerKey, tmpBuf.Bytes())
 
 	return
 }
 
-// SignData signature data(balance proof),just for test
-func SignDataForBalanceProofMessage0(peerKey *ecdsa.PrivateKey,r *balanceProofRequest)  (err error) {
+// SignDataForBalanceProofMessage0 signature data(balance proof),just for test
+func SignDataForBalanceProofMessage0(peerKey *ecdsa.PrivateKey, r *balanceProofRequest) (err error) {
 
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, r.BalanceProof.Nonce)

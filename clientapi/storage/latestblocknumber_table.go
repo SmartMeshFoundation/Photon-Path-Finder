@@ -1,32 +1,31 @@
 package storage
 
 import (
-	"database/sql"
 	"context"
-	log "github.com/sirupsen/logrus"
+	"database/sql"
 )
 
 // channelInfoSchema create tb_latest_block_number
-const latestBlockNumberSchema  = `
+const latestBlockNumberSchema = `
 CREATE TABLE IF NOT EXISTS tb_latest_block_number(
 	latest_block_number BIGINT NOT NULL
 );
 `
 
-const(
+const (
 	// insertLatestBlockNumberSQL sql
-	insertLatestBlockNumberSQL = ""+
+	insertLatestBlockNumberSQL = "" +
 		"INSERT INTO tb_latest_block_number(latest_block_number) VALUES($1)"
 
 	// updatLatestBlockNumberSQL sql
-	updatLatestBlockNumberSQL = ""+
+	updatLatestBlockNumberSQL = "" +
 		"UPDATE tb_latest_block_number SET latest_block_number = $1"
 
 	// selectLatestBlockNumberSQL sql
-	selectLatestBlockNumberSQL=""+
+	selectLatestBlockNumberSQL = "" +
 		"SELECT latest_block_number FROM tb_latest_block_number"
-
 )
+
 // latestBlockNumberStatements interactive with db-operation
 type latestBlockNumberStatements struct {
 	insertLatestBlockNumberStmt *sql.Stmt
@@ -53,7 +52,7 @@ func (s *latestBlockNumberStatements) prepare(db *sql.DB) (err error) {
 }
 
 // insertLatestBlockNumber insert data
-func (s *latestBlockNumberStatements)insertLatestBlockNumber(ctx context.Context,latestBlockNum int64,
+func (s *latestBlockNumberStatements) insertLatestBlockNumber(ctx context.Context, latestBlockNum int64,
 ) (err error) {
 	stmt := s.insertLatestBlockNumberStmt
 	_, err = stmt.Exec(latestBlockNum)
@@ -64,24 +63,24 @@ func (s *latestBlockNumberStatements)insertLatestBlockNumber(ctx context.Context
 }
 
 // updatLatestBlockNumber update LatestBlockNumber
-func (s *latestBlockNumberStatements)updatLatestBlockNumber(ctx context.Context,
+func (s *latestBlockNumberStatements) updatLatestBlockNumber(ctx context.Context,
 	latestBlockNum int64,
 ) (err error) {
-	stmt:=s.updatLatestBlockNumberStmt
-	_,err=stmt.Exec(latestBlockNum)
+	stmt := s.updatLatestBlockNumberStmt
+	_, err = stmt.Exec(latestBlockNum)
 	return
 }
 
 // selectLatestBlockNumber select LatestBlockNumber
-func (s *latestBlockNumberStatements)selectLatestBlockNumber(ctx context.Context,
-) (latestBlockNum int64,err error) {
-	stmt:=s.selectLatestBlockNumberStmt
-	err=stmt.QueryRow().Scan(&latestBlockNum)
-	if err!=nil{
-		if err!=sql.ErrNoRows{
-			log.WithError(err).Error("Unable to retrieve LatestBlockNumber from the db")
+func (s *latestBlockNumberStatements) selectLatestBlockNumber(ctx context.Context,
+) (latestBlockNum int64, err error) {
+	stmt := s.selectLatestBlockNumberStmt
+	err = stmt.QueryRow().Scan(&latestBlockNum)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			//log.WithError(err).Error("Unable to retrieve LatestBlockNumber from the db")
+			return 0, nil
 		}
-		return -1,err
 	}
 	return
 }
