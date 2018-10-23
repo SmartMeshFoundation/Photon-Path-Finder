@@ -105,7 +105,6 @@ func TestDatabase_SaveLatestBlockNumberStorage(t *testing.T) {
 	}
 }
 
-//func (d *Database) InitChannelInfoStorage(ctx context.Context, token, channelID, partipant1, partipant2 string) (err error) {
 func TestDatabase_InitChannelInfoStorage(t *testing.T) {
 	db := setupDb(t)
 	token := utils.NewRandomAddress().String()
@@ -118,7 +117,6 @@ func TestDatabase_InitChannelInfoStorage(t *testing.T) {
 	}
 }
 
-//func (d *Database) UpdateChannelStatusStorage(ctx context.Context, token, channelID, channelStatus, participant, partner string) (err error) {
 func TestDatabase_UpdateChannelStatusStorage(t *testing.T) {
 	db := setupDb(t)
 	token := utils.NewRandomAddress().String()
@@ -130,4 +128,72 @@ func TestDatabase_UpdateChannelStatusStorage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestDatabase_UpdateChannelDepositStorage(t *testing.T) {
+	db := setupDb(t)
+	token := utils.NewRandomAddress().String()
+	channelID := utils.NewRandomHash().String()
+	status := "deposit"
+	participant := utils.NewRandomAddress().String()
+	partner := utils.NewRandomAddress().String()
+	var participantDeposit int64
+	err := db.UpdateChannelDepositStorage(nil, token, channelID, status, participant, partner, participantDeposit)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDatabase_WithdrawChannelInfoStorage(t *testing.T) {
+	db := setupDb(t)
+	token := utils.NewRandomAddress().String()
+	channelID := utils.NewRandomHash().String()
+	status := "withdraw"
+	participant := utils.NewRandomAddress().String()
+	partner := utils.NewRandomAddress().String()
+	var participantDeposit int64
+	err := db.WithdrawChannelInfoStorage(nil, token, channelID, status, participant, partner, participantDeposit)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDbFideldIndex(t *testing.T) {
+	participant0:="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	partner:="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	participant1:="0xcccccccccccccccccccccccccccccccccccccccc"
+	int0:=DbFideldIndex(participant0,partner)
+	int1:=DbFideldIndex(participant1,partner)
+	t.Log("The index after sorting (participant)is ",int0)
+	t.Log("The index after sorting (participant)is ",int1)
+}
+
+//func (d *Database) UpdateBalanceProofStorage(ctx context.Context, token,
+//	channelID, status, participant, partner string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce int) (err error) {
+func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
+	db := setupDb(t)
+	token := utils.NewRandomAddress().String()
+	channelID := utils.NewRandomHash().String()
+	status := "updatebalance"
+	participant := utils.NewRandomAddress().String()
+	partner := utils.NewRandomAddress().String()
+	transferredAmount:=int64(22)
+	receivedAmount:=int64(11)
+	lockedAmount:=int64(11)
+	participantNonce:=1
+	err := db.UpdateBalanceProofStorage(nil, token, channelID, status, participant, partner, transferredAmount,receivedAmount,lockedAmount,participantNonce)
+	if err != nil {
+		t.Error(err)
+	}
+	cis,err:=db.channelinfoStatement.selectAllChannelInfo(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	for _,v:=range cis{
+		if v.ChannelID==channelID{
+			t.Logf(fmt.Sprintf("balance proof message: %s", utils.StringInterface(v, 2)))
+			break
+		}
+	}
+
 }

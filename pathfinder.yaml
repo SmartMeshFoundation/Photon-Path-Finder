@@ -1,9 +1,9 @@
 # The config file format version
 version: 0
 
-registory_address: "0x8BB77B6cbD0DE9668DbDEe1B67502fc74846308e"
+registory_address: "0x5747A2483Bf43F7ac1984Ccd70E29126A5656490"
 
-address: "0x972dcdc3209787fd12d9e6e57e319167ce3666d8"
+address: "0xc67f23CE04ca5E8DD9f2E1B5eD4FaD877f79267A"
 
 keystore_path: "/home/cy/.ethereum/keystore"
 
