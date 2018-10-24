@@ -14,22 +14,36 @@ import (
 	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	smparams "github.com/SmartMeshFoundation/SmartRaiden/params"
+	"math/big"
 )
 
 // verifySinature verify balance proof sinature and caller's sinature
 // 1\verify bob's balance proof sinature
 // 2\verify alice(caller)'s infomation's sinature
-// 3\Balance_Proof_Hash	(nonce,transferred_amount,channel_id,locksroot,additional_hash)
-// 4\Message_Hash		(nonce,transferred_amount,channel_id,locksroot,additional_hash,locks_amount)
+// 3\Balance_Proof_Hash	(nonce,transfer_amount,locksroot,channel_id,open_block_number,additional_hash)
+// 4\Message_Hash		(balance_proof,lock_amount)
 func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partner common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
-	err = binary.Write(tmpBuf, binary.BigEndian, bpr.BalanceProof.Nonce)             //nonce
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.BalanceProof.TransferredAmount)) //transferred_amount
-	_, err = tmpBuf.Write(bpr.BalanceProof.ChannelID[:])                             //channel_id
-	_, err = tmpBuf.Write(bpr.BalanceProof.LocksRoot[:])                             //locksroot
-	_, err = tmpBuf.Write(bpr.BalanceProof.AdditionalHash[:])                        //additional_hash
+	err = binary.Write(tmpBuf, binary.BigEndian, bpr.BalanceProof.Nonce)           //nonce
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.BalanceProof.TransferAmount))  //transfer_amount
+	_, err = tmpBuf.Write(bpr.BalanceProof.LocksRoot[:])                           //locksroot
+	_, err = tmpBuf.Write(bpr.BalanceProof.ChannelID[:])                           //channel_id
+	err = binary.Write(tmpBuf, binary.BigEndian, bpr.BalanceProof.OpenBlockNumber) //open_block_number
+	_, err = tmpBuf.Write(bpr.BalanceProof.AdditionalHash[:])                      //additional_hash
 
-	balanceProofHash := utils.Sha3(tmpBuf.Bytes())
+	//检查是谁的balance proof
+	bpBuf:=new(bytes.Buffer)
+	_, err = bpBuf.Write(smparams.ContractSignaturePrefix)
+	_, err = bpBuf.Write([]byte(smparams.ContractBalanceProofMessageLength))
+	_, err = bpBuf.Write(utils.BigIntTo32Bytes(bpr.BalanceProof.TransferAmount))
+	_, err = bpBuf.Write(bpr.BalanceProof.LocksRoot[:])
+	err = binary.Write(bpBuf, binary.BigEndian, bpr.BalanceProof.Nonce)
+	_, err = bpBuf.Write(bpr.BalanceProof.AdditionalHash[:])
+	_, err = bpBuf.Write(bpr.BalanceProof.ChannelID[:])
+	err = binary.Write(bpBuf, binary.BigEndian, bpr.BalanceProof.OpenBlockNumber)
+	_, err = bpBuf.Write(utils.BigIntTo32Bytes(big.NewInt(8888)))//smparams.ChainID
+	balanceProofHash := utils.Sha3(bpBuf.Bytes())
 	balanceProofSignature := bpr.BalanceProof.Signature
 	balanceProofSigner, err := utils.Ecrecover(balanceProofHash, balanceProofSignature)
 	if err != nil {
@@ -41,17 +55,8 @@ func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partne
 		return err
 	}
 
-	//The data size in communication may be very large.
-	/*for _, lock := range bpr.Locks {
-		err = binary.Write(tmpBuf, binary.BigEndian, lock.LockedAmount)
-		err = binary.Write(tmpBuf, binary.BigEndian, lock.Expriation)
-		_, err = tmpBuf.Write(lock.SecretHash[:])
-
-		locksAmount.Add(locksAmount, lock.LockedAmount)
-	}*/
 	_, err = tmpBuf.Write(bpr.BalanceProof.Signature)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.LocksAmount)) //locks_amount
-
 	messageHash := utils.Sha3(tmpBuf.Bytes())
 	messageSignature := bpr.BalanceSignature
 	signer, err := utils.Ecrecover(messageHash, messageSignature)
@@ -133,104 +138,6 @@ func signDataForPath(req *http.Request, cfg config.PathFinder, peerAddress strin
 	err = binary.Write(tmpBuf, binary.BigEndian, r.LimitPaths)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.SendAmount))
 	_, err = tmpBuf.Write([]byte(r.SortDemand))
-	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
-	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey, err := crypto.ToECDSA(privkeybin)
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusExpectationFailed,
-			JSON: util.NotFound("Sign data err"),
-		}
-	}
-	return util.JSONResponse{
-		Code: http.StatusOK,
-		JSON: signature,
-	}
-}
-
-// SignData signature data,just for test
-func signDataForBalanceProof(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
-	if req.Method != http.MethodPost {
-		return util.JSONResponse{
-			Code: http.StatusMethodNotAllowed,
-			JSON: util.NotFound("Bad method"),
-		}
-	}
-	var r BalanceProof
-	resErr := util.UnmarshalJSONRequest(req, &r)
-	if resErr != nil {
-		return *resErr
-	}
-	var signature []byte
-	tmpBuf := new(bytes.Buffer)
-	err := binary.Write(tmpBuf, binary.BigEndian, r.Nonce)
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.TransferredAmount))
-	_, err = tmpBuf.Write(r.ChannelID[:])
-	_, err = tmpBuf.Write(r.LocksRoot[:])
-	_, err = tmpBuf.Write(r.AdditionalHash[:])
-	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
-	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	privateKey, err := crypto.ToECDSA(privkeybin)
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: err.Error(),
-		}
-	}
-	signature, err = utils.SignData(privateKey, tmpBuf.Bytes())
-	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusExpectationFailed,
-			JSON: util.NotFound("Sign data err"),
-		}
-	}
-	return util.JSONResponse{
-		Code: http.StatusOK,
-		JSON: signature,
-	}
-}
-
-// signDataForBalanceProofMessage signature data,just for test
-func signDataForBalanceProofMessage(req *http.Request, cfg config.PathFinder, peerAddress string) util.JSONResponse {
-	if req.Method != http.MethodPost {
-		return util.JSONResponse{
-			Code: http.StatusMethodNotAllowed,
-			JSON: util.NotFound("Bad method"),
-		}
-	}
-	var r balanceProofRequest
-	resErr := util.UnmarshalJSONRequest(req, &r)
-	if resErr != nil {
-		return *resErr
-	}
-	var signature []byte
-	tmpBuf := new(bytes.Buffer)
-	err := binary.Write(tmpBuf, binary.BigEndian, r.BalanceProof.Nonce)
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.BalanceProof.TransferredAmount))
-	_, err = tmpBuf.Write(r.BalanceProof.ChannelID[:])
-	_, err = tmpBuf.Write(r.BalanceProof.LocksRoot[:])
-	_, err = tmpBuf.Write(r.BalanceProof.AdditionalHash[:])
-	_, err = tmpBuf.Write(r.BalanceProof.Signature[:])
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.LocksAmount))
 	accmanager := accounts.NewAccountManager(cfg.KeystorePath)
 	privkeybin, err := accmanager.GetPrivateKey(common.HexToAddress(peerAddress), "123")
 	if err != nil {
@@ -362,7 +269,7 @@ func signDataForGetFee(req *http.Request, cfg config.PathFinder, peerAddress str
 func SignDataForBalanceProof0(peerKey *ecdsa.PrivateKey, r *BalanceProof) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, r.Nonce)
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.TransferredAmount))
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.TransferAmount))
 	_, err = tmpBuf.Write(r.ChannelID[:])
 	_, err = tmpBuf.Write(r.LocksRoot[:])
 	_, err = tmpBuf.Write(r.AdditionalHash[:])
@@ -376,7 +283,7 @@ func SignDataForBalanceProofMessage0(peerKey *ecdsa.PrivateKey, r *balanceProofR
 
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, r.BalanceProof.Nonce)
-	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.BalanceProof.TransferredAmount))
+	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.BalanceProof.TransferAmount))
 	_, err = tmpBuf.Write(r.BalanceProof.ChannelID[:])
 	_, err = tmpBuf.Write(r.BalanceProof.LocksRoot[:])
 	_, err = tmpBuf.Write(r.BalanceProof.AdditionalHash[:])

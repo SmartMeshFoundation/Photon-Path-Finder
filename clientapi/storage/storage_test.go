@@ -168,8 +168,7 @@ func TestDbFideldIndex(t *testing.T) {
 	t.Log("The index after sorting (participant)is ",int1)
 }
 
-//func (d *Database) UpdateBalanceProofStorage(ctx context.Context, token,
-//	channelID, status, participant, partner string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce int) (err error) {
+
 func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 	db := setupDb(t)
 	token := utils.NewRandomAddress().String()
@@ -195,5 +194,45 @@ func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 			break
 		}
 	}
+}
 
+func TestDatabase_GetTokenByChannelID(t *testing.T) {
+	db := setupDb(t)
+	channelID := utils.NewRandomHash().String()
+	token ,err := db.GetTokenByChannelID(nil, channelID)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(token)
+	channelID="0x0398beea63f098e2d3bb59884be79eda00cf042e39ad65e5c43a0a280f969f93"
+	tokenx ,err := db.GetTokenByChannelID(nil, channelID)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(tokenx)
+}
+
+func TestDatabase_GetLastNonceByChannel(t *testing.T) {
+	db := setupDb(t)
+	channelID := utils.NewRandomHash().String()
+	peerAddress := utils.NewRandomAddress().String()
+	partner := utils.NewRandomAddress().String()
+	nonce,err:=db.GetLastNonceByChannel(nil,channelID,peerAddress,partner)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(nonce)
+}
+
+//func (d *Database) SaveRateFeeStorage(ctx context.Context, channelID, peerAddress, feeRate string) (err error) {
+func TestDatabase_SaveRateFeeStorage(t *testing.T) {
+	db := setupDb(t)
+	channelID := utils.NewRandomHash().String()
+	peerAddress := utils.NewRandomAddress().String()
+	feeRate := "xxx$%^&*(()(56236547"
+	err:=db.SaveRateFeeStorage(nil,channelID,peerAddress,feeRate)
+	if err != nil {
+		t.Error(err)
+	}
+	//
 }

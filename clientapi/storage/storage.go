@@ -189,7 +189,7 @@ func DbFideldIndex(participant, partner string) int {
 
 // UpdateBalanceProofStorage Update balance proof Storage
 func (d *Database) UpdateBalanceProofStorage(ctx context.Context, token,
-	channelID, status, participant, partner string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce int) (err error) {
+	channelID, status, participant, partner string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce uint64) (err error) {
 	err = d.InitChannelInfoStorage(ctx, token, channelID, participant, partner)
 	if err != nil {
 		return
@@ -206,7 +206,7 @@ func (d *Database) GetTokenByChannelID(ctx context.Context, channelID string) (t
 }
 
 // GetLastNonceByChannel Get LastNonce By Channel
-func (d *Database) GetLastNonceByChannel(ctx context.Context, channelID, peerAddress, partner string) (nonce int, err error) {
+func (d *Database) GetLastNonceByChannel(ctx context.Context, channelID, peerAddress, partner string) (nonce uint64, err error) {
 	fieldIndex := DbFideldIndex(peerAddress, partner)
 	nonce, err = d.channelinfoStatement.selectOldNonceByChannelID(ctx, channelID, peerAddress, fieldIndex)
 	return

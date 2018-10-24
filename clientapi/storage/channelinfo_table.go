@@ -19,13 +19,13 @@ CREATE TABLE IF NOT EXISTS tb_channel_info(
 	participant2 TEXT NOT NULL,
 	p1_status TEXT NOT NULL,
 	p1_transferamount BIGINT NOT NULL,
-	p1_nonce INT NOT NULL DEFAULT 0,
+	p1_nonce BIGINT NOT NULL DEFAULT 0,
 	p1_lockedamount BIGINT NOT NULL,
 	p1_deposit BIGINT NOT NULL,
 	p1_balance BIGINT NOT NULL,
 	p2_status TEXT NOT NULL,
 	p2_transferamount BIGINT NOT NULL,
-	p2_nonce INT NOT NULL DEFAULT 0,
+	p2_nonce BIGINT NOT NULL DEFAULT 0,
 	p2_lockedamount BIGINT NOT NULL,
 	p2_deposit BIGINT NOT NULL,
 	p2_balance BIGINT NOT NULL
@@ -223,7 +223,7 @@ func (s *channelInfoStatements) selectTokenByChannelID(ctx context.Context, chan
 
 // selectOldNonceByChannelID get peer's nonce in some channel
 func (s *channelInfoStatements) selectOldNonceByChannelID(ctx context.Context, channeID, peerAddress string, pIndex int) (
-	nonce int, err error) {
+	nonce uint64, err error) {
 	var stmt *sql.Stmt
 	if pIndex == 1 {
 		stmt = s.selectNonceByChannelID1Stmt
@@ -318,7 +318,7 @@ func (s *channelInfoStatements) updateChannelWithdraw(ctx context.Context,
 
 // updateBalanceProof update balance
 func (s *channelInfoStatements) updateBalanceProof(ctx context.Context,
-	channeID, status, participant string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce, pIndex int,
+	channeID, status, participant string, transferredAmount, receivedAmount, lockedAmount int64, participantNonce uint64, pIndex int,
 ) (err error) {
 	timeMs := time.Now().UnixNano() / 1000000
 

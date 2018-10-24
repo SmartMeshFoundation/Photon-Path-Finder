@@ -69,7 +69,7 @@ func InitChannelView(token common.Address, channelID common.Hash, participant1, 
 
 //UpdateCapacity refush channel status and capacity
 func (cv *ChannelView) UpdateCapacity(
-	nonce int,
+	nonce uint64,
 	deposit *big.Int,
 	transferredAmount *big.Int,
 	receivedAmount *big.Int,

@@ -65,22 +65,6 @@ func Setup(
 		}),
 	).Methods(http.MethodPost, http.MethodOptions)
 
-	// "/calc_signature_balance_proof"
-	vmux.Handle("/{peerAddress}/calc_signature_balance_proof",
-		common.MakeExternalAPI("calc_signature_for_test", func(req *http.Request) util.JSONResponse {
-			vars := mux.Vars(req)
-			return signDataForBalanceProof(req, cfg, vars["peerAddress"])
-		}),
-	).Methods(http.MethodPost, http.MethodOptions)
-
-	// "/calc_signature_message"
-	vmux.Handle("/{peerAddress}/calc_signature_message",
-		common.MakeExternalAPI("calc_signature_message_for_test", func(req *http.Request) util.JSONResponse {
-			vars := mux.Vars(req)
-			return signDataForBalanceProofMessage(req, cfg, vars["peerAddress"])
-		}),
-	).Methods(http.MethodPost, http.MethodOptions)
-
 	// "/calc_signature_set_fee"
 	vmux.Handle("/{peerAddress}/calc_signature_set_fee",
 		common.MakeExternalAPI("calc_signature_setfee_for_test", func(req *http.Request) util.JSONResponse {

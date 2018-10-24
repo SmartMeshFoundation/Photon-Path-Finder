@@ -10,16 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// BalanceProof is the json request for BalanceProof
-type BalanceProof struct {
-	Nonce             int         `json:"nonce"`
-	TransferredAmount *big.Int    `json:"transferred_amount"`
-	ChannelID         common.Hash `json:"channel_id"`
-	LocksRoot         common.Hash `json:"locksroot"`
-	AdditionalHash    common.Hash `json:"additional_hash"`
-	Signature         []byte      `json:"signature"`
-}
-
 //lock is the json request for BalanceProof
 type lock struct {
 	LockedAmount *big.Int    `json:"locked_amount"`
@@ -27,12 +17,23 @@ type lock struct {
 	SecretHash   common.Hash `json:"secret_hash"`
 }
 
+// BalanceProof is the json request for BalanceProof
+type BalanceProof struct {
+	Nonce           uint64      `json:"nonce"`
+	TransferAmount  *big.Int    `json:"transfer_amount"`
+	LocksRoot       common.Hash `json:"locks_root"`
+	ChannelID       common.Hash `json:"channel_identifier"`
+	OpenBlockNumber int64       `json:"open_block_number"`
+	AdditionalHash  common.Hash `json:"addition_hash"`
+	Signature       []byte      `json:"signature"`
+	ExtraHash       common.Hash `json:"extra_hash"`
+}
+
 //balanceProofRequest is the json request for BalanceProof
 type balanceProofRequest struct {
-	BalanceSignature []byte       `json:"balance_signature"`
 	BalanceProof     BalanceProof `json:"balance_proof"`
-	//Locks        []lock       `json:"locks"`
-	LocksAmount *big.Int `json:"locks_amount"`
+	BalanceSignature []byte       `json:"balance_signature"`
+	LocksAmount      *big.Int     `json:"lock_amount"`
 }
 
 // UpdateBalanceProof handle the request with balance proof,implements GET and POST /balance
@@ -74,7 +75,7 @@ func UpdateBalanceProof(req *http.Request, ce blockchainlistener.ChainEvents, pe
 			r.BalanceProof.ChannelID,
 			partner,
 			r.BalanceProof.Nonce,
-			r.BalanceProof.TransferredAmount,
+			r.BalanceProof.TransferAmount,
 			r.LocksAmount)
 		if err != nil {
 			return util.JSONResponse{

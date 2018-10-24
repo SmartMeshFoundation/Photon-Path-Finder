@@ -7,20 +7,20 @@ import (
 
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/nkbai/dijkstra"
 	"github.com/sirupsen/logrus"
+	"github.com/nkbai/dijkstra"
 )
 
 // TokenNetwork token network view
 type TokenNetwork struct {
 	TokenNetworkAddress   common.Address
 	ChannelID2Address     map[common.Hash][2]common.Address //cache key=channel_id value={0xparticipant1,0xparticipan2}
-	PeerRelationshipGraph dijkstra.Graph
+	//PeerRelationshipGraph dijkstra.Graph
 	MaxRelativeFee        int64
 	db                    *storage.Database
 	channelViews          map[common.Address]map[common.Address]*ChannelView
-	GPeerAddress2Index    map[common.Address]int
-	CacheRemoveEdge       map[int]int //Remember those who were removed for calc.
+	//GPeerAddress2Index    map[common.Address]int
+	//CacheRemoveEdge       map[int]int //Remember those who were removed for calc.
 }
 
 // InitTokenNetwork token network initialization
@@ -31,9 +31,9 @@ func InitTokenNetwork(tokenNetworkAddress common.Address, db *storage.Database) 
 		return
 	}
 	channelID2Address := make(map[common.Hash][2]common.Address)
-	gPeerAddress2Index := make(map[common.Address]int)
-	dijstraGraph := *dijkstra.NewEmptyGraph()
-	var addrIndex = -1
+	//gPeerAddress2Index := make(map[common.Address]int)
+	//dijstraGraph := *dijkstra.NewEmptyGraph()
+	//var addrIndex = -1
 	for _, channelinfo := range channelinfos {
 		//if channelinfo.Status != StateChannelClose {
 		peerAddr1 := common.HexToAddress(channelinfo.Partipant1)
@@ -43,7 +43,7 @@ func InitTokenNetwork(tokenNetworkAddress common.Address, db *storage.Database) 
 		channelID2Address[channelID] = participant
 
 		// Initialization dijkstra graph data
-		if _, exist := gPeerAddress2Index[peerAddr1]; !exist {
+		/*if _, exist := gPeerAddress2Index[peerAddr1]; !exist {
 			addrIndex++
 			gPeerAddress2Index[peerAddr1] = addrIndex
 		}
@@ -53,19 +53,19 @@ func InitTokenNetwork(tokenNetworkAddress common.Address, db *storage.Database) 
 		}
 
 		dijstraGraph.AddEdge(gPeerAddress2Index[peerAddr1], gPeerAddress2Index[peerAddr2], 100)
-		dijstraGraph.AddEdge(gPeerAddress2Index[peerAddr2], gPeerAddress2Index[peerAddr1], 100)
+		dijstraGraph.AddEdge(gPeerAddress2Index[peerAddr2], gPeerAddress2Index[peerAddr1], 100)*/
 	}
 	channelviews := make(map[common.Address]map[common.Address]*ChannelView)
 
 	twork = &TokenNetwork{
 		TokenNetworkAddress:   tokenNetworkAddress,
 		ChannelID2Address:     channelID2Address,
-		PeerRelationshipGraph: dijstraGraph,
+		//PeerRelationshipGraph: dijstraGraph,
 		MaxRelativeFee:        0,
 		db:                    db,
 		channelViews:          channelviews,
-		GPeerAddress2Index:    gPeerAddress2Index,
-		CacheRemoveEdge:       make(map[int]int),
+		//GPeerAddress2Index:    gPeerAddress2Index,
+		//CacheRemoveEdge:       make(map[int]int),
 	}
 	return
 }
@@ -83,8 +83,7 @@ func (twork *TokenNetwork) HandleChannelOpenedEvent(tokenNetwork common.Address,
 	cview1 := InitChannelView(token, channelID, participant1, participant2, big.NewInt(0), StateChannelOpen, nil, twork.db)
 	cview2 := InitChannelView(token, channelID, participant2, participant1, big.NewInt(0), StateChannelOpen, nil, twork.db)
 
-	//新的通道双方
-	if _, exist := twork.ChannelID2Address[channelID]; !exist {
+	/*if _, exist := twork.ChannelID2Address[channelID]; !exist {
 		addrIndex := 0
 		addrIndex = len(twork.GPeerAddress2Index)
 		if _, exist := twork.GPeerAddress2Index[participant1]; !exist {
@@ -97,7 +96,7 @@ func (twork *TokenNetwork) HandleChannelOpenedEvent(tokenNetwork common.Address,
 		}
 		twork.PeerRelationshipGraph.AddEdge(twork.GPeerAddress2Index[participant1], twork.GPeerAddress2Index[participant2], 100)
 		twork.PeerRelationshipGraph.AddEdge(twork.GPeerAddress2Index[participant2], twork.GPeerAddress2Index[participant1], 100)
-	}
+	}*/
 	//cache channel->participants
 	twork.ChannelID2Address[channelID] = participant
 
@@ -156,8 +155,8 @@ func (twork *TokenNetwork) HandleChannelClosedEvent(tokenNetwork common.Address,
 	participant1 := participants[0]
 	participant2 := participants[1]
 
-	twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant1], twork.GPeerAddress2Index[participant2])
-	twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant2], twork.GPeerAddress2Index[participant1])
+	/*twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant1], twork.GPeerAddress2Index[participant2])
+	twork.PeerRelationshipGraph.RemoveEdge(twork.GPeerAddress2Index[participant2], twork.GPeerAddress2Index[participant1])*/
 	//标记通道禁用
 	cview1 := InitChannelView(token, channelID, participant1, participant2, big.NewInt(0), StateChannelClose, nil, twork.db)
 	cview2 := InitChannelView(token, channelID, participant2, participant1, big.NewInt(0), StateChannelClose, nil, twork.db)
@@ -207,7 +206,7 @@ func (twork *TokenNetwork) HandleChannelWithdrawEvent(tokenNetwork common.Addres
 func (twork *TokenNetwork) UpdateBalance(
 	channelID common.Hash,
 	signer common.Address, //signer=谁的balance proof
-	nonce int,
+	nonce uint64,
 	transferredAmount *big.Int,
 	lockedAmount *big.Int,
 ) (err error) {
@@ -234,7 +233,7 @@ func (twork *TokenNetwork) UpdateBalance(
 		return fmt.Errorf("Balance proof signature error")
 	}
 
-	var oldNonce int
+	var oldNonce uint64
 	oldNonce, err = twork.db.GetLastNonceByChannel(nil, channelID.String(), signer.String(), partner.String())
 	if err != nil {
 		return fmt.Errorf("Can not validate nonce(internal error),nonce=%s", nonce)
@@ -269,99 +268,73 @@ type pathResult struct {
 }
 
 // GetPaths get shortest path
-func (twork *TokenNetwork) GetPaths(
-	source common.Address,
-	target common.Address,
-	value *big.Int,
-	limitPaths int,
-	sortDemand string,
+func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
+	value *big.Int,limitPaths int,sortDemand string,
 ) (pathinfos []interface{}, err error) {
-	xsource := twork.GPeerAddress2Index[source]
-	xtarget := twork.GPeerAddress2Index[target]
-	//还原上次因计算移除的边，确保最新的判断标准
-	for fEdgeIndex, tEdgeIndex := range twork.CacheRemoveEdge {
-		twork.PeerRelationshipGraph.AddEdge(fEdgeIndex, tEdgeIndex, 100)
-	}
-
-	/*//test case:
-	gMapToIndex := make(map[common.Address]int)
-	index1 := len(gMapToIndex)
-	fmt.Println(index1)
-	gMapToIndex[common.HexToAddress("0xc67f23CE04ca5E8DD9f2E1B5eD4FaD877f79267A")] = index1
-	index2 := len(gMapToIndex)
-	fmt.Println(index2)
-	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216174")] = index2
-	index3 := len(gMapToIndex)
-	fmt.Println(index3)
-	gMapToIndex[common.HexToAddress("0xd4bd8fAcD16704C2B6Ed4B06775467d44f216188")] = index3
-
-	xsource = 3
-	xtarget = 2
-	twork.PeerRelationshipGraph=*dijkstra.NewEmptyGraph()
-	twork.PeerRelationshipGraph.AddEdge(0, 1, 100)
-	twork.PeerRelationshipGraph.AddEdge(1, 0, 100)
-	twork.PeerRelationshipGraph.AddEdge(1, 2, 50)
-	twork.PeerRelationshipGraph.AddEdge(2, 1, 50)
-	twork.PeerRelationshipGraph.AddEdge(2, 3, 10)
-	twork.PeerRelationshipGraph.AddEdge(3, 2, 10)
-	twork.PeerRelationshipGraph.AddEdge(1, 3, 10)
-	twork.PeerRelationshipGraph.AddEdge(3, 1, 10)
-	twork.PeerRelationshipGraph.AddEdge(4, 5, 10)
-	twork.PeerRelationshipGraph.AddEdge(5, 4, 10)
-	twork.PeerRelationshipGraph.RemoveEdge(1, 0) //删除本次计算余额不够的边（一次计算用）
-	twork.PeerRelationshipGraph.RemoveEdge(0, 1)
-	*/
-	//todo 删除余额不够的边,(删除节点不在线所处的通道，删除节点类型是手机的节点所处的通道)
+	//todo 1\移除余额不够的边,2\移除节点不在线所处的通道,3\移除节点类型是手机的节点所处的通道matrix,4\移除节点不在线所处的所有通道matrix
+	//检索出所有的节点的数据
 	latestJudgements, err := twork.db.GetLatestFeeJudge(nil)
 	if err != nil {
-		return nil, fmt.Errorf("Can not get graph's status,err=%s", err)
+		return nil, fmt.Errorf("Can not get peer graph's data,err=%s", err)
 	}
-	for _, v := range latestJudgements {
-		// remove edge when channel status=close
-		p1Index := twork.GPeerAddress2Index[common.HexToAddress(v.Participant1)]
-		p2Index := twork.GPeerAddress2Index[common.HexToAddress(v.Participant2)]
-		if v.ChannelStatus == StateChannelClose {
-			twork.PeerRelationshipGraph.RemoveEdge(p1Index, p2Index)
-			twork.PeerRelationshipGraph.RemoveEdge(p2Index, p1Index)
-			twork.CacheRemoveEdge[p1Index] = p2Index
-			twork.CacheRemoveEdge[p2Index] = p1Index
-		}
-		// remove edge when channel balance*fee_rate<value
-		var feeJudge float64
-		var xbalance float64
-		if v.PeerAddr == v.Participant1 {
-			xbalance, err = strconv.ParseFloat(strconv.FormatInt(v.P1Balance, 10), 32)
-			if err != nil {
-				return nil, fmt.Errorf("Formatting error(balance*fee_rate)")
-			}
-		} else {
-			xbalance, err = strconv.ParseFloat(strconv.FormatInt(v.P2Balance, 10), 32)
-			if err != nil {
-				return nil, fmt.Errorf("Formatting error(balance*fee_rate)")
-			}
-		}
-		xfee, err := strconv.ParseFloat(v.FeeRate, 32)
-		if err != nil {
-			return nil, fmt.Errorf("Formatting error(fee_rate)")
-		}
 
-		feeJudge = xbalance * xfee
-		xvalue, err := strconv.ParseFloat(value.String(), 32)
-		if err != nil {
-			return nil, fmt.Errorf("Formatting error(value)")
+	djGraph := *dijkstra.NewEmptyGraph()
+	gPeerToIndex := make(map[common.Address]int)
+	gIndex:=-1
+	//作图，作图是把本次计算不符合上述条件的移除掉
+	for _, peerData := range latestJudgements {
+		//该节点所处通道是关闭状态的
+		if peerData.ChannelStatus==StateChannelClose{
+			continue
 		}
-		if feeJudge >= xvalue {
-			if v.PeerAddr == v.Participant1 {
-				twork.PeerRelationshipGraph.RemoveEdge(p1Index, p2Index)
-				twork.CacheRemoveEdge[p1Index] = p2Index
-			} else {
-				twork.PeerRelationshipGraph.RemoveEdge(p2Index, p1Index)
-				twork.CacheRemoveEdge[p2Index] = p1Index
+		//===========================================
+		var peerBalance int64
+		if peerData.PeerAddr == peerData.Participant1 {
+			peerBalance=peerData.P1Balance
+		} else {
+			peerBalance=peerData.P2Balance
+		}
+		//该节点所处通道的余额不够
+		if peerBalance<value.Int64(){
+			continue
+		}
+		peerHex:=common.HexToAddress(peerData.PeerAddr)
+		//===========================================
+		if peerData.PeerAddr == peerData.Participant1 {
+			if _,exist:=gPeerToIndex[peerHex];!exist {
+				gIndex++
+				gPeerToIndex[peerHex] = gIndex
 			}
+			if _,exist:=gPeerToIndex[common.HexToAddress(peerData.Participant2)];!exist {
+				gIndex++
+				gPeerToIndex[common.HexToAddress(peerData.Participant2)] = gIndex
+			}
+			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant2)],int(peerBalance))
+		}else {
+			if _,exist:=gPeerToIndex[peerHex];!exist {
+				gIndex++
+				gPeerToIndex[peerHex] = gIndex
+			}
+			if _,exist:=gPeerToIndex[common.HexToAddress(peerData.Participant1)];!exist {
+				gIndex++
+				gPeerToIndex[common.HexToAddress(peerData.Participant1)] = gIndex
+			}
+			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant1)],int(peerBalance))
 		}
 	}
-	result := twork.PeerRelationshipGraph.AllShortestPath(xsource, xtarget)
-	for k, pathSlice := range result {
+	if _,exist:=gPeerToIndex[source];!exist{
+		return nil, fmt.Errorf("There is no suitable path")
+	}
+	if _,exist:=gPeerToIndex[target];!exist{
+		return nil, fmt.Errorf("There is no suitable path")
+	}
+	xsource := gPeerToIndex[source]
+	xtarget := gPeerToIndex[target]
+	djResult := djGraph.AllShortestPath(xsource, xtarget)
+	if djResult==nil{
+		return nil, fmt.Errorf("There is no suitable path")
+	}
+	for k, pathSlice := range djResult {
 		sinPathInfo := &pathResult{}
 		sinPathInfo.PathID = k
 		sinPathInfo.PathHop = len(pathSlice) - 2
@@ -371,7 +344,7 @@ func (twork *TokenNetwork) GetPaths(
 		pathSlice = removePeer(pathSlice, 0)
 		pathSlice = removePeer(pathSlice, len(pathSlice)-1)
 		for _, peerIndex := range pathSlice {
-			for addr, index := range twork.GPeerAddress2Index {
+			for addr, index := range gPeerToIndex {
 				if index == peerIndex {
 					xaddr = append(xaddr, addr)
 					//calc fee_rate per peer
@@ -395,13 +368,12 @@ func (twork *TokenNetwork) GetPaths(
 			return nil, fmt.Errorf("Formatting error(value per peer in path)")
 		}
 		sinPathInfo.Fee = valuef * totalfeerates
-
 		pathinfos = append(pathinfos, sinPathInfo)
 	}
-	//fmt.Println(result)
 	return
 }
 
+// removePeer remove source and target peer from best-path result
 func removePeer(s []int, i int) []int {
 	return append(s[0:i], s[i+1:]...)
 }
