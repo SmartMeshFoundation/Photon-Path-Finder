@@ -323,8 +323,8 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 				gIndex++
 				gPeerToIndex[common.HexToAddress(peerData.Participant1)] = gIndex
 			}
-			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant1)],int(peerBalance1))
-			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)],gPeerToIndex[peerHex],int(peerBalance0))
+			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant1)],int(peerBalance0))
+			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)],gPeerToIndex[peerHex],int(peerBalance1))
 		}
 	}
 	if _,exist:=gPeerToIndex[source];!exist{
