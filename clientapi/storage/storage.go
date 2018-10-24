@@ -3,9 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
-
 	"sort"
-
 	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
 	_ "github.com/lib/pq"

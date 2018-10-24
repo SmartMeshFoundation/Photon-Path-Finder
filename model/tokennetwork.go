@@ -288,14 +288,17 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 			continue
 		}
 		//===========================================
-		var peerBalance int64
+		var peerBalance0 int64
+		var peerBalance1 int64
 		if peerData.PeerAddr == peerData.Participant1 {
-			peerBalance=peerData.P1Balance
+			peerBalance0=peerData.P1Balance
+			peerBalance1=peerData.P2Balance
 		} else {
-			peerBalance=peerData.P2Balance
+			peerBalance0=peerData.P2Balance
+			peerBalance1=peerData.P1Balance
 		}
 		//该节点所处通道的余额不够
-		if peerBalance<value.Int64(){
+		if peerBalance0<value.Int64(){
 			continue
 		}
 		peerHex:=common.HexToAddress(peerData.PeerAddr)
@@ -309,7 +312,8 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 				gIndex++
 				gPeerToIndex[common.HexToAddress(peerData.Participant2)] = gIndex
 			}
-			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant2)],int(peerBalance))
+			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant2)],int(peerBalance0))
+			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant2)],gPeerToIndex[peerHex],int(peerBalance1))
 		}else {
 			if _,exist:=gPeerToIndex[peerHex];!exist {
 				gIndex++
@@ -319,7 +323,8 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 				gIndex++
 				gPeerToIndex[common.HexToAddress(peerData.Participant1)] = gIndex
 			}
-			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant1)],int(peerBalance))
+			djGraph.AddEdge(gPeerToIndex[peerHex],gPeerToIndex[common.HexToAddress(peerData.Participant1)],int(peerBalance0))
+			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)],gPeerToIndex[peerHex],int(peerBalance0))
 		}
 	}
 	if _,exist:=gPeerToIndex[source];!exist{

@@ -2,23 +2,22 @@ package storage
 
 import (
 	"bytes"
-	"database/sql"
-	"fmt"
 	"testing"
-
-	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"strings"
+	"database/sql"
+	ycommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func setupDb(t *testing.T) *Database {
+func SetupDb(t *testing.T) *Database {
 	var dataSourceName = "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
 	var db *sql.DB
 	var err error
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
 		return nil
 	}
-	partitions := xcommon.PartitionOffsetStatements{}
+	partitions := ycommon.PartitionOffsetStatements{}
 	if err = partitions.Prepare(db, "pfs"); err != nil {
 		return nil
 	}
@@ -54,14 +53,14 @@ func TestNewDatabase(t *testing.T) {
 }
 
 func TestDatabase_SaveTokensStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress()
 	tokennetwork := utils.NewRandomAddress()
 	err := db.SaveTokensStorage(nil, token.String(), tokennetwork.String())
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(tokennetwork)
+	t.Log(tokennetwork)
 	tm, err := db.GetAllTokensStorage(nil)
 	if err != nil {
 		t.Error(err)
@@ -73,25 +72,25 @@ func TestDatabase_SaveTokensStorage(t *testing.T) {
 }
 
 func TestDatabase_GetAllTokensStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	tokenmap, err := db.GetAllTokensStorage(nil)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(tokenmap)
+	t.Log(tokenmap)
 }
 
 func TestDatabase_GetAllChannelHistoryStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	cis, err := db.GetAllChannelHistoryStorage(nil)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(cis)
+	t.Log(cis)
 }
 
 func TestDatabase_SaveLatestBlockNumberStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	err := db.SaveLatestBlockNumberStorage(nil, 555)
 	if err != nil {
 		t.Error(err)
@@ -106,7 +105,7 @@ func TestDatabase_SaveLatestBlockNumberStorage(t *testing.T) {
 }
 
 func TestDatabase_InitChannelInfoStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress().String()
 	channelID := utils.NewRandomHash().String()
 	partipant1 := utils.NewRandomAddress().String()
@@ -118,7 +117,7 @@ func TestDatabase_InitChannelInfoStorage(t *testing.T) {
 }
 
 func TestDatabase_UpdateChannelStatusStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress().String()
 	channelID := utils.NewRandomHash().String()
 	channelStatus := "close"
@@ -131,7 +130,7 @@ func TestDatabase_UpdateChannelStatusStorage(t *testing.T) {
 }
 
 func TestDatabase_UpdateChannelDepositStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress().String()
 	channelID := utils.NewRandomHash().String()
 	status := "deposit"
@@ -145,7 +144,7 @@ func TestDatabase_UpdateChannelDepositStorage(t *testing.T) {
 }
 
 func TestDatabase_WithdrawChannelInfoStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress().String()
 	channelID := utils.NewRandomHash().String()
 	status := "withdraw"
@@ -170,7 +169,7 @@ func TestDbFideldIndex(t *testing.T) {
 
 
 func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	token := utils.NewRandomAddress().String()
 	channelID := utils.NewRandomHash().String()
 	status := "updatebalance"
@@ -179,7 +178,7 @@ func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 	transferredAmount:=int64(22)
 	receivedAmount:=int64(11)
 	lockedAmount:=int64(11)
-	participantNonce:=1
+	participantNonce:=uint64(5)
 	err := db.UpdateBalanceProofStorage(nil, token, channelID, status, participant, partner, transferredAmount,receivedAmount,lockedAmount,participantNonce)
 	if err != nil {
 		t.Error(err)
@@ -190,14 +189,14 @@ func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 	}
 	for _,v:=range cis{
 		if v.ChannelID==channelID{
-			t.Logf(fmt.Sprintf("balance proof message: %s", utils.StringInterface(v, 2)))
+			t.Logf("balance proof message: %s", utils.StringInterface(v, 2))
 			break
 		}
 	}
 }
 
 func TestDatabase_GetTokenByChannelID(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	channelID := utils.NewRandomHash().String()
 	token ,err := db.GetTokenByChannelID(nil, channelID)
 	if err != nil {
@@ -213,7 +212,7 @@ func TestDatabase_GetTokenByChannelID(t *testing.T) {
 }
 
 func TestDatabase_GetLastNonceByChannel(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	channelID := utils.NewRandomHash().String()
 	peerAddress := utils.NewRandomAddress().String()
 	partner := utils.NewRandomAddress().String()
@@ -224,15 +223,28 @@ func TestDatabase_GetLastNonceByChannel(t *testing.T) {
 	t.Log(nonce)
 }
 
-//func (d *Database) SaveRateFeeStorage(ctx context.Context, channelID, peerAddress, feeRate string) (err error) {
 func TestDatabase_SaveRateFeeStorage(t *testing.T) {
-	db := setupDb(t)
+	db := SetupDb(t)
 	channelID := utils.NewRandomHash().String()
 	peerAddress := utils.NewRandomAddress().String()
-	feeRate := "xxx$%^&*(()(56236547"
-	err:=db.SaveRateFeeStorage(nil,channelID,peerAddress,feeRate)
+	feeRate := "0.099"
+	err := db.SaveRateFeeStorage(nil, channelID, peerAddress, feeRate)
 	if err != nil {
 		t.Error(err)
 	}
-	//
+	saveok := false
+	// random(address,hash) may cause mismatch of tables:channel_info and fee_rate
+	pfb, err := db.GetLatestFeeJudge(nil)
+	if err != nil {
+		if strings.Index(err.Error(), "*string") == -1 {
+			t.Error(err)
+		}
+	}
+	for _, v := range pfb {
+		if v.PeerAddr == peerAddress {
+			saveok = true
+			break
+		}
+	}
+	t.Log(saveok)
 }

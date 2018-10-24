@@ -1,18 +1,14 @@
 package model
 
 import (
-	"fmt"
-	"math/big"
 	"testing"
-
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 )
 
 func TestInitChannelView(t *testing.T) {
 
 }
 
-func TestChannelView_UpdateCapacity(t *testing.T) {
+/*func TestChannelView_UpdateCapacity(t *testing.T) {
 	xdeposit := big.NewInt(10)
 	xamount := big.NewInt(0)
 
@@ -40,4 +36,4 @@ func TestChannelView_UpdateCapacity(t *testing.T) {
 	if err != nil {
 		fmt.Printf("TestChannelView_UpdateCapacity err=%s", err)
 	}
-}
+}*/
