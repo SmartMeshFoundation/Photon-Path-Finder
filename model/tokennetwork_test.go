@@ -4,12 +4,16 @@ import (
 	"testing"
 	"github.com/nkbai/dijkstra"
 	"math/big"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 )
 
 func TestTokenNetwork_GetPaths(t *testing.T) {
 
 	db,err:=storage.NewDatabase("fps_xxx")
-
+	if err!=nil{
+		t.Error(err)
+	}
 	g1:=*dijkstra.NewEmptyGraph()//必须做双向的
 	g1.AddEdge(0, 1, 600)
 	g1.AddEdge(1, 0, 600)
@@ -35,3 +39,47 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	}
 	t.Log("test 3:",paths3)
 }
+
+func TestTokenNetwork_UpdateBalance(t *testing.T) {
+	dbx,err:=storage.NewDatabase("fps_xxx")
+	if err!=nil{
+		t.Error(err)
+	}
+	channelID:=utils.NewRandomHash()
+	signer:=utils.NewRandomAddress()
+	nonce:=uint64(6)
+	transferAmount:=big.NewInt(22)
+	lockAmount:=big.NewInt(0)
+	xtwork:=&TokenNetwork{
+		db:dbx,
+	}
+	err=xtwork.UpdateBalance(channelID,signer,nonce,transferAmount,lockAmount)
+	if err!=nil{
+		t.Error(err)
+	}
+}
+
+
+
+func TestTokenNetwork_HandleChannelWithdrawEvent(t *testing.T) {
+	tokenNetwork:=utils.NewRandomAddress()
+	channelID:=utils.NewRandomHash()
+	participant1:=utils.NewRandomAddress()
+	participant2:=utils.NewRandomAddress()
+	participant1Balance:=big.NewInt(10)
+	participant2Balance:=big.NewInt(5)
+	dbx,err:=storage.NewDatabase("fps_xxx")
+	if err!=nil{
+		t.Error(err)
+	}
+
+	xtwork:=&TokenNetwork{
+		db:dbx,
+	}
+	err=xtwork.HandleChannelWithdrawEvent(tokenNetwork,channelID,participant1,participant2,participant1Balance,participant2Balance)
+	if err!=nil{
+		t.Error(err)
+	}
+}
+
+

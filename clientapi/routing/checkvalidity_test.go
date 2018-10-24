@@ -9,7 +9,7 @@ import (
 func TestVerifySinature(t *testing.T) {
 	br := &BalanceProof{
 		Nonce:             1,
-		TransferredAmount: big.NewInt(32),
+		TransferAmount: big.NewInt(32),
 		LocksRoot:         utils.EmptyHash,
 		AdditionalHash:    utils.EmptyHash,
 		ChannelID:         utils.NewRandomHash(),
