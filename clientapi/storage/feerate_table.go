@@ -22,14 +22,19 @@ const insertFeeRateSQL = "" +
 	"INSERT INTO tb_fee_rate(channel_id,peer_address,fee_rate,effitime) VALUES(" +
 	"$1,$2,$3,$4)"
 
-// selectFeeRateSQL sql for select-FeeRate
+// selectLatestFeeRateSQL sql for select-FeeRate
 const selectLatestFeeRateSQL = "" +
 	"SELECT fee_rate,effitime FROM tb_fee_rate WHERE channel_id=$1 and peer_address=$2 ORDER BY effitime DESC LIMIT 1"
+
+// updateLatestFeeRateSQL sql for select-FeeRate
+const updateLatestFeeRateSQL = "" +
+	"UPDATE tb_fee_rate SET fee_rate=$1,effitime=$2 WHERE channel_id=$3 and peer_address=$4"
 
 // balanceStatements interactive with db-operation
 type feeRateStatements struct {
 	insertFeeRateStmt *sql.Stmt
 	selectFeeRateStmt *sql.Stmt
+	updateLatestFeeRateStmt *sql.Stmt
 }
 
 // prepare prepare tb_balance
@@ -44,6 +49,9 @@ func (s *feeRateStatements) prepare(db *sql.DB) (err error) {
 	if s.selectFeeRateStmt, err = db.Prepare(selectLatestFeeRateSQL); err != nil {
 		return
 	}
+	if s.updateLatestFeeRateStmt, err = db.Prepare(updateLatestFeeRateSQL); err != nil {
+		return
+	}
 	return
 }
 
@@ -52,8 +60,8 @@ func (s *feeRateStatements) insertFeeRate(ctx context.Context,
 	channeID, peerAddress, feeRate string,
 ) (err error) {
 	timeMs := time.Now().UnixNano() / 1000000
-	stmt := s.insertFeeRateStmt
-	_, err = stmt.Exec(channeID, peerAddress, feeRate, timeMs)
+	stmt := s.updateLatestFeeRateStmt
+	_, err = stmt.Exec(feeRate, timeMs,channeID, peerAddress)
 
 	return
 }

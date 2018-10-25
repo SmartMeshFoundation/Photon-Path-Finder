@@ -123,13 +123,19 @@ const (
 		"WHERE channel_id = $4 AND participant2=$5 "
 
 	// updateChannelWithdrawSQL sql for update-selectFeeJudgeSQL
-	selectFeeJudgeSQL = "" +
+	/*selectFeeJudgeSQL = "" +
 		"SELECT tb_fee_rate.peer_address,tb_fee_rate.fee_rate," +
 		"tb_channel_info.channel_id,tb_channel_info.channel_status," +
 		"tb_channel_info.participant1,tb_channel_info.participant2,tb_channel_info.p1_balance,tb_channel_info.p2_balance " +
 		"FROM tb_fee_rate LEFT OUTER JOIN tb_channel_info ON " +
 		"tb_fee_rate.channel_id=tb_channel_info.channel_id WHERE tb_fee_rate.effitime IN (SELECT " +
-		"MAX(effitime) FROM tb_fee_rate GROUP BY peer_address)"
+		"MAX(effitime) FROM tb_fee_rate GROUP BY peer_address)"*/
+	selectFeeJudgeSQL = "" +
+		"SELECT tb_fee_rate.peer_address,tb_fee_rate.fee_rate," +
+		"tb_channel_info.channel_id,tb_channel_info.channel_status," +
+		"tb_channel_info.participant1,tb_channel_info.participant2,tb_channel_info.p1_balance,tb_channel_info.p2_balance " +
+		"FROM tb_fee_rate LEFT OUTER JOIN tb_channel_info ON " +
+		"tb_fee_rate.channel_id=tb_channel_info.channel_id "
 
 	// initFeeTableSQL sql for insert-initFeeTableSQL
 	initFeeTableSQL = "" +

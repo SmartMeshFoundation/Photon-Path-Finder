@@ -362,6 +362,7 @@ func GetSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr st
 	for k,v:=range peerToIndex{
 		if v==nextIndex{
 			nextAddress=k
+			break
 		}
 	}
 	var myFeeRate string
