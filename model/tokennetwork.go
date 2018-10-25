@@ -275,9 +275,11 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 				gIndex++
 				gPeerToIndex[common.HexToAddress(peerData.Participant2)] = gIndex
 			}
-			djGraph.AddEdge(gPeerToIndex[peerHex], gPeerToIndex[common.HexToAddress(peerData.Participant2)], int(peerBalance0))
-			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant2)], gPeerToIndex[peerHex], int(peerBalance1))
-			if peerBalance1<value.Int64(){
+			weight0 := getWeight(peerHex.String(), peerData.Participant2, latestJudgements, value.Int64())
+			weight1 := getWeight(peerData.Participant2, peerHex.String(), latestJudgements, value.Int64())
+			djGraph.AddEdge(gPeerToIndex[peerHex], gPeerToIndex[common.HexToAddress(peerData.Participant2)], weight0) //int(peerBalance0)
+			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant2)], gPeerToIndex[peerHex], weight1) //int(peerBalance1)
+			if peerBalance1 < value.Int64() {
 				djGraph.RemoveEdge(gPeerToIndex[common.HexToAddress(peerData.Participant2)], gPeerToIndex[peerHex])
 			}
 		} else {
@@ -289,9 +291,11 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 				gIndex++
 				gPeerToIndex[common.HexToAddress(peerData.Participant1)] = gIndex
 			}
-			djGraph.AddEdge(gPeerToIndex[peerHex], gPeerToIndex[common.HexToAddress(peerData.Participant1)], int(peerBalance0))
-			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)], gPeerToIndex[peerHex], int(peerBalance1))
-			if peerBalance1<value.Int64(){
+			weight0 := getWeight(peerHex.String(), peerData.Participant1, latestJudgements, value.Int64())
+			weight1 := getWeight(peerData.Participant1, peerHex.String(), latestJudgements, value.Int64())
+			djGraph.AddEdge(gPeerToIndex[peerHex], gPeerToIndex[common.HexToAddress(peerData.Participant1)], weight0) //int(peerBalance0)
+			djGraph.AddEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)], gPeerToIndex[peerHex], weight1) //int(peerBalance1)
+			if peerBalance1 < value.Int64() {
 				djGraph.RemoveEdge(gPeerToIndex[common.HexToAddress(peerData.Participant1)], gPeerToIndex[peerHex])
 			}
 		}
@@ -316,7 +320,7 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 		var totalfeerates float64
 		// ignore peer_from and peer_to from result
 		var calcPath []int
-		calcPath= pathSlice
+		calcPath = pathSlice
 		calcPath = removePeer(calcPath, 0)
 		calcPath = removePeer(calcPath, len(calcPath)-1)
 		for _, peerIndex := range calcPath {
@@ -334,8 +338,8 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 							break
 						}
 					}*/
-					xfee,err:=GetSomeChannelFeeRate(latestJudgements,pathSlice,addr.String(),index,gPeerToIndex)
-					if err!=nil{
+					xfee, err := getSomeChannelFeeRate(latestJudgements, pathSlice, addr.String(), index, gPeerToIndex)
+					if err != nil {
 						return nil, err
 					}
 					totalfeerates += xfee
@@ -354,8 +358,31 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 	return
 }
 
+//getWeight put weight for peer in some channel
+func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValue int64)(weight int) {
+	var myFeeRate string
+	for _, data := range sp {
+		if data.PeerAddr == peerAddr && (nextAddress == data.Participant1 || nextAddress == data.Participant2) {
+			myFeeRate = data.FeeRate
+			break
+		}
+	}
+	xfee, err := strconv.ParseFloat(myFeeRate, 32)
+	if err != nil {
+		fmt.Println("Formatting error(fee_rate)")
+	}
+	var feeJudge float64
+	value, err := strconv.ParseFloat(strconv.FormatInt(xValue, 10), 32)
+	if err != nil {
+		fmt.Println("Formatting error(send_amount)")
+	}
+	feeJudge = value * xfee
+	weight = int(feeJudge)
+	return
+}
 
-func GetSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr string,myIndex int,peerToIndex map[common.Address]int) (xfee float64 ,err error){
+// getSomeChannelFeeRate get fee_rate when the peer in some channel
+func getSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr string,myIndex int,peerToIndex map[common.Address]int) (xfee float64 ,err error){
 	nexti:=0
 	for i, peerIndex := range onePath {
 		if peerIndex==myIndex{

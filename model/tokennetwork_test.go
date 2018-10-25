@@ -57,7 +57,6 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	}
 	t.Log("test 1:",paths1)
 
-	//反之
 	paths2, err := view.GetPaths(common.HexToAddress(target), common.HexToAddress(source), big.NewInt(1), 1, "")
 	if err != nil {
 		t.Error(err)
@@ -66,11 +65,12 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 }
 
 func TestTokenNetwork_UpdateBalance(t *testing.T) {
-	dbx,err:=storage.NewDatabase("fps_xxx")
+	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
 	if err!=nil{
 		t.Error(err)
 	}
 	channelID:=utils.NewRandomHash()
+	channelID=common.HexToHash("0x1212121212121212121212121212121212121212121212121212121212121212")
 	signer:=utils.NewRandomAddress()
 	nonce:=uint64(6)
 	transferAmount:=big.NewInt(22)
@@ -85,15 +85,15 @@ func TestTokenNetwork_UpdateBalance(t *testing.T) {
 }
 
 
-
 func TestTokenNetwork_HandleChannelWithdrawEvent(t *testing.T) {
 	tokenNetwork:=utils.NewRandomAddress()
 	channelID:=utils.NewRandomHash()
+	channelID=common.HexToHash("0x1212121212121212121212121212121212121212121212121212121212121212")
 	participant1:=utils.NewRandomAddress()
 	participant2:=utils.NewRandomAddress()
 	participant1Balance:=big.NewInt(10)
 	participant2Balance:=big.NewInt(5)
-	dbx,err:=storage.NewDatabase("fps_xxx")
+	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
 	if err!=nil{
 		t.Error(err)
 	}
@@ -107,4 +107,22 @@ func TestTokenNetwork_HandleChannelWithdrawEvent(t *testing.T) {
 	}
 }
 
+//func (twork *TokenNetwork) HandleChannelClosedEvent(tokenNetwork common.Address, channelID common.Hash) (err error) {
+func TestTokenNetwork_HandleChannelClosedEvent(t *testing.T) {
+	tokenNetwork:=utils.NewRandomAddress()
+	channelID:=utils.NewRandomHash()
+	channelID=common.HexToHash("0x1212121212121212121212121212121212121212121212121212121212121212")
+	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
+	if err!=nil{
+		t.Error(err)
+	}
+
+	xtwork:=&TokenNetwork{
+		db:dbx,
+	}
+	err=xtwork.HandleChannelClosedEvent(tokenNetwork,channelID)
+	if err!=nil{
+		t.Error(err)
+	}
+}
 
