@@ -405,7 +405,7 @@ func (s *channelInfoStatements) selectLatestFeeJudge(ctx context.Context) (peerF
 			&p.P2Balance,
 		)
 		if err != nil {
-			return
+			continue
 		}
 		peerFeeAndBalances = append(peerFeeAndBalances, &p)
 	}

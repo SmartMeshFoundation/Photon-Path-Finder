@@ -10,16 +10,38 @@ import (
 )
 
 func TestTokenNetwork_GetPaths(t *testing.T) {
-	g1:=*dijkstra.NewEmptyGraph()//必须做双向的
+	g1:=*dijkstra.NewEmptyGraph()
 	g1.AddEdge(0, 1, 600)
 	g1.AddEdge(1, 0, 200)
 	g1.AddEdge(1, 2, 700)
 	g1.AddEdge(2, 1, 700)
 	g1.AddEdge(2, 3, 100)
-	g1.AddEdge(3, 2, 100)
-	g1.RemoveEdge(1,3)
-	paths0:=g1.AllShortestPath(0,3)
-	t.Log("test 0:",paths0)
+	g1.AddEdge(3, 4, 100)
+	g1.RemoveEdge(2,1)
+	paths01:=g1.AllShortestPath(0,3)
+	t.Log("test 01:",paths01)
+
+	g1.AddEdge(0, 1, 600)
+	g1.AddEdge(1, 2, 700)
+	g1.AddEdge(2, 3, 100)
+	g1.AddEdge(3, 4, 100)
+	paths02:=g1.AllShortestPath(0,3)
+	t.Log("test 02:",paths02)
+
+	g1.AddEdge(1, 2, 700)
+	g1.AddEdge(2, 3, 100)
+	g1.AddEdge(3, 4, 100)
+	paths03:=g1.AllShortestPath(1,3)
+	t.Log("test 03:",paths03)
+
+	g1.AddEdge(0, 1, 600)
+	g1.AddEdge(1, 0, 200)
+	g1.AddEdge(1, 2, 700)
+	g1.AddEdge(2, 3, 100)
+	g1.AddEdge(3, 4, 100)
+	g1.RemoveEdge(2,1)
+	paths04:=g1.AllShortestPath(0,4)
+	t.Log("test 04:",paths04)
 
 	db,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
 	if err!=nil{
