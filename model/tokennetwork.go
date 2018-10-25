@@ -240,7 +240,7 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 	if err != nil {
 		return nil, fmt.Errorf("Can not get peer graph's data,err=%s", err)
 	}
-
+	//fmt.Println(fmt.Sprintf("-->s%",utils.StringInterface(latestJudgements,2)))
 	djGraph := *dijkstra.NewEmptyGraph()
 	gPeerToIndex := make(map[common.Address]int)
 	gIndex := -1
