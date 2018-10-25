@@ -24,8 +24,10 @@ ratelimited:
   min_path_redundancy: 5
   # path_redundancy_factor
   path_redundancy_factor: 5
-  # DiversityPenDefault
-  DiversityPenDefault: 5
+  # diversity_pen_default
+  diversity_pen_default: 5
+  # stationary_feerate_default
+  stationary_feerate_default: "0.0001"
 
 # The configuration for dendrite logs
 logging:

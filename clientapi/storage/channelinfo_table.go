@@ -253,6 +253,7 @@ func (s *channelInfoStatements) selectOldNonceByChannelID(ctx context.Context, c
 func (s *channelInfoStatements) initChannelInfo(ctx context.Context, token, channelID, channelStatus, partipant1, partipant2 string,
 	p1Status string, p1Transferamount int64, p1Nonce int, p1Lockedamount, p1Deposit, p1Balance int64,
 	p2Status string, p2Transferamount int64, p2Nonce int, p2Lockedamount, p2Deposit, p2Balance int64,
+	defaultFeeRate string,
 ) (err error) {
 	xtoken, err := s.selectTokenByChannelID(nil, channelID)
 	if err != nil {
@@ -265,8 +266,8 @@ func (s *channelInfoStatements) initChannelInfo(ctx context.Context, token, chan
 			p1Status, p1Transferamount, p1Nonce, p1Lockedamount, p1Deposit, p1Balance,
 			p2Status, p2Transferamount, p2Nonce, p2Lockedamount, p2Deposit, p2Balance)
 		stmtinitfee := s.initFeeTableStmt
-		_, err = stmtinitfee.Exec(channelID, partipant1, "0", timeMs)
-		_, err = stmtinitfee.Exec(channelID, partipant2, "0", timeMs)
+		_, err = stmtinitfee.Exec(channelID, partipant1, defaultFeeRate, timeMs)
+		_, err = stmtinitfee.Exec(channelID, partipant2, defaultFeeRate, timeMs)
 	}
 	return
 }

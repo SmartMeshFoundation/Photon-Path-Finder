@@ -47,10 +47,11 @@ type PathFinder struct {
 	} `yaml:"pfs"`
 
 	RateLimited struct {
-		MaxPathPerRequest    int `yaml:"max_path_per_request"`
-		MinPathRedundancy    int `yaml:"min_path_redundancy"`
-		PathRedundancyFactor int `yaml:"path_redundancy_factor"`
-		DiversityPenDefault  int `yaml:"diversity_penDefault"`
+		MaxPathPerRequest        int    `yaml:"max_path_per_request"`
+		MinPathRedundancy        int    `yaml:"min_path_redundancy"`
+		PathRedundancyFactor     int    `yaml:"path_redundancy_factor"`
+		DiversityPenDefault      int    `yaml:"diversity_pen_default"`
+		StationaryFeeRateDefault string `yaml:"stationary_feerate_default"`
 	} `yaml:"ratelimited"`
 
 	// The config for logging informations. Each hook will be added to logrus.
@@ -186,6 +187,9 @@ func (config *PathFinder) setDefaults() {
 	}
 	if config.RateLimited.DiversityPenDefault == 0 {
 		config.RateLimited.DiversityPenDefault = 1000
+	}
+	if config.RateLimited.StationaryFeeRateDefault == "" {
+		config.RateLimited.StationaryFeeRateDefault = "0.0001"
 	}
 }
 

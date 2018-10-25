@@ -376,7 +376,7 @@ func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValu
 	if err != nil {
 		fmt.Println("Formatting error(send_amount)")
 	}
-	if xfee<0.000001{
+	if xfee<0.000000000001{
 		weight=0
 		return
 	}

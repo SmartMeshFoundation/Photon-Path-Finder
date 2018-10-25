@@ -7,6 +7,7 @@ import (
 	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
 	_ "github.com/lib/pq"
+	"strconv"
 )
 
 // Database Data base
@@ -17,6 +18,7 @@ type Database struct {
 	channelinfoStatement       channelInfoStatements
 	tokensStatement            tokensStatements
 	feereteStatement           feeRateStatements
+	feeRateDefault             string
 }
 
 // ChannelInfo db-type as channel info
@@ -58,12 +60,17 @@ type AddressMap map[common.Address]common.Address
 var TokenNetwork2TokenMap map[common.Address]common.Address
 
 // NewDatabase creates a new accounts and profiles database
-func NewDatabase(dataSourceName string) (*Database, error) {
+func NewDatabase(dataSourceName,feeRateDefault string) (*Database, error) {
 	var db *sql.DB
 	var err error
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
 		return nil, err
 	}
+	_, err = strconv.ParseFloat(feeRateDefault, 32)
+	if err!=nil{
+		return nil,err
+	}
+
 	partitions := xcommon.PartitionOffsetStatements{}
 	if err = partitions.Prepare(db, "pfs"); err != nil {
 		return nil, err
@@ -91,7 +98,7 @@ func NewDatabase(dataSourceName string) (*Database, error) {
 	}
 
 	TokenNetwork2TokenMap = make(map[common.Address]common.Address)
-	return &Database{db, partitions, lbs, cis, tss, frs}, nil
+	return &Database{db, partitions, lbs, cis, tss, frs,feeRateDefault}, nil
 }
 
 // SaveTokensStorage Save Latest Tokens Storage
@@ -137,7 +144,7 @@ func (d *Database) InitChannelInfoStorage(ctx context.Context, token, channelID,
 
 	err = d.channelinfoStatement.initChannelInfo(nil, token, channelID, "createchannel", partipantPairs[0], partipantPairs[1],
 		"online", 0, 0, 0, 0, 0,
-		"online", 0, 0, 0, 0, 0)
+		"online", 0, 0, 0, 0, 0,d.feeRateDefault)
 	return
 }
 

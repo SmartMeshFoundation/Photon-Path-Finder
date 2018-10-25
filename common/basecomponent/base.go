@@ -41,7 +41,7 @@ func (bpf *BasePathFinder) Close() error {
 
 // CreateDeviceDB creates a new instance of the balance database. Should only be called once per component.
 func (bpf *BasePathFinder) CreatePfsDB() *storage.Database {
-	db, err := storage.NewDatabase(string(bpf.Cfg.Database.NodeInfos))
+	db, err := storage.NewDatabase(string(bpf.Cfg.Database.NodeInfos),string(bpf.Cfg.RateLimited.StationaryFeeRateDefault))
 	if err != nil {
 		logrus.WithError(err).Panicf("failed to connect to progresSql(db)")
 	}

@@ -239,8 +239,8 @@ func (chainevent *ChainEvents)GetLatestBlockNumber() int64 {
 		logrus.Error("Models (GetLatestBlockNumber) err=",err)
 	}
 	fmt.Println(number)
-	return number
-	//return 0//just test
+	//return number
+	return 0//just test
 }
 
 
