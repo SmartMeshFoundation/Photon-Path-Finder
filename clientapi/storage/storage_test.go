@@ -2,23 +2,19 @@ package storage
 
 import (
 	"bytes"
-	"testing"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
-	"strings"
 	"database/sql"
-	ycommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
+	"strings"
+	"testing"
+
+	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func SetupDb(t *testing.T) *Database {
-	var dataSourceName = "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
+	var dataSourceName = "postgres://pfs:123456@192.168.124.15/pfs_xxx?sslmode=disable"
 	var db *sql.DB
 	var err error
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
-		return nil
-	}
-	partitions := ycommon.PartitionOffsetStatements{}
-	if err = partitions.Prepare(db, "pfs"); err != nil {
 		return nil
 	}
 	lbs := latestBlockNumberStatements{}
@@ -41,14 +37,14 @@ func SetupDb(t *testing.T) *Database {
 	if err != nil {
 		t.Error(err)
 	}
-	defaultFeeRate:="0.00001"
-	return &Database{db, partitions, lbs, cis, tss, frs,defaultFeeRate}
+	defaultFeeRate := "0.00001"
+	return &Database{db, lbs, cis, tss, frs, defaultFeeRate}
 }
 
 func TestNewDatabase(t *testing.T) {
-	dataSourceName := "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
-	defaultFeeRate:="0.00001"
-	_, err := NewDatabase(dataSourceName,defaultFeeRate)
+	dataSourceName := "postgres://pfs:123456@192.168.124.15/pfs_xxx?sslmode=disable"
+	defaultFeeRate := "0.00001"
+	_, err := NewDatabase(dataSourceName, defaultFeeRate)
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,42 +113,42 @@ func TestDatabase_InitChannelInfoStorage(t *testing.T) {
 		t.Error(err)
 	}
 	//path test data
-	token="0x1234567890123456789012345678901234567890"
-	channelID="0x1212121212121212121212121212121212121212121212121212121212121212"
-	partipant1="0x1111111111111111111111111111111111111111"
-	partipant2="0x2222222222222222222222222222222222222222"
+	token = "0x1234567890123456789012345678901234567890"
+	channelID = "0x1212121212121212121212121212121212121212121212121212121212121212"
+	partipant1 = "0x1111111111111111111111111111111111111111"
+	partipant2 = "0x2222222222222222222222222222222222222222"
 	err = db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
 	if err != nil {
 		t.Error(err)
 	}
-	token="0x1234567890123456789012345678901234567890"
-	channelID="0x2323232323232323232323232323232323232323232323232323232323232323"
-	partipant1="0x2222222222222222222222222222222222222222"
-	partipant2="0x3333333333333333333333333333333333333333"
+	token = "0x1234567890123456789012345678901234567890"
+	channelID = "0x2323232323232323232323232323232323232323232323232323232323232323"
+	partipant1 = "0x2222222222222222222222222222222222222222"
+	partipant2 = "0x3333333333333333333333333333333333333333"
 	err = db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
 	if err != nil {
 		t.Error(err)
 	}
-	token="0x1234567890123456789012345678901234567890"
-	channelID="0x3434343434343434343434343434343434343434343434343434343434343434"
-	partipant1="0x3333333333333333333333333333333333333333"
-	partipant2="0x4444444444444444444444444444444444444444"
+	token = "0x1234567890123456789012345678901234567890"
+	channelID = "0x3434343434343434343434343434343434343434343434343434343434343434"
+	partipant1 = "0x3333333333333333333333333333333333333333"
+	partipant2 = "0x4444444444444444444444444444444444444444"
 	err = db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
 	if err != nil {
 		t.Error(err)
 	}
-	token="0x1234567890123456789012345678901234567890"
-	channelID="0x4545454545454545454545454545454545454545454545454545454545454545"
-	partipant1="0x4444444444444444444444444444444444444444"
-	partipant2="0x5555555555555555555555555555555555555555"
+	token = "0x1234567890123456789012345678901234567890"
+	channelID = "0x4545454545454545454545454545454545454545454545454545454545454545"
+	partipant1 = "0x4444444444444444444444444444444444444444"
+	partipant2 = "0x5555555555555555555555555555555555555555"
 	err = db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
 	if err != nil {
 		t.Error(err)
 	}
-	token="0x1234567890123456789012345678901234567890"
-	channelID="0x5656565656565656565656565656565656565656565656565656565656565656"
-	partipant1="0x5555555555555555555555555555555555555555"
-	partipant2="0x6666666666666666666666666666666666666666"
+	token = "0x1234567890123456789012345678901234567890"
+	channelID = "0x5656565656565656565656565656565656565656565656565656565656565656"
+	partipant1 = "0x5555555555555555555555555555555555555555"
+	partipant2 = "0x6666666666666666666666666666666666666666"
 	err = db.InitChannelInfoStorage(nil, token, channelID, partipant1, partipant2)
 	if err != nil {
 		t.Error(err)
@@ -201,15 +197,14 @@ func TestDatabase_WithdrawChannelInfoStorage(t *testing.T) {
 }
 
 func TestDbFideldIndex(t *testing.T) {
-	participant0:="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	partner:="0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-	participant1:="0xcccccccccccccccccccccccccccccccccccccccc"
-	int0:=DbFideldIndex(participant0,partner)
-	int1:=DbFideldIndex(participant1,partner)
-	t.Log("The index after sorting (participant)is ",int0)
-	t.Log("The index after sorting (participant)is ",int1)
+	participant0 := "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	partner := "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	participant1 := "0xcccccccccccccccccccccccccccccccccccccccc"
+	int0 := DbFideldIndex(participant0, partner)
+	int1 := DbFideldIndex(participant1, partner)
+	t.Log("The index after sorting (participant)is ", int0)
+	t.Log("The index after sorting (participant)is ", int1)
 }
-
 
 func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 	db := SetupDb(t)
@@ -218,20 +213,20 @@ func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 	status := "updatebalance"
 	participant := utils.NewRandomAddress().String()
 	partner := utils.NewRandomAddress().String()
-	transferredAmount:=int64(22)
-	receivedAmount:=int64(11)
-	lockedAmount:=int64(11)
-	participantNonce:=uint64(5)
-	err := db.UpdateBalanceProofStorage(nil, token, channelID, status, participant, partner, transferredAmount,receivedAmount,lockedAmount,participantNonce)
+	transferredAmount := int64(22)
+	receivedAmount := int64(11)
+	lockedAmount := int64(11)
+	participantNonce := uint64(5)
+	err := db.UpdateBalanceProofStorage(nil, token, channelID, status, participant, partner, transferredAmount, receivedAmount, lockedAmount, participantNonce)
 	if err != nil {
 		t.Error(err)
 	}
-	cis,err:=db.channelinfoStatement.selectAllChannelInfo(nil)
+	cis, err := db.channelinfoStatement.selectAllChannelInfo(nil)
 	if err != nil {
 		t.Error(err)
 	}
-	for _,v:=range cis{
-		if v.ChannelID==channelID{
+	for _, v := range cis {
+		if v.ChannelID == channelID {
 			t.Logf("balance proof message: %s", utils.StringInterface(v, 2))
 			break
 		}
@@ -241,13 +236,13 @@ func TestDatabase_UpdateBalanceProofStorage(t *testing.T) {
 func TestDatabase_GetTokenByChannelID(t *testing.T) {
 	db := SetupDb(t)
 	channelID := utils.NewRandomHash().String()
-	token ,err := db.GetTokenByChannelID(nil, channelID)
+	token, err := db.GetTokenByChannelID(nil, channelID)
 	if err != nil {
 		t.Error(err)
 	}
 	t.Log(token)
-	channelID="0x0398beea63f098e2d3bb59884be79eda00cf042e39ad65e5c43a0a280f969f93"
-	tokenx ,err := db.GetTokenByChannelID(nil, channelID)
+	channelID = "0x0398beea63f098e2d3bb59884be79eda00cf042e39ad65e5c43a0a280f969f93"
+	tokenx, err := db.GetTokenByChannelID(nil, channelID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -259,7 +254,7 @@ func TestDatabase_GetLastNonceByChannel(t *testing.T) {
 	channelID := utils.NewRandomHash().String()
 	peerAddress := utils.NewRandomAddress().String()
 	partner := utils.NewRandomAddress().String()
-	nonce,err:=db.GetLastNonceByChannel(nil,channelID,peerAddress,partner)
+	nonce, err := db.GetLastNonceByChannel(nil, channelID, peerAddress, partner)
 	if err != nil {
 		t.Error(err)
 	}
