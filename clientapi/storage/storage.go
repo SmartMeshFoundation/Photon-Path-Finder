@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"sort"
+	"strconv"
+
 	xcommon "github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
 	"github.com/ethereum/go-ethereum/common"
 	_ "github.com/lib/pq"
-	"strconv"
 )
 
 // Database Data base
@@ -60,15 +61,15 @@ type AddressMap map[common.Address]common.Address
 var TokenNetwork2TokenMap map[common.Address]common.Address
 
 // NewDatabase creates a new accounts and profiles database
-func NewDatabase(dataSourceName,feeRateDefault string) (*Database, error) {
+func NewDatabase(dataSourceName, feeRateDefault string) (*Database, error) {
 	var db *sql.DB
 	var err error
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
 		return nil, err
 	}
 	_, err = strconv.ParseFloat(feeRateDefault, 32)
-	if err!=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 
 	partitions := xcommon.PartitionOffsetStatements{}
@@ -98,7 +99,7 @@ func NewDatabase(dataSourceName,feeRateDefault string) (*Database, error) {
 	}
 
 	TokenNetwork2TokenMap = make(map[common.Address]common.Address)
-	return &Database{db, partitions, lbs, cis, tss, frs,feeRateDefault}, nil
+	return &Database{db, partitions, lbs, cis, tss, frs, feeRateDefault}, nil
 }
 
 // SaveTokensStorage Save Latest Tokens Storage
@@ -144,7 +145,7 @@ func (d *Database) InitChannelInfoStorage(ctx context.Context, token, channelID,
 
 	err = d.channelinfoStatement.initChannelInfo(nil, token, channelID, "createchannel", partipantPairs[0], partipantPairs[1],
 		"online", 0, 0, 0, 0, 0,
-		"online", 0, 0, 0, 0, 0,d.feeRateDefault)
+		"online", 0, 0, 0, 0, 0, d.feeRateDefault)
 	return
 }
 
@@ -230,7 +231,7 @@ func (d *Database) GetLastestRateFeeStorage(ctx context.Context, channelID, peer
 }
 
 // GetLatestFeeJudge refush peer's balance and lasest fee
-func (d *Database) GetLatestFeeJudge(ctx context.Context) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
-	peerFeeAndBalances, err = d.channelinfoStatement.selectLatestFeeJudge(ctx)
+func (d *Database) GetLatestFeeJudge(ctx context.Context, tokenAddress string) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
+	peerFeeAndBalances, err = d.channelinfoStatement.selectLatestFeeJudge(ctx, tokenAddress)
 	return
 }

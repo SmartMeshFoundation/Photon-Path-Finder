@@ -8,14 +8,15 @@ import (
 	"net/http"
 	"strconv"
 
+	"math/big"
+
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
+	smparams "github.com/SmartMeshFoundation/SmartRaiden/params"
 	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	smparams "github.com/SmartMeshFoundation/SmartRaiden/params"
-	"math/big"
 )
 
 // verifySinature verify balance proof sinature and caller's sinature
@@ -33,7 +34,7 @@ func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partne
 	_, err = tmpBuf.Write(bpr.BalanceProof.AdditionalHash[:])                      //additional_hash
 
 	//检查是谁的balance proof
-	bpBuf:=new(bytes.Buffer)
+	bpBuf := new(bytes.Buffer)
 	_, err = bpBuf.Write(smparams.ContractSignaturePrefix)
 	_, err = bpBuf.Write([]byte(smparams.ContractBalanceProofMessageLength))
 	_, err = bpBuf.Write(utils.BigIntTo32Bytes(bpr.BalanceProof.TransferAmount))
@@ -42,7 +43,7 @@ func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partne
 	_, err = bpBuf.Write(bpr.BalanceProof.AdditionalHash[:])
 	_, err = bpBuf.Write(bpr.BalanceProof.ChannelID[:])
 	err = binary.Write(bpBuf, binary.BigEndian, bpr.BalanceProof.OpenBlockNumber)
-	_, err = bpBuf.Write(utils.BigIntTo32Bytes(big.NewInt(8888)))//smparams.ChainID
+	_, err = bpBuf.Write(utils.BigIntTo32Bytes(big.NewInt(8888))) //smparams.ChainID
 	balanceProofHash := utils.Sha3(bpBuf.Bytes())
 	balanceProofSignature := bpr.BalanceProof.Signature
 	balanceProofSigner, err := utils.Ecrecover(balanceProofHash, balanceProofSignature)
@@ -104,6 +105,7 @@ func verifySinaturePaths(pr pathRequest, peerAddress common.Address) (err error)
 	tmpBuf := new(bytes.Buffer)
 	_, err = tmpBuf.Write(pr.PeerFrom[:])                       //peer_from
 	_, err = tmpBuf.Write(pr.PeerTo[:])                         //peer_to
+	_, err = tmpBuf.Write(pr.TokenAddress[:])                   //token_address
 	err = binary.Write(tmpBuf, binary.BigEndian, pr.LimitPaths) //limit_paths
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(pr.SendAmount)) //send_amount
 	_, err = tmpBuf.Write([]byte(pr.SortDemand))                //send_amount
@@ -135,6 +137,7 @@ func signDataForPath(req *http.Request, cfg config.PathFinder, peerAddress strin
 	tmpBuf := new(bytes.Buffer)
 	_, err := tmpBuf.Write(r.PeerFrom[:])
 	_, err = tmpBuf.Write(r.PeerTo[:])
+	_, err = tmpBuf.Write(r.TokenAddress[:])
 	err = binary.Write(tmpBuf, binary.BigEndian, r.LimitPaths)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.SendAmount))
 	_, err = tmpBuf.Write([]byte(r.SortDemand))

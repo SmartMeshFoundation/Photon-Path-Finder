@@ -7,17 +7,17 @@ import (
 
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 	"github.com/nkbai/dijkstra"
+	"github.com/sirupsen/logrus"
 )
 
 // TokenNetwork token network view
 type TokenNetwork struct {
-	TokenNetworkAddress   common.Address
-	ChannelID2Address     map[common.Hash][2]common.Address //cache key=channel_id value={0xparticipant1,0xparticipan2}
-	MaxRelativeFee        int64
-	db                    *storage.Database
-	channelViews          map[common.Address]map[common.Address]*ChannelView
+	TokenNetworkAddress common.Address
+	ChannelID2Address   map[common.Hash][2]common.Address //cache key=channel_id value={0xparticipant1,0xparticipan2}
+	MaxRelativeFee      int64
+	db                  *storage.Database
+	channelViews        map[common.Address]map[common.Address]*ChannelView
 }
 
 // InitTokenNetwork token network initialization
@@ -39,11 +39,11 @@ func InitTokenNetwork(tokenNetworkAddress common.Address, db *storage.Database) 
 	channelviews := make(map[common.Address]map[common.Address]*ChannelView)
 
 	twork = &TokenNetwork{
-		TokenNetworkAddress:   tokenNetworkAddress,
-		ChannelID2Address:     channelID2Address,
-		MaxRelativeFee:        0,
-		db:                    db,
-		channelViews:          channelviews,
+		TokenNetworkAddress: tokenNetworkAddress,
+		ChannelID2Address:   channelID2Address,
+		MaxRelativeFee:      0,
+		db:                  db,
+		channelViews:        channelviews,
 	}
 	return
 }
@@ -203,7 +203,10 @@ func (twork *TokenNetwork) UpdateBalance(
 	//token和通道是一一对应的
 	cview := InitChannelView(common.HexToAddress(token), channelID, signer, partner, big.NewInt(0), StateUpdateBalance, nil, twork.db)
 
-	if nonce <= oldNonce {
+	if nonce == oldNonce {
+		return nil
+	}
+	if nonce < oldNonce {
 		return fmt.Errorf("Outdated balance proof")
 	}
 
@@ -230,13 +233,13 @@ type pathResult struct {
 }
 
 // GetPaths get shortest path
-func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
-	value *big.Int,limitPaths int,sortDemand string,
+func (twork *TokenNetwork) GetPaths(source common.Address, target common.Address, tokenAddress common.Address,
+	value *big.Int, limitPaths int, sortDemand string,
 ) (pathinfos []interface{}, err error) {
 	//todo 1\移除余额不够的边,2\移除节点不在线所处的通道,3\移除节点类型是手机的节点所处的通道matrix,4\移除节点不在线所处的所有通道matrix,5\移除节点网络状态为不在线的matrix
 	//检索出所有的节点的数据
 	//var latestData []*storage.PeerFeeAndBalance
-	latestJudgements, err := twork.db.GetLatestFeeJudge(nil)
+	latestJudgements, err := twork.db.GetLatestFeeJudge(nil, tokenAddress.String())
 	if err != nil {
 		return nil, fmt.Errorf("Can not get peer graph's data,err=%s", err)
 	}
@@ -359,7 +362,7 @@ func (twork *TokenNetwork) GetPaths(source common.Address,target common.Address,
 }
 
 //getWeight put weight for peer in some channel
-func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValue int64)(weight int) {
+func getWeight(peerAddr, nextAddress string, sp []*storage.PeerFeeAndBalance, xValue int64) (weight int) {
 	var myFeeRate string
 	for _, data := range sp {
 		if data.PeerAddr == peerAddr && (nextAddress == data.Participant1 || nextAddress == data.Participant2) {
@@ -376,8 +379,8 @@ func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValu
 	if err != nil {
 		fmt.Println("Formatting error(send_amount)")
 	}
-	if xfee<0.00001{
-		weight=0
+	if xfee < 0.00001 {
+		weight = 0
 		return
 	}
 	feeJudge = value * xfee
@@ -386,26 +389,26 @@ func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValu
 }
 
 // getSomeChannelFeeRate get fee_rate when the peer in some channel
-func getSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr string,myIndex int,peerToIndex map[common.Address]int) (xfee float64 ,err error){
-	nexti:=0
+func getSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance, onePath []int, addr string, myIndex int, peerToIndex map[common.Address]int) (xfee float64, err error) {
+	nexti := 0
 	for i, peerIndex := range onePath {
-		if peerIndex==myIndex{
-			nexti=i+1
+		if peerIndex == myIndex {
+			nexti = i + 1
 			break
 		}
 	}
-	nextIndex:=onePath[nexti]
+	nextIndex := onePath[nexti]
 	var nextAddress common.Address
-	for k,v:=range peerToIndex{
-		if v==nextIndex{
-			nextAddress=k
+	for k, v := range peerToIndex {
+		if v == nextIndex {
+			nextAddress = k
 			break
 		}
 	}
 	var myFeeRate string
-	for _,data:=range sp{
-		if data.PeerAddr==addr && (nextAddress.String()==data.Participant1 || nextAddress.String()==data.Participant2){
-			myFeeRate=data.FeeRate
+	for _, data := range sp {
+		if data.PeerAddr == addr && (nextAddress.String() == data.Participant1 || nextAddress.String() == data.Participant2) {
+			myFeeRate = data.FeeRate
 			break
 		}
 	}
@@ -413,8 +416,8 @@ func getSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr st
 	if err != nil {
 		return 0, fmt.Errorf("Formatting error(fee_rate per peer in path)")
 	}
-	if xfee<0.00001{
-		xfee=0
+	if xfee < 0.00001 {
+		xfee = 0
 		return
 	}
 	return

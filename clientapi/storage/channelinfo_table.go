@@ -124,18 +124,18 @@ const (
 
 	// updateChannelWithdrawSQL sql for update-selectFeeJudgeSQL
 	/*selectFeeJudgeSQL = "" +
-		"SELECT tb_fee_rate.peer_address,tb_fee_rate.fee_rate," +
-		"tb_channel_info.channel_id,tb_channel_info.channel_status," +
-		"tb_channel_info.participant1,tb_channel_info.participant2,tb_channel_info.p1_balance,tb_channel_info.p2_balance " +
-		"FROM tb_fee_rate LEFT OUTER JOIN tb_channel_info ON " +
-		"tb_fee_rate.channel_id=tb_channel_info.channel_id WHERE tb_fee_rate.effitime IN (SELECT " +
-		"MAX(effitime) FROM tb_fee_rate GROUP BY peer_address)"*/
+	"SELECT tb_fee_rate.peer_address,tb_fee_rate.fee_rate," +
+	"tb_channel_info.channel_id,tb_channel_info.channel_status," +
+	"tb_channel_info.participant1,tb_channel_info.participant2,tb_channel_info.p1_balance,tb_channel_info.p2_balance " +
+	"FROM tb_fee_rate LEFT OUTER JOIN tb_channel_info ON " +
+	"tb_fee_rate.channel_id=tb_channel_info.channel_id WHERE tb_fee_rate.effitime IN (SELECT " +
+	"MAX(effitime) FROM tb_fee_rate GROUP BY peer_address)"*/
 	selectFeeJudgeSQL = "" +
 		"SELECT tb_fee_rate.peer_address,tb_fee_rate.fee_rate," +
 		"tb_channel_info.channel_id,tb_channel_info.channel_status," +
 		"tb_channel_info.participant1,tb_channel_info.participant2,tb_channel_info.p1_balance,tb_channel_info.p2_balance " +
 		"FROM tb_fee_rate LEFT OUTER JOIN tb_channel_info ON " +
-		"tb_fee_rate.channel_id=tb_channel_info.channel_id "
+		"tb_fee_rate.channel_id=tb_channel_info.channel_id WHERE tb_channel_info.token=$1"
 
 	// initFeeTableSQL sql for insert-initFeeTableSQL
 	initFeeTableSQL = "" +
@@ -385,9 +385,9 @@ func (s *channelInfoStatements) selectAllChannelInfo(ctx context.Context) (chann
 }
 
 // selectLatestJudgement select data
-func (s *channelInfoStatements) selectLatestFeeJudge(ctx context.Context) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
+func (s *channelInfoStatements) selectLatestFeeJudge(ctx context.Context, tokenAddress string) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
 	stmt := s.selectFeeJudgeStmt
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(tokenAddress)
 	if err != nil {
 		return
 	}
