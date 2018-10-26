@@ -7,24 +7,38 @@ import (
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
 	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"fmt"
 )
+
+var dataSource="postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
 
 func TestTokenNetwork_GetPaths(t *testing.T) {
 	g1:=*dijkstra.NewEmptyGraph()
-	g1.AddEdge(0, 1, 600)
-	g1.AddEdge(1, 0, 200)
-	g1.AddEdge(1, 2, 700)
-	g1.AddEdge(2, 1, 700)
-	g1.AddEdge(2, 3, 100)
-	g1.AddEdge(3, 4, 100)
+	g1.AddEdge(1, 2, 100)
+	fmt.Println(fmt.Sprintf("****1>%s",utils.StringInterface(g1,5)))
 	g1.RemoveEdge(2,1)
-	paths01:=g1.AllShortestPath(0,3)
+	t.Log("=======================")
+	fmt.Println(fmt.Sprintf("****2>%s",utils.StringInterface(g1,5)))
+	g1.AddEdge(2, 1, 100)
+	fmt.Println(fmt.Sprintf("****2>%s",utils.StringInterface(g1,5)))
+	g1.AddEdge(2, 3, 100)
+	g1.AddEdge(3, 2, 100)
+	g1.AddEdge(3, 4, 100)
+	g1.AddEdge(4, 3, 100)
+
+	/*g1.AddEdge(1, 0, 100)
+	g1.AddEdge(0, 1, 100)*/
+	fmt.Println(fmt.Sprintf("****2%s",utils.StringInterface(g1,5)))
+
+	paths01:=g1.AllShortestPath(1,3)
 	t.Log("test 01:",paths01)
 
-	g1.AddEdge(0, 1, 600)
-	g1.AddEdge(1, 2, 700)
-	g1.AddEdge(2, 3, 100)
-	g1.AddEdge(3, 4, 100)
+
+	g1.AddEdge(0, 1, 55)
+	g1.AddEdge(1, 2, 55)
+	g1.AddEdge(2, 3, 55)
+	g1.AddEdge(3, 4, 55)
+	fmt.Println(fmt.Sprintf("****4%s",utils.StringInterface(g1,5)))
 	paths02:=g1.AllShortestPath(0,3)
 	t.Log("test 02:",paths02)
 
@@ -40,10 +54,10 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	g1.AddEdge(2, 3, 100)
 	g1.AddEdge(3, 4, 100)
 	g1.RemoveEdge(2,1)
-	paths04:=g1.AllShortestPath(0,4)
+	paths04:=g1.AllShortestPath(0,3)
 	t.Log("test 04:",paths04)
 
-	db,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
+	db,err:=storage.NewDatabase(dataSource,"0.001")
 	if err!=nil{
 		t.Error(err)
 	}
@@ -54,18 +68,20 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	paths1, err := view.GetPaths(common.HexToAddress(source), common.HexToAddress(target), big.NewInt(1), 1, "")
 	if err != nil {
 		t.Error(err)
+		fmt.Println(err)
 	}
 	t.Log("test 1:",paths1)
 
 	paths2, err := view.GetPaths(common.HexToAddress(target), common.HexToAddress(source), big.NewInt(1), 1, "")
 	if err != nil {
 		t.Error(err)
+		fmt.Println(err)
 	}
 	t.Log("test 2:",paths2)
 }
 
 func TestTokenNetwork_UpdateBalance(t *testing.T) {
-	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
+	dbx,err:=storage.NewDatabase(dataSource,"0.001")
 	if err!=nil{
 		t.Error(err)
 	}
@@ -93,7 +109,7 @@ func TestTokenNetwork_HandleChannelWithdrawEvent(t *testing.T) {
 	participant2:=utils.NewRandomAddress()
 	participant1Balance:=big.NewInt(10)
 	participant2Balance:=big.NewInt(5)
-	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
+	dbx,err:=storage.NewDatabase(dataSource,"0.001")
 	if err!=nil{
 		t.Error(err)
 	}
@@ -112,7 +128,7 @@ func TestTokenNetwork_HandleChannelClosedEvent(t *testing.T) {
 	tokenNetwork:=utils.NewRandomAddress()
 	channelID:=utils.NewRandomHash()
 	channelID=common.HexToHash("0x1212121212121212121212121212121212121212121212121212121212121212")
-	dbx,err:=storage.NewDatabase("postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable")
+	dbx,err:=storage.NewDatabase(dataSource,"0.001")
 	if err!=nil{
 		t.Error(err)
 	}

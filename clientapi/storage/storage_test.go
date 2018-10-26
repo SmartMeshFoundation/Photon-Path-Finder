@@ -41,12 +41,14 @@ func SetupDb(t *testing.T) *Database {
 	if err != nil {
 		t.Error(err)
 	}
-	return &Database{db, partitions, lbs, cis, tss, frs}
+	defaultFeeRate:="0.00001"
+	return &Database{db, partitions, lbs, cis, tss, frs,defaultFeeRate}
 }
 
 func TestNewDatabase(t *testing.T) {
 	dataSourceName := "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
-	_, err := NewDatabase(dataSourceName)
+	defaultFeeRate:="0.00001"
+	_, err := NewDatabase(dataSourceName,defaultFeeRate)
 	if err != nil {
 		t.Error(err)
 	}

@@ -376,7 +376,7 @@ func getWeight(peerAddr,nextAddress string,sp []*storage.PeerFeeAndBalance,xValu
 	if err != nil {
 		fmt.Println("Formatting error(send_amount)")
 	}
-	if xfee<0.000000000001{
+	if xfee<0.00001{
 		weight=0
 		return
 	}
@@ -412,6 +412,10 @@ func getSomeChannelFeeRate(sp []*storage.PeerFeeAndBalance,onePath []int,addr st
 	xfee, err = strconv.ParseFloat(myFeeRate, 32)
 	if err != nil {
 		return 0, fmt.Errorf("Formatting error(fee_rate per peer in path)")
+	}
+	if xfee<0.00001{
+		xfee=0
+		return
 	}
 	return
 }
