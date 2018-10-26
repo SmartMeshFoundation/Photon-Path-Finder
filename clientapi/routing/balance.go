@@ -48,7 +48,7 @@ func UpdateBalanceProof(req *http.Request, ce blockchainlistener.ChainEvents, pe
 		if _, exist := ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]; !exist {
 			return util.JSONResponse{
 				Code: http.StatusInternalServerError,
-				JSON: fmt.Sprintf("Unknown channel,channel_id=%s", r.BalanceProof.ChannelID.String()),
+				JSON: fmt.Sprintf("Unknown channel which in the known channels on server or json error,channel_id=%s", r.BalanceProof.ChannelID.String()),
 			}
 		}
 

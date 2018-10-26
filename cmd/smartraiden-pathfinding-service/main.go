@@ -33,7 +33,6 @@ func StartMain() {
 	defer base.Close()
 	logrus.Info("Welcome to smartraiden-path-finder,version ",base.Cfg.Version)
 	PfsDB := base.CreatePfsDB()
-	//time.Sleep(time.Second)
 
 	httpHandler := common.WrapHandlerInCORS(base.APIMux)
 	http.Handle("/pathfinder", promhttp.Handler())

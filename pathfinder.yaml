@@ -11,6 +11,10 @@ eth_rpc_endpoint: "ws://192.168.124.13:5555"
 
 password-file: "/home/cy/.ethereum/keystore/pass"
 
+chain_id: 8888
+
+matrix_server_address: "transport01.smartmesh.cn"
+
 # The pfs specific config
 pfs:
   # The name of the server. This is usually the domain name, e.g 'smartraiden.io', 'localhost'.

@@ -40,7 +40,11 @@ type PathFinder struct {
 
 	PasswordFile string `yaml:"password-file"`
 
-	Pfs struct {
+	ChainID int `yaml:"chain_id"`
+
+	MatrixServerAddress string `yaml:"matrix_server_address"`
+
+	Pfs     struct {
 		ServerName string `yaml:"server_name"`
 		//APIPort             int
 		//APIPath             string
@@ -190,6 +194,12 @@ func (config *PathFinder) setDefaults() {
 	}
 	if config.RateLimited.StationaryFeeRateDefault == "" {
 		config.RateLimited.StationaryFeeRateDefault = "0.0001"
+	}
+	if config.ChainID==0{
+		config.ChainID=8888
+	}
+	if config.MatrixServerAddress==""{
+		config.MatrixServerAddress="transport01.smartmesh.cn"
 	}
 }
 
