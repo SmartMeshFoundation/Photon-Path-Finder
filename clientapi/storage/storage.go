@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" //use for sql.DB
 )
 
 // Database Data base
@@ -56,6 +56,7 @@ type PeerFeeAndBalance struct {
 //AddressMap is token address to mananger address
 type AddressMap map[common.Address]common.Address
 
+//TokenNetwork2TokenMap map from TokenNetwork to token
 var TokenNetwork2TokenMap map[common.Address]common.Address
 
 // NewDatabase creates a new accounts and profiles database
@@ -223,7 +224,7 @@ func (d *Database) GetLastestRateFeeStorage(ctx context.Context, channelID, peer
 }
 
 // GetLatestFeeJudge refush peer's balance and lasest fee
-func (d *Database) GetLatestFeeJudge(ctx context.Context) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
-	peerFeeAndBalances, err = d.channelinfoStatement.selectLatestFeeJudge(ctx)
+func (d *Database) GetLatestFeeJudge(ctx context.Context, tokenAddress string) (peerFeeAndBalances []*PeerFeeAndBalance, err error) {
+	peerFeeAndBalances, err = d.channelinfoStatement.selectLatestFeeJudge(ctx, tokenAddress)
 	return
 }

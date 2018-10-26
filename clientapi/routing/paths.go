@@ -3,6 +3,7 @@ package routing
 import (
 	"math/big"
 	"net/http"
+
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"github.com/ethereum/go-ethereum/common"
@@ -10,12 +11,13 @@ import (
 
 // pathRequest is the json request for GetPaths
 type pathRequest struct {
-	PeerFrom   common.Address `json:"peer_from"`
-	PeerTo     common.Address `json:"peer_to"`
-	LimitPaths int            `json:"limit_paths"`
-	SendAmount *big.Int       `json:"send_amount"`
-	SortDemand string         `json:"sort_demand"`
-	Sinature   []byte         `json:"signature"`
+	PeerFrom     common.Address `json:"peer_from"`
+	PeerTo       common.Address `json:"peer_to"`
+	TokenAddress common.Address `json:"token_address"`
+	LimitPaths   int            `json:"limit_paths"`
+	SendAmount   *big.Int       `json:"send_amount"`
+	SortDemand   string         `json:"sort_demand"`
+	Sinature     []byte         `json:"signature"`
 }
 
 // GetPaths handle the request with GetPaths,implements POST /paths
@@ -36,10 +38,11 @@ func GetPaths(req *http.Request, ce blockchainlistener.ChainEvents, peerAddress 
 		}
 		var peerFrom = r.PeerFrom
 		var peerTo = r.PeerTo
+		var tokenAddress = r.TokenAddress
 		var limitPaths = r.LimitPaths
 		var sendAmount = r.SendAmount
 		var sortDemand = r.SortDemand
-		pathResult, err := ce.TokenNetwork.GetPaths(peerFrom, peerTo, sendAmount, limitPaths, sortDemand)
+		pathResult, err := ce.TokenNetwork.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand)
 		if err != nil {
 			return util.JSONResponse{
 				Code: http.StatusExpectationFailed,

@@ -1,13 +1,14 @@
 package routing
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"net/http"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/gorilla/mux"
 )
 
 //Setup registers HTTP handlers with the given ServeMux.
@@ -53,7 +54,7 @@ func Setup(
 	vmux.Handle("/{peerAddress}/get_fee_rate",
 		common.MakeExternalAPI("get_fee_rate", func(req *http.Request) util.JSONResponse {
 			vars := mux.Vars(req)
-			return GetFeeRate(req, pfsdb, vars["peerAddress"])
+			return GetFeeRate(req, pfsdb, vars["peerAddress"], cfg)
 		}),
 	).Methods(http.MethodPost, http.MethodOptions)
 

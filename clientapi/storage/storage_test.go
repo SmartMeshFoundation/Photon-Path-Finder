@@ -272,7 +272,7 @@ func TestDatabase_SaveRateFeeStorage(t *testing.T) {
 	}
 	saveok := false
 	// random(address,hash) may cause mismatch of tables:channel_info and fee_rate
-	pfb, err := db.GetLatestFeeJudge(nil)
+	pfb, err := db.GetLatestFeeJudge(nil, "0x")
 	if err != nil {
 		if strings.Index(err.Error(), "*string") == -1 {
 			t.Error(err)
