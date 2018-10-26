@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -24,17 +25,10 @@ type GetFeeRateRequest struct {
 	Signature []byte         `json:"signature"`
 }
 
-// GetFeeRateResponse is the json reponse for GetFeeRate
-type GetFeeRateResponse struct {
-	Result map[common.Hash]*FeeRateInfo `json:"result"`
-}
-
-// FeeRateInfo struct of fee-rate-info
-type FeeRateInfo struct {
-	ChannelID     common.Hash    `json:"channel_id"`
-	PeerAddress   common.Address `json:"peer_address"`
-	FeeRate       string         `json:"fee_rate"`
-	EffectiveTime int64          `json:"effective_time"`
+// GetFeeRateInfoResponse struct of fee-rate-info
+type GetFeeRateInfoResponse struct {
+	FeeRate       string `json:"fee_rate"`
+	EffectiveTime int64  `json:"effective_time"`
 }
 
 // SetFeeRate save request data of set_fee_rate
@@ -88,7 +82,7 @@ func SetFeeRate(req *http.Request, feeRateDB *storage.Database, peerAddress stri
 }
 
 // GetFeeRate reponse fee_rate data
-func GetFeeRate(req *http.Request, feeRateDB *storage.Database, peerAddress string) util.JSONResponse {
+func GetFeeRate(req *http.Request, feeRateDB *storage.Database, peerAddress string, cfg config.PathFinder) util.JSONResponse {
 	if req.Method == http.MethodPost {
 		var r GetFeeRateRequest
 		resErr := util.UnmarshalJSONRequest(req, &r)
@@ -111,16 +105,12 @@ func GetFeeRate(req *http.Request, feeRateDB *storage.Database, peerAddress stri
 				JSON: util.NotFound("any fee-rate data found"),
 			}
 		}
-		reslut0 := &FeeRateInfo{
-			ChannelID:     r.ChannelID,
-			PeerAddress:   common.HexToAddress(peerAddress),
+		if effitime == 0 {
+			feerate = cfg.RateLimited.StationaryFeeRateDefault
+		}
+		reslut := &GetFeeRateInfoResponse{
 			FeeRate:       feerate,
 			EffectiveTime: effitime,
-		}
-		resultMap := make(map[common.Hash]*FeeRateInfo)
-		resultMap[r.ChannelID] = reslut0
-		reslut := &GetFeeRateResponse{
-			Result: resultMap,
 		}
 		return util.JSONResponse{
 			Code: http.StatusOK,
