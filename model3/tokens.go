@@ -3,9 +3,8 @@ package model3
 import (
 	"fmt"
 
+	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/nkbai/log_bak"
 )
 
 type tokenNetwork struct {
