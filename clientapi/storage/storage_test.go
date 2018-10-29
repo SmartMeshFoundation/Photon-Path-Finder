@@ -11,7 +11,7 @@ import (
 )
 
 func SetupDb(t *testing.T) *Database {
-	var dataSourceName = "postgres://pfs:123456@192.168.124.15/pfs_xxx?sslmode=disable"
+	var dataSourceName = "postgres://pfs:123456@localhost/pfs_xxx?sslmode=disable"
 	var db *sql.DB
 	var err error
 	if db, err = sql.Open("postgres", dataSourceName); err != nil {
@@ -42,12 +42,7 @@ func SetupDb(t *testing.T) *Database {
 }
 
 func TestNewDatabase(t *testing.T) {
-	dataSourceName := "postgres://pfs:123456@192.168.124.15/pfs_xxx?sslmode=disable"
-	defaultFeeRate := "0.00001"
-	_, err := NewDatabase(dataSourceName, defaultFeeRate)
-	if err != nil {
-		t.Error(err)
-	}
+	SetupDb(t)
 }
 
 func TestDatabase_SaveTokensStorage(t *testing.T) {

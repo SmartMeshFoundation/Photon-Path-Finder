@@ -1,11 +1,21 @@
 package model
 
 import (
+	"math/big"
 	"testing"
 )
 
 func TestInitChannelView(t *testing.T) {
-
+	var testFloatType = 100e30
+	t.Logf("testf=%f", testFloatType)
+	//i:=new(big.Int)
+	f := new(big.Float)
+	_, b := f.SetString("1000003000400000000000000")
+	if !b {
+		t.Error("float err")
+		return
+	}
+	t.Logf("f=%s", f.String())
 }
 
 /*func TestChannelView_UpdateCapacity(t *testing.T) {

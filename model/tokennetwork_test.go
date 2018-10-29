@@ -65,14 +65,14 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	view.db = db
 	source := "0x1111111111111111111111111111111111111111"
 	target := "0x6666666666666666666666666666666666666666"
-	paths1, err := view.GetPaths(common.HexToAddress(source), common.HexToAddress(target), big.NewInt(1), 1, "")
+	paths1, err := view.GetPaths(common.HexToAddress(source), common.HexToAddress(target), utils.EmptyAddress, big.NewInt(1), 1, "")
 	if err != nil {
 		t.Error(err)
 		fmt.Println(err)
 	}
 	t.Log("test 1:", paths1)
 
-	paths2, err := view.GetPaths(common.HexToAddress(target), common.HexToAddress(source), big.NewInt(1), 1, "")
+	paths2, err := view.GetPaths(common.HexToAddress(target), common.HexToAddress(source), utils.EmptyAddress, big.NewInt(1), 1, "")
 	if err != nil {
 		t.Error(err)
 		fmt.Println(err)

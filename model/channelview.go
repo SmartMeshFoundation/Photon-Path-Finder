@@ -85,28 +85,6 @@ func (cv *ChannelView) UpdateCapacity(
 	case StateChannelClose:
 		err = cv.db.UpdateChannelStatusStorage(nil, cv.Token.String(), cv.ChannelID.String(), cv.Status, cv.SelfAddress.String(), cv.PartnerAddress.String())
 	case StateUpdateBalance:
-		/*if nonce != 0 {
-			if nonce <= cv.BalanceProofNonce.Nonce {
-				logrus.Warn("Balance proof nonce must increase.")
-				return
-			}
-			cv.BalanceProofNonce.Nonce = nonce
-		}*/
-		/*if deposit.Uint64() != 0 {
-			cv.Deposit = deposit
-		}
-		if transferredAmount.Uint64() != 0 {
-			cv.TransferredAmount = transferredAmount
-		}
-		if receivedAmount.Uint64() != 0 {
-			cv.ReceivedAmount = receivedAmount
-		}
-		if lockedAmount.Uint64() != 0 {
-			cv.LockedAmount = lockedAmount
-		}
-		cv.Capacity.Sub(cv.Capacity, cv.TransferredAmount)
-		cv.Capacity.Sub(cv.Capacity, cv.LockedAmount)
-		cv.Capacity.Add(cv.Capacity, cv.ReceivedAmount)*/
 		err = cv.db.UpdateBalanceProofStorage(nil, cv.Token.String(),
 			cv.ChannelID.String(),
 			cv.Status,

@@ -96,7 +96,7 @@ func (twork *TokenNetwork) HandleChannelDepositEvent(tokenNetwork common.Address
 	} else if partner == participant2 {
 		err = cview2.UpdateCapacity(0, totalDeposit, big.NewInt(0), big.NewInt(0), big.NewInt(0))
 	} else {
-		err = fmt.Errorf("Partner in ChannelDeposit does not fit the internal channel", channelID.String())
+		err = fmt.Errorf("Partner in ChannelDeposit does not fit the internal channel %s", channelID.String())
 	}
 	return
 }
@@ -198,7 +198,7 @@ func (twork *TokenNetwork) UpdateBalance(
 	var oldNonce uint64
 	oldNonce, err = twork.db.GetLastNonceByChannel(nil, channelID.String(), signer.String(), partner.String())
 	if err != nil {
-		return fmt.Errorf("Can not validate nonce(internal error),nonce=%s", nonce)
+		return fmt.Errorf("Can not validate nonce(internal error),nonce=%d", nonce)
 	}
 	//token和通道是一一对应的
 	cview := InitChannelView(common.HexToAddress(token), channelID, signer, partner, big.NewInt(0), StateUpdateBalance, nil, twork.db)

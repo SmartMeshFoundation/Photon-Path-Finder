@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"math/big"
+	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/params"
 
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
 	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
@@ -43,7 +43,7 @@ func verifySinature(bpr *balanceProofRequest, peerAddress common.Address, partne
 	_, err = bpBuf.Write(bpr.BalanceProof.AdditionalHash[:])
 	_, err = bpBuf.Write(bpr.BalanceProof.ChannelID[:])
 	err = binary.Write(bpBuf, binary.BigEndian, bpr.BalanceProof.OpenBlockNumber)
-	_, err = bpBuf.Write(utils.BigIntTo32Bytes(big.NewInt(8888))) //smparams.ChainID
+	_, err = bpBuf.Write(utils.BigIntTo32Bytes(params.ChainID)) //smparams.ChainID
 	balanceProofHash := utils.Sha3(bpBuf.Bytes())
 	balanceProofSignature := bpr.BalanceProof.Signature
 	balanceProofSigner, err := utils.Ecrecover(balanceProofHash, balanceProofSignature)
