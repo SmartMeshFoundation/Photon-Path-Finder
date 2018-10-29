@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
 	"github.com/ethereum/go-ethereum/common"
 )
 

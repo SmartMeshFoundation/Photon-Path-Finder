@@ -1,19 +1,20 @@
 package config
 
 import (
+	"crypto/ecdsa"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
-	"io"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
 	jaegermetrics "github.com/uber/jaeger-lib/metrics"
-	"fmt"
-	"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/common"
+	yaml "gopkg.in/yaml.v2"
 )
 
-const MaxPathRedundancyFactorNum  = 20
+const MaxPathRedundancyFactorNum = 20
 
 const Version = 0
 
@@ -21,7 +22,7 @@ type configErrors []string
 
 var PrivKey *ecdsa.PrivateKey
 
-//The ethereum address you would like smartraiden monitoring to use sign transaction on ethereum
+//The ethereum address you would like Photon monitoring to use sign transaction on ethereum
 var Address common.Address
 
 // DataSource for opening a postgresql database using lib/pq.
@@ -44,7 +45,7 @@ type PathFinder struct {
 
 	MatrixServerAddress string `yaml:"matrix_server_address"`
 
-	Pfs     struct {
+	Pfs struct {
 		ServerName string `yaml:"server_name"`
 		//APIPort             int
 		//APIPath             string
@@ -139,7 +140,6 @@ func loadConfig(
 		return nil, err
 	}
 
-
 	return &config, nil
 }
 
@@ -156,6 +156,7 @@ func (config *PathFinder) SetupTracing(serviceName string) (closer io.Closer, er
 type logrusLogger struct {
 	l *logrus.Logger
 }
+
 // Error error info of logrus logger
 func (l logrusLogger) Error(msg string) {
 	l.l.Error(msg)
@@ -195,11 +196,11 @@ func (config *PathFinder) setDefaults() {
 	if config.RateLimited.StationaryFeeRateDefault == "" {
 		config.RateLimited.StationaryFeeRateDefault = "0.0001"
 	}
-	if config.ChainID==0{
-		config.ChainID=8888
+	if config.ChainID == 0 {
+		config.ChainID = 8888
 	}
-	if config.MatrixServerAddress==""{
-		config.MatrixServerAddress="transport01.smartmesh.cn"
+	if config.MatrixServerAddress == "" {
+		config.MatrixServerAddress = "transport01.smartmesh.cn"
 	}
 }
 
@@ -222,6 +223,7 @@ func (errs configErrors) Error() string {
 		"%s (and %d other problems)", errs[0], len(errs)-1,
 	)
 }
+
 //check
 func (config *PathFinder) check(monolithic bool) error {
 	var configErrs configErrors
@@ -234,10 +236,10 @@ func (config *PathFinder) check(monolithic bool) error {
 	}
 	config.checkPfs(&configErrs)
 
-	if !monolithic{
+	if !monolithic {
 		config.checkListen(&configErrs)
 	}
-	if configErrs!=nil{
+	if configErrs != nil {
 		return configErrs
 	}
 	return nil
@@ -248,12 +250,14 @@ func (config *PathFinder) checkListen(configErrs *configErrors) {
 func (config *PathFinder) checkPfs(configErrs *configErrors) {
 	checkNotEmpty(configErrs, "pfs.server_name", string(config.Pfs.ServerName))
 }
+
 // checkNotEmpty verifies the given value is not empty in the configuration.
 func checkNotEmpty(configErrs *configErrors, key, value string) {
 	if value == "" {
 		configErrs.Add(fmt.Sprintf("missing config key %q", key))
 	}
 }
+
 // absPath returns the absolute path for a given relative or absolute path.
 func absPath(dir string, path Path) string {
 	if filepath.IsAbs(string(path)) {

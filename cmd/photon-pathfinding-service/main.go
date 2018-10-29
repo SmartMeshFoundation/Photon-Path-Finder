@@ -6,16 +6,16 @@ import (
 	"net/http"
 	debug2 "runtime/debug"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/basecomponent"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
-	"github.com/SmartMeshFoundation/SmartRaiden/network/helper"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/basecomponent"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
+	"github.com/SmartMeshFoundation/Photon/accounts"
+	"github.com/SmartMeshFoundation/Photon/log"
+	"github.com/SmartMeshFoundation/Photon/network/helper"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/nkbai/SmartRaiden/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
@@ -28,8 +28,8 @@ var (
 func init() {
 	debug2.SetTraceback("crash")
 	log.LocationTrims = append(log.LocationTrims,
-		"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/vendor/github.com/SmartMeshFoundation/SmartRaiden/",
-		"github.com/SmartMeshFoundation/SmartRaiden-Monitoring",
+		"github.com/SmartMeshFoundation/Photon-Path-Finder/vendor/github.com/SmartMeshFoundation/Photon/",
+		"github.com/SmartMeshFoundation/Photon-Monitoring",
 	)
 
 }
@@ -44,7 +44,7 @@ func StartMain() {
 	cfg := basecomponent.ParseMonolithFlags()
 	base := basecomponent.NewBasePathFinder(cfg, "PathFinder")
 	defer base.Close()
-	logrus.Info("Welcome to smartraiden-path-finder,version ", base.Cfg.Version)
+	logrus.Info("Welcome to Photon-path-finder,version ", base.Cfg.Version)
 	PfsDB := base.CreatePfsDB()
 
 	httpHandler := common.WrapHandlerInCORS(base.APIMux)

@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nkbai/dijkstra"
 	"github.com/sirupsen/logrus"

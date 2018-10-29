@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/model"
-	"github.com/SmartMeshFoundation/SmartRaiden/blockchain"
-	"github.com/SmartMeshFoundation/SmartRaiden/network/helper"
-	"github.com/SmartMeshFoundation/SmartRaiden/network/rpc"
-	"github.com/SmartMeshFoundation/SmartRaiden/transfer"
-	"github.com/SmartMeshFoundation/SmartRaiden/transfer/mediatedtransfer"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+	"github.com/SmartMeshFoundation/Photon/blockchain"
+	"github.com/SmartMeshFoundation/Photon/network/helper"
+	"github.com/SmartMeshFoundation/Photon/network/rpc"
+	"github.com/SmartMeshFoundation/Photon/transfer"
+	"github.com/SmartMeshFoundation/Photon/transfer/mediatedtransfer"
+	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +24,6 @@ type ChainEvents struct {
 	bcs             *rpc.BlockChainService
 	key             *ecdsa.PrivateKey
 	quitChan        chan struct{}
-	alarm           *blockchain.AlarmTask
 	stopped         bool
 	BlockNumberChan chan int64
 	blockNumber     *atomic.Value
@@ -55,7 +54,6 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		key:             key,
 		db:              db,
 		quitChan:        make(chan struct{}),
-		alarm:           blockchain.NewAlarmTask(client),
 		BlockNumberChan: make(chan int64, 1),
 		blockNumber:     new(atomic.Value),
 		TokenNetwork:    *model.InitTokenNetwork(tokenNetworkRegistryAddress, db),
@@ -64,30 +62,13 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 
 // Start moniter blockchain
 func (chainevent *ChainEvents) Start() error {
-	err := chainevent.alarm.Start()
-	if err != nil {
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case blockNumber := <-chainevent.alarm.LastBlockNumberChan:
-				chainevent.SaveLatestBlockNumber(blockNumber)
-				chainevent.setBlockNumber(blockNumber)
-			}
-		}
-	}()
-	err = chainevent.be.Start(chainevent.GetLatestBlockNumber())
-	if err != nil {
-		logrus.Errorf("Block chain events start err %s", err)
-	}
+	chainevent.be.Start(chainevent.GetLatestBlockNumber())
 	go chainevent.loop()
 	return nil
 }
 
 // Stop service
 func (chainevent *ChainEvents) Stop() {
-	chainevent.alarm.Stop()
 	chainevent.be.Stop()
 	close(chainevent.quitChan)
 }
@@ -111,12 +92,6 @@ func (chainevent *ChainEvents) loop() {
 				return
 			}
 			chainevent.handleStateChange(st)
-		case n, ok := <-chainevent.BlockNumberChan:
-			if !ok {
-				logrus.Info("BlockNumberChan closed")
-				return
-			}
-			chainevent.handleBlockNumber(n)
 		case <-chainevent.quitChan:
 			return
 		}
@@ -126,6 +101,8 @@ func (chainevent *ChainEvents) loop() {
 // handleStateChange 通道打开、通道关闭、通道存钱、通道取钱
 func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
 	switch st2 := st.(type) {
+	case *transfer.BlockStateChange:
+		chainevent.handleBlockNumber(st2.BlockNumber)
 	case *mediatedtransfer.ContractNewChannelStateChange: //open channel event
 		chainevent.handleChainChannelOpend(st2)
 	case *mediatedtransfer.ContractClosedStateChange: //close channel event

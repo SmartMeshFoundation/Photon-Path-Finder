@@ -3,7 +3,7 @@ package common
 import (
 	"net/http"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
 	"github.com/opentracing/opentracing-go"
 )
 

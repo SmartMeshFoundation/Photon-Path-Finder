@@ -1,12 +1,11 @@
 package model3
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 
-	"github.com/gin-gonic/gin/json"
-
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/jinzhu/gorm"

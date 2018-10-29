@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
 	"github.com/ethereum/go-ethereum/common"
 )
 

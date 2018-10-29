@@ -3,11 +3,11 @@ package routing
 import (
 	"net/http"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
 	"github.com/gorilla/mux"
 )
 

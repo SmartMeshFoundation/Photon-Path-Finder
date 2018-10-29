@@ -3,7 +3,7 @@ package model3
 import (
 	"testing"
 
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon/utils"
 )
 
 func TestGetLatestBlockNumber(t *testing.T) {

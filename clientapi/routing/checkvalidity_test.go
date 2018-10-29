@@ -1,18 +1,19 @@
 package routing
 
 import (
-	"testing"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
 	"math/big"
+	"testing"
+
+	"github.com/SmartMeshFoundation/Photon/utils"
 )
 
 func TestVerifySinature(t *testing.T) {
 	br := &BalanceProof{
-		Nonce:             1,
+		Nonce:          1,
 		TransferAmount: big.NewInt(32),
-		LocksRoot:         utils.EmptyHash,
-		AdditionalHash:    utils.EmptyHash,
-		ChannelID:         utils.NewRandomHash(),
+		LocksRoot:      utils.EmptyHash,
+		AdditionalHash: utils.EmptyHash,
+		ChannelID:      utils.NewRandomHash(),
 	}
 
 	key1, addr1 := utils.MakePrivateKeyAddress()

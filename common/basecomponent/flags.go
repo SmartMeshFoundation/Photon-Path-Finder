@@ -2,7 +2,8 @@ package basecomponent
 
 import (
 	"flag"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
+
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,13 +14,13 @@ var configPath = flag.String("config", "pathfinder.yaml", "The path to the confi
 func ParseFlags() *config.PathFinder {
 	flag.Parse()
 
-	if *configPath==""{
+	if *configPath == "" {
 		logrus.Fatal("--config must be supplied")
 	}
 
-	cfg,err:=config.Load(*configPath)
+	cfg, err := config.Load(*configPath)
 
-	if err!=nil{
+	if err != nil {
 		logrus.Fatalf("Invalid config file: %s", err)
 	}
 	return cfg
@@ -36,4 +37,3 @@ func ParseMonolithFlags() *config.PathFinder {
 	}
 	return cfg
 }
-

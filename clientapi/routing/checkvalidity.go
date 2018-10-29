@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/params"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/util"
-	"github.com/SmartMeshFoundation/SmartRaiden/accounts"
-	smparams "github.com/SmartMeshFoundation/SmartRaiden/params"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon/accounts"
+	smparams "github.com/SmartMeshFoundation/Photon/params"
+	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )

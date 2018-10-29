@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/params"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon/utils"
 )
 
 func TestGetAccountFeePolicy(t *testing.T) {

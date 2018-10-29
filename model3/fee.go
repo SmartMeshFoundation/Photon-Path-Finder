@@ -3,7 +3,7 @@ package model3
 import (
 	"math/big"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/params"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/jinzhu/gorm"

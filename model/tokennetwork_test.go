@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/clientapi/storage"
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
+	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nkbai/dijkstra"
 )

@@ -17,7 +17,7 @@ matrix_server_address: "transport01.smartmesh.cn"
 
 # The pfs specific config
 pfs:
-  # The name of the server. This is usually the domain name, e.g 'smartraiden.io', 'localhost'.
+  # The name of the server. This is usually the domain name, e.g 'Photon.io', 'localhost'.
   server_name: "localhost"
 
 # The config for ratelimited

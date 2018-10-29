@@ -7,11 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/SmartMeshFoundation/SmartRaiden-Path-Finder/params"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/SmartMeshFoundation/SmartRaiden/utils"
+	"github.com/SmartMeshFoundation/Photon/utils"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
