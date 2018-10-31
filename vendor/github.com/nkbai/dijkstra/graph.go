@@ -156,6 +156,13 @@ func (g *Graph) AddEdge(source, target, weight int) {
 			arcs: make(map[int]int),
 		}
 	}
+	_, ok = g.vertices[target]
+	if !ok {
+		g.vertices[target] = Vertex{
+			id:   target,
+			arcs: make(map[int]int),
+		}
+	}
 	v.arcs[target] = weight
 	g.vertices[source] = v
 }
