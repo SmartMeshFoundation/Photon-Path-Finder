@@ -1,11 +1,11 @@
-package routing
+package rest
 
 import (
 	"math/big"
 	"net/http"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
+	"github.com/ant0ine/go-json-rest/rest"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -17,45 +17,36 @@ type pathRequest struct {
 	LimitPaths   int            `json:"limit_paths"`
 	SendAmount   *big.Int       `json:"send_amount"`
 	SortDemand   string         `json:"sort_demand"`
-	Sinature     []byte         `json:"signature"`
+	Signature    []byte
 }
 
 // GetPaths handle the request with GetPaths,implements POST /paths
-func GetPaths(req *http.Request, ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
-	if req.Method == http.MethodPost {
-		var r pathRequest
-		resErr := util.UnmarshalJSONRequest(req, &r)
-		if resErr != nil {
-			return *resErr
-		}
-		//verify caller's sinature
-		err := verifySinaturePaths(r, common.HexToAddress(peerAddress))
-		if err != nil {
-			return util.JSONResponse{
-				Code: http.StatusBadRequest,
-				JSON: err.Error(),
-			}
-		}
-		var peerFrom = r.PeerFrom
-		var peerTo = r.PeerTo
-		var tokenAddress = r.TokenAddress
-		var limitPaths = r.LimitPaths
-		var sendAmount = r.SendAmount
-		var sortDemand = r.SortDemand
-		pathResult, err := ce.TokenNetwork.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand)
-		if err != nil {
-			return util.JSONResponse{
-				Code: http.StatusExpectationFailed,
-				JSON: err.Error(),
-			}
-		}
-		return util.JSONResponse{
-			Code: http.StatusOK,
-			JSON: pathResult,
-		}
+func GetPaths(w rest.ResponseWriter, r *rest.Request) {
+	var req pathRequest
+	err := r.DecodeJsonPayload(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
-	return util.JSONResponse{
-		Code: http.StatusMethodNotAllowed,
-		JSON: util.NotFound("Bad method"),
+	var peerFrom = req.PeerFrom
+	var peerTo = req.PeerTo
+	var tokenAddress = req.TokenAddress
+	var limitPaths = req.LimitPaths
+	var sendAmount = req.SendAmount
+	var sortDemand = req.SortDemand
+	pathResult, err := tn.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: pathResult,
+	})
 }

@@ -1,88 +1,56 @@
-package routing
+package rest
 
 import (
-	"fmt"
 	"math/big"
 	"net/http"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+	"github.com/ant0ine/go-json-rest/rest"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// BalanceProof is the json request for BalanceProof
-type BalanceProof struct {
-	Nonce           uint64      `json:"nonce"`
-	TransferAmount  *big.Int    `json:"transfer_amount"`
-	LocksRoot       common.Hash `json:"locks_root"`
-	ChannelID       common.Hash `json:"channel_identifier"`
-	OpenBlockNumber int64       `json:"open_block_number"`
-	AdditionalHash  common.Hash `json:"addition_hash"`
-	Signature       []byte      `json:"signature"`
-	ExtraHash       common.Hash `json:"extra_hash"`
-}
-
 //balanceProofRequest is the json request for BalanceProof
 type balanceProofRequest struct {
-	BalanceProof     BalanceProof `json:"balance_proof"`
-	BalanceSignature []byte       `json:"balance_signature"`
-	LocksAmount      *big.Int     `json:"lock_amount"`
+	BalanceProof     *model.BalanceProof `json:"balance_proof"`
+	BalanceSignature []byte              `json:"balance_signature"`
+	LockedAmount     *big.Int            `json:"lock_amount"`
 }
 
 // UpdateBalanceProof handle the request with balance proof,implements GET and POST /balance
-func UpdateBalanceProof(req *http.Request, ce blockchainlistener.ChainEvents, peerAddress string) util.JSONResponse {
-	if req.Method == http.MethodPut {
-		var r balanceProofRequest
-		resErr := util.UnmarshalJSONRequest(req, &r)
-		if resErr != nil {
-			return *resErr
-		}
-		//validate json-input
-		if _, exist := ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID]; !exist {
-			return util.JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: fmt.Sprintf("Unknown channel which in the known channels on server or json error,channel_id=%s", r.BalanceProof.ChannelID.String()),
-			}
-		}
-
-		var partner common.Address
-		for _, xpartner := range ce.TokenNetwork.ChannelID2Address[r.BalanceProof.ChannelID] {
-			if xpartner != common.HexToAddress(peerAddress) {
-				partner = xpartner
-				break
-			}
-		}
-
-		//var locksAmount *big.Int
-		err := verifySinature(&r, common.HexToAddress(peerAddress), partner)
-		if err != nil {
-			return util.JSONResponse{
-				Code: http.StatusBadRequest,
-				JSON: err.Error(),
-			}
-		}
-
-		util.GetLogger(req.Context()).WithField("balance_proof", r.BalanceSignature).Info("Processing balance_proof request")
-
-		err = ce.TokenNetwork.UpdateBalance(
-			r.BalanceProof.ChannelID,
-			partner,
-			r.BalanceProof.Nonce,
-			r.BalanceProof.TransferAmount,
-			r.LocksAmount)
-		if err != nil {
-			return util.JSONResponse{
-				Code: http.StatusInternalServerError,
-				JSON: util.InvalidArgumentValue(err.Error()),
-			}
-		}
-		return util.JSONResponse{
-			Code: http.StatusOK,
-			JSON: util.OkJSON("true"),
-		}
+func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
+	peer := r.PathParam("peer")
+	peerAddress := common.HexToAddress(peer)
+	var req = &balanceProofRequest{}
+	err := r.DecodeJsonPayload(req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
-	return util.JSONResponse{
-		Code: http.StatusMethodNotAllowed,
-		JSON: util.NotFound("Bad method"),
+
+	//var locksAmount *big.Int
+	partner, err := verifyBalanceProofSignature(req, peerAddress)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
+
+	err = tn.UpdateBalance(peerAddress, partner, req.LockedAmount, req.BalanceProof)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: nil,
+	})
 }

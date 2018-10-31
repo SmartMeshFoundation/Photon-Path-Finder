@@ -1,10 +1,15 @@
-package model3
+package model
 
 import (
+	"fmt"
+
 	"log"
 	"os"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 var db *gorm.DB
@@ -27,8 +32,21 @@ func SetUpDB(dbtype, path string) {
 	db.AutoMigrate(&SettledChannel{})
 	db.AutoMigrate(&latestBlockNumber{})
 	db.AutoMigrate(&tokenNetwork{})
-	db.AutoMigrate(&AccountFee{}, &AccountTokenFee{}, &TokenFee{})
+	db.AutoMigrate(&AccountFee{}, &AccountTokenFee{}, &TokenFee{}, &NodeStatus{})
 	db = db.Debug()
 	db.Create(lb)
 	return
+}
+
+func CloseDB() {
+	err := db.Close()
+	if err != nil {
+		log.Printf(fmt.Sprintf("closedb err %s", err))
+	}
+}
+
+func SetupTestDB() {
+	dbPath := "/tmp/test.db"
+	os.Remove(dbPath)
+	SetUpDB("sqlite3", dbPath)
 }

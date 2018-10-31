@@ -1,4 +1,4 @@
-package model3
+package model
 
 import (
 	"math/big"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetAccountFeePolicy(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	a := utils.NewRandomAddress()
 	fee := GetAccountFeePolicy(a)
 	if fee.FeePolicy != params.DefaultFeePolicy ||
@@ -34,7 +34,7 @@ func TestGetAccountFeePolicy(t *testing.T) {
 }
 
 func TestGetAccountTokenFee(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	a := utils.NewRandomAddress()
 	token := utils.NewRandomAddress()
 	fee, err := GetAccountTokenFee(a, token)

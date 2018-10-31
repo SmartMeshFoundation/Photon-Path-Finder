@@ -1,4 +1,4 @@
-package model3
+package model
 
 import (
 	"math/big"
@@ -37,9 +37,9 @@ type TokenFee struct {
 
 //Fee 为了使用方便定义
 type Fee struct {
-	FeePolicy   int
-	FeeConstant *big.Int
-	FeePercent  int64
+	FeePolicy   int      `json:"fee_policy"`
+	FeeConstant *big.Int `json:"fee_constant" `
+	FeePercent  int64    `json:"fee_percent"`
 }
 
 //UpdateAccountDefaultFeePolicy 设置某个账户的缺省收费,新创建的通道都会按照此缺省设置进行

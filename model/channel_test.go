@@ -1,8 +1,7 @@
-package model3
+package model
 
 import (
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -16,16 +15,12 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-func setupdb() {
-	os.Remove("test.db")
-	SetUpDB("sqlite3", "test.db")
-}
 func TestSetUpDB(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 }
 
 func TestChannel(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	c := &Channel{
 		ChannelID: utils.NewRandomHash().String(),
 		Status:    ChannelStatusClosed,
@@ -96,7 +91,7 @@ func testCreateChannel(t *testing.T) (c2 *Channel) {
 	c.Participants[1] = &ChannelParticipantInfo{
 		Participant: participant2.String(),
 	}
-	err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
+	_, err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
 	if err != nil {
 		t.Error(err)
 		return
@@ -109,7 +104,7 @@ func testCreateChannel(t *testing.T) (c2 *Channel) {
 	return c2
 }
 func TestAddChannel(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	token := utils.NewRandomAddress()
 	channelIdentifier := utils.NewRandomHash()
 	c := &Channel{
@@ -126,7 +121,7 @@ func TestAddChannel(t *testing.T) {
 	c.Participants[1] = &ChannelParticipantInfo{
 		Participant: participant2.String(),
 	}
-	err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
+	_, err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
 	if err != nil {
 		t.Error(err)
 		return
@@ -143,12 +138,51 @@ func TestAddChannel(t *testing.T) {
 	assert.EqualValues(t, c2.Participants[1].FeeConstantPart, params.DefaultFeeConstantPart.String())
 	assert.EqualValues(t, c2.Participants[0].FeePercentPart, params.DefaultFeePercentPart)
 }
+func TestGetAllTokenChannels(t *testing.T) {
+	SetupTestDB()
+
+	token := utils.NewRandomAddress()
+	channelIdentifier := utils.NewRandomHash()
+	c := &Channel{
+		ChannelID: channelIdentifier.String(),
+		Status:    ChannelStatusOpen,
+		Token:     token.String(),
+	}
+	participant1 := utils.NewRandomAddress()
+	participant2 := utils.NewRandomAddress()
+	c.Participants = make([]*ChannelParticipantInfo, 2)
+	c.Participants[0] = &ChannelParticipantInfo{
+		Participant: participant1.String(),
+	}
+	c.Participants[1] = &ChannelParticipantInfo{
+		Participant: participant2.String(),
+	}
+	cs, err := GetAllTokenChannels(token)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("cs=%s", utils.StringInterface(cs, 3))
+	_, err = AddChannel(token, participant1, participant2, channelIdentifier, 3)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	cs, err = GetAllTokenChannels(token)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(cs) != 1 {
+		t.Error("length error")
+	}
+}
 
 func TestCloseChannel(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	c := testCreateChannel(t)
 	assert.EqualValues(t, c.Status, ChannelStatusOpen)
-	err := CloseChannel(common.HexToHash(c.ChannelID))
+	_, err := CloseChannel(common.HexToHash(c.ChannelID))
 	if err != nil {
 		t.Error(err)
 		return
@@ -162,9 +196,9 @@ func TestCloseChannel(t *testing.T) {
 }
 
 func TestSettleChannel(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	c := testCreateChannel(t)
-	err := SettleChannel(common.HexToHash(c.ChannelID))
+	_, err := SettleChannel(common.HexToHash(c.ChannelID))
 	if err != nil {
 		t.Error(err)
 		return
@@ -176,19 +210,19 @@ func TestSettleChannel(t *testing.T) {
 }
 
 func TestUpdateChannelDeposit(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	c := testCreateChannel(t)
 	channelIdentifier := common.HexToHash(c.ChannelID)
 	p1 := c.Participants[0]
 	p2 := c.Participants[1]
-	err := UpdateChannelDeposit(channelIdentifier, common.HexToAddress(p1.Participant), big.NewInt(20))
+	_, err := UpdateChannelDeposit(channelIdentifier, common.HexToAddress(p1.Participant), big.NewInt(20))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	c2, _ := getChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(20).String())
-	err = UpdateChannelDeposit(channelIdentifier, common.HexToAddress(p2.Participant), big.NewInt(30))
+	_, err = UpdateChannelDeposit(channelIdentifier, common.HexToAddress(p2.Participant), big.NewInt(30))
 	if err != nil {
 		t.Error(err)
 		return
@@ -198,21 +232,21 @@ func TestUpdateChannelDeposit(t *testing.T) {
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(30).String())
 }
 func TestUpdateChannelBalanceProof(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	c := testCreateChannel(t)
 	participant := common.HexToAddress(c.Participants[0].Participant)
 	partner := common.HexToAddress(c.Participants[1].Participant)
-	err := UpdateChannelDeposit(common.HexToHash(c.ChannelID), participant, big.NewInt(50))
+	_, err := UpdateChannelDeposit(common.HexToHash(c.ChannelID), participant, big.NewInt(50))
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = UpdateChannelDeposit(common.HexToHash(c.ChannelID), partner, big.NewInt(50))
+	_, err = UpdateChannelDeposit(common.HexToHash(c.ChannelID), partner, big.NewInt(50))
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
 		ChannelID:      common.HexToHash(c.ChannelID),
 		TransferAmount: big.NewInt(32),
 		Nonce:          1,
@@ -222,7 +256,7 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
 		ChannelID:      common.HexToHash(c.ChannelID),
 		TransferAmount: big.NewInt(32),
 		Nonce:          0,
@@ -232,7 +266,7 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 		t.Error("should failed because of nonce")
 		return
 	}
-	err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
 		ChannelID:      common.HexToHash(c.ChannelID),
 		TransferAmount: big.NewInt(22),
 		Nonce:          3,
@@ -245,7 +279,7 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 	c2, _ := getChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(18).String())
-	err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
+	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
 		ChannelID:      common.HexToHash(c.ChannelID),
 		TransferAmount: big.NewInt(10),
 		Nonce:          1,
@@ -259,4 +293,113 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(22).String())
 	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(50).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(28).String())
+}
+
+func TestWithDrawChannel(t *testing.T) {
+	SetupTestDB()
+	c := testCreateChannel(t)
+	channelIdentifier := common.HexToHash(c.ChannelID)
+	participant := common.HexToAddress(c.Participants[0].Participant)
+	partner := common.HexToAddress(c.Participants[1].Participant)
+	_, err := UpdateChannelDeposit(common.HexToHash(c.ChannelID), participant, big.NewInt(50))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = UpdateChannelDeposit(common.HexToHash(c.ChannelID), partner, big.NewInt(50))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+		ChannelID:      common.HexToHash(c.ChannelID),
+		TransferAmount: big.NewInt(32),
+		Nonce:          1,
+		LocksRoot:      utils.NewRandomHash(),
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+		ChannelID:      common.HexToHash(c.ChannelID),
+		TransferAmount: big.NewInt(32),
+		Nonce:          0,
+		LocksRoot:      utils.NewRandomHash(),
+	})
+	if err == nil {
+		t.Error("should failed because of nonce")
+		return
+	}
+	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
+		ChannelID:      common.HexToHash(c.ChannelID),
+		TransferAmount: big.NewInt(22),
+		Nonce:          3,
+		LocksRoot:      utils.NewRandomHash(),
+	})
+	if err == nil {
+		t.Error("should failed because of transfer amount decrease")
+		return
+	}
+	c2, _ := getChannel(c.ChannelID)
+	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
+	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(18).String())
+	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
+		ChannelID:      common.HexToHash(c.ChannelID),
+		TransferAmount: big.NewInt(10),
+		Nonce:          1,
+		LocksRoot:      utils.NewRandomHash(),
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	c2, _ = getChannel(c.ChannelID)
+	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(22).String())
+	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(50).String())
+	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(28).String())
+	_, err = WithDrawChannel(channelIdentifier,
+		common.HexToAddress(c.Participants[0].Participant),
+		common.HexToAddress(c.Participants[1].Participant),
+		big.NewInt(10), big.NewInt(20), 5)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	c2, _ = getChannel(c.ChannelID)
+	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(10).String())
+	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(0).String())
+	assert.EqualValues(t, c2.Participants[0].TransferedAmount, big.NewInt(0).String())
+	assert.EqualValues(t, c2.Participants[0].Nonce, 0)
+	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(20).String())
+	assert.EqualValues(t, c2.Participants[1].LockedAmount, big.NewInt(0).String())
+	assert.EqualValues(t, c2.Participants[1].TransferedAmount, big.NewInt(0).String())
+	assert.EqualValues(t, c2.Participants[1].Nonce, 0)
+}
+
+func TestUpdateChannelFeeRate(t *testing.T) {
+	SetupTestDB()
+	c := testCreateChannel(t)
+	channelIdentifier := common.HexToHash(c.ChannelID)
+	participant := common.HexToAddress(c.Participants[0].Participant)
+
+	_, err := UpdateChannelFeeRate(channelIdentifier, participant, &Fee{
+		FeePolicy:   FeePolicyCombined,
+		FeeConstant: big.NewInt(30),
+		FeePercent:  50,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	c2, _ := getChannel(c.ChannelID)
+
+	assert.EqualValues(t, c2.Participants[0].FeePolicy, FeePolicyCombined)
+	assert.EqualValues(t, c2.Participants[0].FeePercentPart, 50)
+	assert.EqualValues(t, c2.Participants[0].FeeConstantPart, big.NewInt(30).String())
+
+	fee, err := GetChannelFeeRate(channelIdentifier, participant)
+	assert.EqualValues(t, fee.FeePolicy, FeePolicyCombined)
+	assert.EqualValues(t, fee.FeePercent, 50)
+	assert.EqualValues(t, fee.FeeConstant, big.NewInt(30))
 }

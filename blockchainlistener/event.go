@@ -3,10 +3,10 @@ package blockchainlistener
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"sync/atomic"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi/storage"
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+	"github.com/nkbai/log"
+
 	"github.com/SmartMeshFoundation/Photon/blockchain"
 	"github.com/SmartMeshFoundation/Photon/network/helper"
 	"github.com/SmartMeshFoundation/Photon/network/rpc"
@@ -14,210 +14,183 @@ import (
 	"github.com/SmartMeshFoundation/Photon/transfer/mediatedtransfer"
 	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 //ChainEvents block chain operations
 type ChainEvents struct {
-	client          *helper.SafeEthClient
-	be              *blockchain.Events
-	bcs             *rpc.BlockChainService
-	key             *ecdsa.PrivateKey
-	quitChan        chan struct{}
-	stopped         bool
-	BlockNumberChan chan int64
-	blockNumber     *atomic.Value
-	TokenNetwork    model.TokenNetwork
-	db              *storage.Database
+	client       *helper.SafeEthClient
+	be           *blockchain.Events
+	bcs          *rpc.BlockChainService
+	key          *ecdsa.PrivateKey
+	quitChan     chan struct{}
+	stopped      bool
+	TokenNetwork *TokenNetwork
+	matrix       *MatrixObserver
 }
 
 // NewChainEvents create chain events
-func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address, db *storage.Database) *ChainEvents { //, db *models.ModelDB
-	logrus.Info("Token Network registry address=", tokenNetworkRegistryAddress.String())
+func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address) *ChainEvents { //, db *models.ModelDB
+	log.Info(fmt.Sprintf("Token Network registry address=%s", tokenNetworkRegistryAddress.String()))
 	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client)
 	if err != nil {
-		logrus.Panic(err)
+		log.Crit(err.Error())
 	}
 	registry := bcs.Registry(tokenNetworkRegistryAddress, true)
 	if registry == nil {
-		logrus.Panic("Register token network error : cannot get registry")
+		log.Crit("Register token network error : cannot get registry")
 	}
 
-	token2TokenNetwork, err := db.GetAllTokensStorage(nil)
-	//fmt.Printf("token2TokenNetwork startup=%s",utils.StringInterface(token2TokenNetwork,2))
-	logrus.Infoln("token2TokenNetwork startup=%s", utils.StringInterface(token2TokenNetwork, 2))
+	token2TokenNetwork := model.GetAllTokenNetworks()
+	log.Trace(fmt.Sprintf("token2TokenNetwork startup=%s", utils.StringInterface(token2TokenNetwork, 2)))
+
 	//logrus.in
-	return &ChainEvents{
-		client:          client,
-		be:              blockchain.NewBlockChainEvents(client, bcs, token2TokenNetwork),
-		bcs:             bcs,
-		key:             key,
-		db:              db,
-		quitChan:        make(chan struct{}),
-		BlockNumberChan: make(chan int64, 1),
-		blockNumber:     new(atomic.Value),
-		TokenNetwork:    *model.InitTokenNetwork(tokenNetworkRegistryAddress, db),
+	ce := &ChainEvents{
+		client:       client,
+		be:           blockchain.NewBlockChainEvents(client, bcs, token2TokenNetwork),
+		bcs:          bcs,
+		key:          key,
+		quitChan:     make(chan struct{}),
+		TokenNetwork: NewTokenNetwork(token2TokenNetwork),
 	}
+	ce.matrix = NewMatrixObserver(ce.TokenNetwork)
+	return ce
 }
 
 // Start moniter blockchain
-func (chainevent *ChainEvents) Start() error {
-	chainevent.be.Start(chainevent.GetLatestBlockNumber())
-	go chainevent.loop()
+func (ce *ChainEvents) Start() error {
+	ce.be.Start(ce.getLatestBlockNumber())
+	go ce.loop()
 	return nil
 }
 
 // Stop service
-func (chainevent *ChainEvents) Stop() {
-	chainevent.be.Stop()
-	close(chainevent.quitChan)
-}
-
-//setBlockNumber set block number
-func (chainevent *ChainEvents) setBlockNumber(blocknumber int64) {
-	if chainevent.stopped {
-		logrus.Infof("New block number arrived %d,but has stopped", blocknumber)
-		return
-	}
-	chainevent.BlockNumberChan <- blocknumber
+func (ce *ChainEvents) Stop() {
+	ce.be.Stop()
+	ce.matrix.Stop()
+	close(ce.quitChan)
 }
 
 // loop loop
-func (chainevent *ChainEvents) loop() {
+func (ce *ChainEvents) loop() {
 	for {
 		select {
-		case st, ok := <-chainevent.be.StateChangeChannel:
+		case st, ok := <-ce.be.StateChangeChannel:
 			if !ok {
-				logrus.Info("StateChangeChannel closed")
+				log.Info("StateChangeChannel closed")
 				return
 			}
-			chainevent.handleStateChange(st)
-		case <-chainevent.quitChan:
+			ce.handleStateChange(st)
+		case <-ce.quitChan:
 			return
 		}
 	}
 }
 
 // handleStateChange 通道打开、通道关闭、通道存钱、通道取钱
-func (chainevent *ChainEvents) handleStateChange(st transfer.StateChange) {
+func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 	switch st2 := st.(type) {
 	case *transfer.BlockStateChange:
-		chainevent.handleBlockNumber(st2.BlockNumber)
+		ce.handleBlockNumber(st2.BlockNumber)
 	case *mediatedtransfer.ContractNewChannelStateChange: //open channel event
-		chainevent.handleChainChannelOpend(st2)
+		ce.handleChainChannelOpend(st2)
 	case *mediatedtransfer.ContractClosedStateChange: //close channel event
-		chainevent.handleChainChannelClosed(st2)
+		ce.handleChainChannelClosed(st2)
 	case *mediatedtransfer.ContractBalanceStateChange: //deposit event
-		chainevent.handleChainChannelDeposit(st2)
+		ce.handleChainChannelDeposit(st2)
 	case *mediatedtransfer.ContractChannelWithdrawStateChange: //withdaw event
-		chainevent.handleWithdrawStateChange(st2)
+		ce.handleWithdrawStateChange(st2)
 	case *mediatedtransfer.ContractTokenAddedStateChange:
 		//chainevent.be.TokenNetworks[st2.TokenNetworkAddress] = true
-		chainevent.handleTokenAddedStateChange(st2)
+		ce.handleTokenAddedStateChange(st2)
 	}
 }
 
 // handleTokenAddedStateChange Token added
-func (chainevent *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.ContractTokenAddedStateChange) {
-	logrus.Info("Received TokenAddedStateChange event for token ", st2.TokenAddress.String())
-	fmt.Println(fmt.Sprintf("Received TokenAddedStateChange data: %s", utils.StringInterface(st2, 2)))
-	err := chainevent.db.SaveTokensStorage(nil, st2.TokenAddress.String(), st2.TokenNetworkAddress.String())
+func (ce *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.ContractTokenAddedStateChange) {
+	log.Trace(fmt.Sprintf("Received TokenAddedStateChange event for token %s", st2.TokenAddress.String()))
+	tokenProxy, err := ce.bcs.Token(st2.TokenAddress)
 	if err != nil {
-		logrus.Error("Handle token added state change event error,err=", err)
+		log.Error(fmt.Sprintf("Token proxy create error %s", err))
+		return
+	}
+	decimal, err := tokenProxy.Token.Decimals(nil)
+	err = ce.TokenNetwork.handleTokenNetworkAdded(st2.TokenAddress, st2.TokenNetworkAddress, st2.BlockNumber, decimal)
+	if err != nil {
+		log.Error(fmt.Sprintf("handleTokenNetworkAdded err %s ", err))
 	}
 }
 
-func (chainevent *ChainEvents) handleBlockNumber(n int64) {
-}
-
-// existTokenNetwork
-func (chainevent *ChainEvents) existTokenNetwork(channelID common.Hash) bool {
-	if _, exist := chainevent.TokenNetwork.ChannelID2Address[channelID]; !exist {
-		return false
-	}
-	return true
+func (ce *ChainEvents) handleBlockNumber(n int64) {
+	model.UpdateBlockNumber(n)
 }
 
 // handleNewChannelStateChange Open channel
-func (chainevent *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange) {
+func (ce *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange) {
 	tokenNetwork := st2.TokenNetworkAddress
 
-	logrus.Info("Received ChannelOpened event for token network ", tokenNetwork.String())
+	log.Trace(fmt.Sprintf("Received ChannelOpened event for token network %s", tokenNetwork.String()))
 
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
 	participant2 := st2.Participant2
-	fmt.Println(fmt.Sprintf("Received ChannelOpened data: %s", utils.StringInterface(st2, 2)))
-	err := chainevent.TokenNetwork.HandleChannelOpenedEvent(tokenNetwork, channelID, participant1, participant2)
+	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelOpened data: %s", utils.StringInterface(st2, 2))))
+	err := ce.TokenNetwork.handleChannelOpenedEvent(tokenNetwork, channelID, participant1, participant2, st2.BlockNumber)
 	if err != nil {
-		logrus.Warn("Handle channel open event error,err=", err)
+		log.Error(fmt.Sprintf("Handle channel open event error,err=%s", err))
 	}
 
 }
 
 // handleDepositStateChange deposit
-func (chainevent *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractBalanceStateChange) {
+func (ce *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractBalanceStateChange) {
 	tokenNetwork := st2.TokenNetworkAddress
 
-	logrus.Info("Received ChannelDeposit event for token network ", tokenNetwork.String())
+	log.Trace(fmt.Sprintf("Received ChannelDeposit event for token network %s", tokenNetwork.String()))
 
 	channelID := st2.ChannelIdentifier
 	participantAddress := st2.ParticipantAddress
 	totalDeposit := st2.Balance
-	fmt.Println(fmt.Sprintf("Received ChannelDeposit data: %s", utils.StringInterface(st2, 2)))
-	err := chainevent.TokenNetwork.HandleChannelDepositEvent(tokenNetwork, channelID, participantAddress, totalDeposit)
+	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelDeposit data: %s", utils.StringInterface(st2, 2))))
+	err := ce.TokenNetwork.handleChannelDepositEvent(tokenNetwork, channelID, participantAddress, totalDeposit)
 	if err != nil {
-		logrus.Warn("Handle channel deposit event error,err=", err)
+		log.Error(fmt.Sprintf("Handle channel deposit event error,err=%s", err))
 	}
 }
 
 // handleChainChannelClosed Close Channel
-func (chainevent *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractClosedStateChange) {
+func (ce *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractClosedStateChange) {
 	tokenNetwork := st2.TokenNetworkAddress
 
-	logrus.Info("Received ChannelClosed event for token network ", tokenNetwork.String())
+	log.Trace(fmt.Sprintf("Received ChannelClosed event for token network %s", tokenNetwork.String()))
 
 	channelID := st2.ChannelIdentifier
-	fmt.Println(fmt.Sprintf("Received ChannelClosed data: %s", utils.StringInterface(st2, 2)))
-	err := chainevent.TokenNetwork.HandleChannelClosedEvent(tokenNetwork, channelID)
+	err := ce.TokenNetwork.handleChannelClosedEvent(tokenNetwork, channelID)
 	if err != nil {
-		logrus.Warn("Handle channel close event error,err=", err)
+		log.Error(fmt.Sprintf("Handle channel close event error,err=%s", err))
 	}
 }
 
 // handleWithdrawStateChange Withdraw
-func (chainevent *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractChannelWithdrawStateChange) {
+func (ce *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractChannelWithdrawStateChange) {
 	tokenNetwork := st2.TokenNetworkAddress
 
-	logrus.Info("Received ChannelWithdraw event for token network ", tokenNetwork.String())
+	log.Trace(fmt.Sprintf("Received ChannelWithdraw event for token network %s", tokenNetwork.String()))
 
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
 	participant2 := st2.Participant2
 	participant1Balance := st2.Participant1Balance
 	participant2Balance := st2.Participant2Balance
-	fmt.Println(fmt.Sprintf("Received ChannelWithdraw data: %s", utils.StringInterface(st2, 2)))
-	err := chainevent.TokenNetwork.HandleChannelWithdrawEvent(tokenNetwork, channelID, participant1, participant2, participant1Balance, participant2Balance)
+
+	err := ce.TokenNetwork.handleChannelWithdrawEvent(tokenNetwork, channelID, participant1, participant2, participant1Balance, participant2Balance, st2.BlockNumber)
 	if err != nil {
-		logrus.Warn("Handle channel withdaw event error,err=", err)
+		log.Error(fmt.Sprintf("Handle channel withdaw event error,err=%s", err))
 	}
 }
 
-// SaveLatestBlockNumber
-func (chainevent *ChainEvents) SaveLatestBlockNumber(blockNumber int64) {
-	err := chainevent.db.SaveLatestBlockNumberStorage(nil, blockNumber)
-	if err != nil {
-		logrus.Error("Models (SaveLatestBlockNumber) err=", err)
-	}
-}
-
-// GetLatestBlockNumber
-func (chainevent *ChainEvents) GetLatestBlockNumber() int64 {
-	number, err := chainevent.db.GetLatestBlockNumberStorage(nil)
-	if err != nil {
-		logrus.Error("Models (GetLatestBlockNumber) err=", err)
-	}
+// getLatestBlockNumber
+func (ce *ChainEvents) getLatestBlockNumber() int64 {
+	number := model.GetLatestBlockNumber()
 	fmt.Println(number)
-	//return number
-	return 0 //just test
+	return number
 }

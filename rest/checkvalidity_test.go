@@ -1,14 +1,18 @@
-package routing
+package rest
 
 import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+
 	"github.com/SmartMeshFoundation/Photon/utils"
 )
 
 func TestVerifySinature(t *testing.T) {
-	br := &BalanceProof{
+	br := &model.BalanceProof{
 		Nonce:          1,
 		TransferAmount: big.NewInt(32),
 		LocksRoot:      utils.EmptyHash,
@@ -24,8 +28,8 @@ func TestVerifySinature(t *testing.T) {
 		return
 	}
 	brm := &balanceProofRequest{
-		BalanceProof: *br,
-		LocksAmount:  big.NewInt(0),
+		BalanceProof: br,
+		LockedAmount: big.NewInt(0),
 	}
 	err = SignDataForBalanceProofMessage0(key2, brm)
 	if err != nil {
@@ -33,9 +37,10 @@ func TestVerifySinature(t *testing.T) {
 		return
 	}
 
-	err = verifySinature(brm, addr2, addr1)
+	maddr, err := verifyBalanceProofSignature(brm, addr2)
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	assert.EqualValues(t, maddr, addr1)
 }

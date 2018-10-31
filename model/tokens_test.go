@@ -1,4 +1,4 @@
-package model3
+package model
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetLatestBlockNumber(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	if GetLatestBlockNumber() != 0 {
 		t.Error("should be 0 first")
 		return
@@ -20,7 +20,7 @@ func TestGetLatestBlockNumber(t *testing.T) {
 }
 
 func TestGetAllTokenNetworks(t *testing.T) {
-	setupdb()
+	SetupTestDB()
 	a1 := utils.NewRandomAddress()
 	a2 := utils.NewRandomAddress()
 	m := GetAllTokenNetworks()

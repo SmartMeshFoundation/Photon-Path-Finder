@@ -1,92 +1,138 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"net/http"
-	debug2 "runtime/debug"
+	"os/signal"
+
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/rest"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/clientapi"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/common"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/basecomponent"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/Photon/accounts"
+
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/internal/debug"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
+
+	"os"
+	debug2 "runtime/debug"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/network/helper"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
+	"github.com/SmartMeshFoundation/Photon/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/node"
+	"gopkg.in/urfave/cli.v1"
 )
 
-var (
-	// httpBindAddr http listening port is 9001
-	httpBindAddr = flag.String("http-bind-address", ":9001", "The HTTP listening port for the server")
-)
+func main() {
+	StartMain()
+}
 
 func init() {
 	debug2.SetTraceback("crash")
 	log.LocationTrims = append(log.LocationTrims,
 		"github.com/SmartMeshFoundation/Photon-Path-Finder/vendor/github.com/SmartMeshFoundation/Photon/",
-		"github.com/SmartMeshFoundation/Photon-Monitoring",
+		"github.com/SmartMeshFoundation/Photon-Path-Finder",
 	)
 
 }
 
-// main main
-func main() {
-	StartMain()
+//StartMain entry point of Photon app
+func StartMain() {
+	fmt.Printf("os.args=%q\n", os.Args)
+	app := cli.NewApp()
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name: "eth-rpc-endpoint",
+			Usage: `"host:port" address of ethereum JSON-RPC server.\n'
+	           'Also accepts a protocol prefix (ws:// or ipc channel) with optional port',`,
+			Value: node.DefaultIPCEndpoint("geth"),
+		},
+		cli.StringFlag{
+			Name:  "registry-contract-address",
+			Usage: `hex encoded address of the registry contract.`,
+			Value: params.RegistryAddress.String(),
+		},
+		cli.IntFlag{
+			Name:  "port",
+			Usage: ` port  for the RPC server to listen on.`,
+			Value: 7000,
+		},
+		cli.StringFlag{
+			Name:  "dbtype",
+			Usage: "database type sqlite3/mysql/postgres",
+			Value: "sqlite3",
+		},
+		cli.StringFlag{
+			Name:  "dbconnection",
+			Usage: "database connection string",
+			Value: "./photon.db",
+		},
+	}
+	app.Flags = append(app.Flags, debug.Flags...)
+	app.Action = mainCtx
+	app.Name = "PhotonPathFinder"
+	app.Version = "0.1"
+	app.Before = func(ctx *cli.Context) error {
+		if err := debug.Setup(ctx); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	app.After = func(ctx *cli.Context) error {
+		debug.Exit()
+		return nil
+	}
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Error(fmt.Sprintf("run err %s", err))
+	}
 }
 
-// StartMain Start path finding service
-func StartMain() {
-	cfg := basecomponent.ParseMonolithFlags()
-	base := basecomponent.NewBasePathFinder(cfg, "PathFinder")
-	defer base.Close()
-	logrus.Info("Welcome to Photon-path-finder,version ", base.Cfg.Version)
-	PfsDB := base.CreatePfsDB()
+func mainCtx(ctx *cli.Context) error {
 
-	httpHandler := common.WrapHandlerInCORS(base.APIMux)
-	http.Handle("/pathfinder", promhttp.Handler())
-	http.Handle("/", httpHandler)
-
-	// Connect to geth and listening block chain events
-	ethEndpoint := cfg.EthRPCEndpoint
+	var err error
+	fmt.Printf("Welcom to Photon Path Finder,version %s\n", ctx.App.Version)
+	config(ctx)
+	//log.Debug(fmt.Sprintf("Config:%s", utils.StringInterface(cfg, 2)))
+	ethEndpoint := ctx.String("eth-rpc-endpoint")
 	client, err := helper.NewSafeClient(ethEndpoint)
 	if err != nil {
-		logrus.Fatalf("Cannot connect to geth :%s err=%s", ethEndpoint, err)
+		log.Error(fmt.Sprintf("cannot connect to geth :%s err=%s", ethEndpoint, err))
+		utils.SystemExit(1)
 	}
-	address := ethcommon.HexToAddress(base.Cfg.Address)
-	address, privkeyBin, err := accounts.PromptAccount(address, base.Cfg.KeystorePath, base.Cfg.PasswordFile)
-
-	if err != nil {
-		logrus.Fatal("error :", err)
-	}
-	config.Address = address
-	config.PrivKey, err = crypto.ToECDSA(privkeyBin)
-	if err != nil {
-		logrus.Fatal("privkey error :", err)
-	}
-	ce := blockchainlistener.NewChainEvents(config.PrivKey, client, ethcommon.HexToAddress(base.Cfg.RegistryAddress), PfsDB)
+	params.DBType = ctx.String("dbtype")
+	params.DBPath = ctx.String("dbconnection")
+	model.SetUpDB(params.DBType, params.DBPath)
+	key, _ := utils.MakePrivateKeyAddress()
+	ce := blockchainlistener.NewChainEvents(key, client, params.RegistryAddress)
 	err = ce.Start()
 	if err != nil {
-		log.Crit(fmt.Sprintf("ce start err %s", err))
+		log.Error(fmt.Sprintf("ce start err =%s ", err))
+		utils.SystemExit(3)
+	}
+	/*
+		quit handler
+	*/
+	go func() {
+		quitSignal := make(chan os.Signal, 1)
+		signal.Notify(quitSignal, os.Interrupt, os.Kill)
+		<-quitSignal
+		signal.Stop(quitSignal)
+		ce.Stop()
+		model.CloseDB()
+		utils.SystemExit(0)
+	}()
+	rest.Start(ce, ce.TokenNetwork)
+	return nil
+}
+func config(ctx *cli.Context) {
+
+	params.Port = ctx.Int("port")
+	registAddrStr := ctx.String("registry-contract-address")
+	if len(registAddrStr) > 0 {
+		params.RegistryAddress = common.HexToAddress(registAddrStr)
 	}
 
-	// Setup PFS service interface
-	clientapi.SetupClientAPIComponent(
-		base,
-		PfsDB,
-		ce,
-	)
-
-	// Expose the PFS APIs directly,Handle http
-	go func() {
-		logrus.Info("PFS listening on ", *httpBindAddr)
-		logrus.Fatal(http.ListenAndServe(*httpBindAddr, nil))
-
-	}()
-	// block forever to let the HTTP handler serve the APIs
-	select {}
 }

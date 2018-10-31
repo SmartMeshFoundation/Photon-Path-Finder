@@ -1,114 +1,235 @@
-package routing
+package rest
 
 import (
+	"fmt"
+	"math/big"
 	"net/http"
+
+	"github.com/SmartMeshFoundation/Photon/utils"
+
+	"github.com/ant0ine/go-json-rest/rest"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/common/config"
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/util"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// SetFeeRateRequest is the json request for SetFeeRate
+// SetFeeRateRequest is the json request for setChannelRate
 type SetFeeRateRequest struct {
-	ChannelID common.Hash `json:"channel_id"`
-	FeeRate   int64       `json:"fee_rate"`
-	Signature []byte      `json:"signature"`
+	FeeConstant *big.Int `json:"fee_constant"`
+	FeePercent  int64    `json:"fee_percent"`
+	Signature   []byte   `json:"signature"`
 }
 
-// GetFeeRateRequest is the json request for GetFeeRate
-// Reponse all data of fee rate if channel_id is null
-type GetFeeRateRequest struct {
-	ObtainObj common.Address `json:"obtain_obj"`
-	ChannelID common.Hash    `json:"channel_id"`
-	//Signature []byte         `json:"signature"` 查询完全没必要验证签名,这个信息应该是公开的,希望其他人知道的.
-}
-
-// GetFeeRateInfoResponse struct of fee-rate-info
-type GetFeeRateInfoResponse struct {
-	FeeRate int64 `json:"fee_rate"`
-}
-
-// SetFeeRate save request data of set_fee_rate
-func SetFeeRate(req *http.Request, peerAddress string) util.JSONResponse {
-
-	if req.Method != http.MethodPut {
-		return util.JSONResponse{
-			Code: http.StatusMethodNotAllowed,
-			JSON: util.NotFound("Bad method"),
+func verifyAndGetFeePolicy(req *SetFeeRateRequest) (policy int, err error) {
+	policy = model.FeePolicyConstant
+	if req.FeePercent > 0 {
+		policy = model.FeePolicyPercent
+		if req.FeeConstant != nil && req.FeeConstant.Cmp(utils.BigInt0) > 0 {
+			policy = model.FeePolicyCombined
+		}
+	} else {
+		policy = model.FeePolicyConstant
+		if req.FeeConstant == nil || req.FeeConstant.Cmp(utils.BigInt0) < 0 {
+			err = fmt.Errorf("fee arg err constant=%s,percent=%d", req.FeeConstant, req.FeePercent)
+			return
+		} else {
+			policy = model.FeePolicyCombined
 		}
 	}
+	return
+}
 
-	var r SetFeeRateRequest
-	resErr := util.UnmarshalJSONRequest(req, &r)
-	if resErr != nil {
-		return *resErr
+// setChannelRate save request data of set_fee_rate
+func setChannelRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+	channel := common.HexToHash(r.PathParam("channel"))
+	var req SetFeeRateRequest
+	err := r.DecodeJsonPayload(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
-
 	//validate json-input
-	err := verifySinatureSetFeeRate(r, common.HexToAddress(peerAddress))
+	err = verifySinatureSetFeeRate(&req, peerAddress)
 	if err != nil {
-		return util.JSONResponse{
+		w.WriteJson(&response{
 			Code: http.StatusBadRequest,
-			JSON: err.Error(), //util.BadJSON("peerAddress must be provided"),
-		}
+			JSON: err.Error(),
+		})
+		return
 	}
-
-	if r.FeeRate <= 0 {
-		return util.JSONResponse{
+	policy, err := verifyAndGetFeePolicy(&req)
+	if err != nil {
+		w.WriteJson(&response{
 			Code: http.StatusBadRequest,
-			JSON: util.InvalidArgumentValue("fee_rate must be a  positive number"),
-		}
+			JSON: err.Error(),
+		})
+		return
 	}
-
-	util.GetLogger(req.Context()).WithField("set_fee_rate", r.Signature).Info("Processing set_fee_rate request")
-
 	fee := &model.Fee{
-		FeePolicy:  model.FeePolicyPercent,
-		FeePercent: r.FeeRate,
+		FeePolicy:   policy,
+		FeePercent:  req.FeePercent,
+		FeeConstant: req.FeeConstant,
 	}
-	err = model.UpdateChannelFeeRate(r.ChannelID, common.HexToAddress(peerAddress), fee)
+	err = tn.UpdateChannelFeeRate(channel, peerAddress, fee)
 	if err != nil {
-		return util.JSONResponse{
-			Code: http.StatusInternalServerError,
-			JSON: util.InvalidArgumentValue(err.Error()),
-		}
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
-	return util.JSONResponse{
+	w.WriteJson(&response{
 		Code: http.StatusOK,
-		JSON: util.OkJSON("true"),
-	}
+		JSON: fee,
+	})
 }
 
-// GetFeeRate reponse fee_rate data
-func GetFeeRate(req *http.Request, peerAddress string, cfg config.PathFinder) util.JSONResponse {
-	if req.Method == http.MethodPost {
-		var r GetFeeRateRequest
-		resErr := util.UnmarshalJSONRequest(req, &r)
-		if resErr != nil {
-			return *resErr
-		}
+// getChannelFeeRate reponse fee_rate data
+func getChannelRate(w rest.ResponseWriter, r *rest.Request) {
 
-		fee, err := model.GetChannelFeeRate(r.ChannelID, r.ObtainObj)
-		if err != nil {
-			return util.JSONResponse{
-				Code: http.StatusNotFound,
-				JSON: util.NotFound("any fee-rate data found"),
-			}
-		}
-
-		reslut := &GetFeeRateInfoResponse{
-			FeeRate: fee.FeePercent,
-		}
-		return util.JSONResponse{
-			Code: http.StatusOK,
-			JSON: reslut,
-		}
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+	channelID := common.HexToHash(r.PathParam("channel"))
+	fee, err := model.GetChannelFeeRate(channelID, peerAddress)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
 
-	return util.JSONResponse{
-		Code: http.StatusMethodNotAllowed,
-		JSON: util.NotFound("Bad method"),
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: fee,
+	})
+	return
+}
+
+func setTokenRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+	token := common.HexToAddress(r.PathParam("token"))
+	var req SetFeeRateRequest
+	err := r.DecodeJsonPayload(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
 	}
+	//validate json-input
+	err = verifySinatureSetFeeRate(&req, peerAddress)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	policy, err := verifyAndGetFeePolicy(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	fee := &model.Fee{
+		FeePolicy:   policy,
+		FeePercent:  req.FeePercent,
+		FeeConstant: req.FeeConstant,
+	}
+	err = model.UpdateAccountTokenFee(peerAddress, token, fee)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: fee,
+	})
+}
+func getTokenRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+	token := common.HexToAddress(r.PathParam("token"))
+	fee, err := model.GetAccountTokenFee(peerAddress, token)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: fee,
+	})
+	return
+}
+func setAccountRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+
+	var req SetFeeRateRequest
+	err := r.DecodeJsonPayload(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	//validate json-input
+	err = verifySinatureSetFeeRate(&req, peerAddress)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	policy, err := verifyAndGetFeePolicy(&req)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	fee := &model.Fee{
+		FeePolicy:   policy,
+		FeePercent:  req.FeePercent,
+		FeeConstant: req.FeeConstant,
+	}
+	err = model.UpdateAccountDefaultFeePolicy(peerAddress, fee)
+	if err != nil {
+		w.WriteJson(&response{
+			Code: http.StatusBadRequest,
+			JSON: err.Error(),
+		})
+		return
+	}
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: fee,
+	})
+}
+func getAccountRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+
+	fee := model.GetAccountFeePolicy(peerAddress)
+
+	w.WriteJson(&response{
+		Code: http.StatusOK,
+		JSON: fee,
+	})
+	return
 }
