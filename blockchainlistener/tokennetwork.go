@@ -409,7 +409,7 @@ func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address,
 	var fee *model.Fee
 	if p1 == c.Participant1 {
 		fee = c.Participant1Fee
-	} else if p2 == c.Participant2 {
+	} else if p1 == c.Participant2 {
 		fee = c.Participant2Fee
 	} else {
 		panic(fmt.Sprintf("channel error channleid=%s,p1=%s,p2=%s", channelID.String(), p1.String(), p2.String()))
