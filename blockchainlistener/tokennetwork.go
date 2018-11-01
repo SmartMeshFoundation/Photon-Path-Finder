@@ -123,6 +123,32 @@ func (t *TokenNetwork) handleTokenNetworkAdded(token, tokenNetwork common.Addres
 	return nil
 }
 
+func (t *TokenNetwork) handleChannelSettled(tokenNetwork common.Address, channelID common.Hash) (err error) {
+	_, err = model.SettleChannel(channelID)
+	return //do nothing ,already removed when closed
+}
+func (t *TokenNetwork) handleChannelCooperativeSettled(tokenNetwork common.Address, channelID common.Hash) (err error) {
+	_, err = model.SettleChannel(channelID)
+	if err != nil {
+		return
+	}
+	token := t.tokenNetwork2Token[tokenNetwork]
+	if token == utils.EmptyAddress {
+		return fmt.Errorf("unknown token network %s", tokenNetwork)
+	}
+	t.viewlock.Lock()
+	defer t.viewlock.Unlock()
+	c := t.channels[channelID]
+	cs := t.channelViews[token]
+	//c must not be nil
+	for k, v := range cs {
+		if v == c {
+			cs = append(cs[:k], cs[k+1:]...)
+		}
+	}
+	return
+}
+
 // handleChannelDepositEvent Handle Channel Deposit Event
 func (t *TokenNetwork) handleChannelDepositEvent(tokenNetwork common.Address, channelID common.Hash, partner common.Address, totalDeposit *big.Int) (err error) {
 	c, err := model.UpdateChannelDeposit(channelID, partner, totalDeposit)

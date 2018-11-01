@@ -102,6 +102,25 @@ func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 	case *mediatedtransfer.ContractTokenAddedStateChange:
 		//chainevent.be.TokenNetworks[st2.TokenNetworkAddress] = true
 		ce.handleTokenAddedStateChange(st2)
+	case *mediatedtransfer.ContractSettledStateChange:
+		ce.handleChannelSettled(st2)
+	case *mediatedtransfer.ContractCooperativeSettledStateChange:
+		ce.handleChannelCooperativeSettled(st2)
+	}
+}
+
+func (ce *ChainEvents) handleChannelSettled(st2 *mediatedtransfer.ContractSettledStateChange) {
+	log.Trace(fmt.Sprintf("receive ContractSettledStateChange %s", utils.StringInterface(st2, 3)))
+	err := ce.TokenNetwork.handleChannelSettled(st2.TokenNetworkAddress, st2.ChannelIdentifier)
+	if err != nil {
+		log.Error(fmt.Sprintf("handleChannelSettled err %s", err))
+	}
+}
+func (ce *ChainEvents) handleChannelCooperativeSettled(st2 *mediatedtransfer.ContractCooperativeSettledStateChange) {
+	log.Trace(fmt.Sprintf("receive ContractCooperativeSettledStateChange %s", utils.StringInterface(st2, 3)))
+	err := ce.TokenNetwork.handleChannelCooperativeSettled(st2.TokenNetworkAddress, st2.ChannelIdentifier)
+	if err != nil {
+		log.Error(fmt.Sprintf("handleChannelCooperativeSettled err %s", err))
 	}
 }
 

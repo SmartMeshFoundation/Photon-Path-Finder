@@ -18,7 +18,7 @@ import (
 
 const (
 	//ChannelStatusOpen 通道状态打开
-	ChannelStatusOpen = iota
+	ChannelStatusOpen = iota + 1
 	//ChannelStatusClosed 通道状态关闭
 	ChannelStatusClosed
 	//ChannelStatusSettled 通道结算状态
@@ -94,7 +94,10 @@ func getChannel(channelID string) (c *Channel, err error) {
 
 //GetAllTokenChannels get all channels of this `token`
 func GetAllTokenChannels(token common.Address) (cs []*Channel, err error) {
-	err = db.Where("token=?", token.String()).Preload("Participants").Find(&cs).Error
+	err = db.Where(&Channel{
+		Token:  token.String(),
+		Status: ChannelStatusOpen,
+	}).Preload("Participants").Find(&cs).Error
 	return
 }
 
