@@ -279,6 +279,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	if djResult == nil {
 		return nil, errors.New("There is no suitable path")
 	}
+	//log.Trace(fmt.Sprintf("result=%s,index=%s", utils.StringInterface(djResult, 5), utils.StringInterface(gPeerToIndex, 3)))
 	//将所有可能的最短路径转换为Address结果,同时计算费用
 	for k, pathSlice := range djResult {
 		sinPathInfo := &pathResult{}
@@ -310,7 +311,6 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			xaddr = append(xaddr, p1)
 			xfee := t.calcFeeByParticipantPartner(tokenAddress, p1, p2, value)
 			totalfeerates = totalfeerates.Add(totalfeerates, xfee)
-			break
 		}
 		sinPathInfo.Fee = totalfeerates
 		sinPathInfo.Result = xaddr
