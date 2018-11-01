@@ -7,8 +7,8 @@ import (
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/blockchainlistener"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
+	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ant0ine/go-json-rest/rest"
-	"github.com/nkbai/log"
 )
 
 var ce *blockchainlistener.ChainEvents

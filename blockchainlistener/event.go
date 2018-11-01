@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
-	"github.com/nkbai/log"
+	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon/blockchain"
 	"github.com/SmartMeshFoundation/Photon/network/helper"
