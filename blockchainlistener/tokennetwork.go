@@ -221,8 +221,8 @@ func (t *TokenNetwork) UpdateBalance(participant, partner common.Address, locked
 	return
 }
 
-// pathResult is the json response for GetPaths
-type pathResult struct {
+// PathResult is the json response for GetPaths
+type PathResult struct {
 	PathID  int              `json:"path_id"`
 	PathHop int              `json:"path_hop"`
 	Fee     *big.Int         `json:"fee"`
@@ -231,7 +231,7 @@ type pathResult struct {
 
 // GetPaths get the lowest fee  path
 func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, tokenAddress common.Address,
-	value *big.Int, limitPaths int, sortDemand string) (pathinfos []*pathResult, err error) {
+	value *big.Int, limitPaths int, sortDemand string) (pathinfos []*PathResult, err error) {
 	//todo 1\移除余额不够的边,2\移除节点不在线所处的通道,3\移除节点类型是手机的节点所处的通道matrix,4\移除节点不在线所处的所有通道matrix,5\移除节点网络状态为不在线的matrix
 	t.viewlock.RLock()
 	cs, ok := t.channelViews[tokenAddress]
@@ -308,7 +308,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	//log.Trace(fmt.Sprintf("result=%s,index=%s", utils.StringInterface(djResult, 5), utils.StringInterface(gPeerToIndex, 3)))
 	//将所有可能的最短路径转换为Address结果,同时计算费用
 	for k, pathSlice := range djResult {
-		sinPathInfo := &pathResult{}
+		sinPathInfo := &PathResult{}
 		sinPathInfo.PathID = k
 		sinPathInfo.PathHop = len(pathSlice) - 2
 		var xaddr []common.Address
@@ -417,6 +417,7 @@ func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address,
 	return calcFee(value, fee)
 }
 
+//Online implements MatrixPresenceListener
 func (t *TokenNetwork) Online(address common.Address, deviceType string) {
 	t.nodeLock.Lock()
 	defer t.nodeLock.Unlock()
@@ -426,6 +427,8 @@ func (t *TokenNetwork) Online(address common.Address, deviceType string) {
 	}
 	model.NewOrUpdateNodeStatus(address, true, deviceType)
 }
+
+//Offline implements MatrixPresenceListener
 func (t *TokenNetwork) Offline(address common.Address) {
 	t.nodeLock.Lock()
 	defer t.nodeLock.Unlock()
@@ -435,6 +438,7 @@ func (t *TokenNetwork) Offline(address common.Address) {
 	model.NewOrUpdateNodeOnline(address, false)
 }
 
+//UpdateChannelFeeRate set channel fee rate
 func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress common.Address, fee *model.Fee) error {
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()

@@ -66,4 +66,9 @@ func TestGetAccountTokenFee(t *testing.T) {
 		t.Error("not equal")
 		return
 	}
+	err = UpdateAccountTokenFee(a, token, fee)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }

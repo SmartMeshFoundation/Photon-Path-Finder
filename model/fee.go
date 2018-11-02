@@ -66,7 +66,7 @@ var defaultFee = &Fee{
 //GetAccountFeePolicy 获取某个账户的缺省收费,新创建的通道都会按照此缺省设置进行
 func GetAccountFeePolicy(account common.Address) (fee *Fee) {
 	a := &AccountFee{}
-	err := db.Where(&AccountFee{Account: account.String()}).Find(a)
+	err := db.Where(&AccountFee{Account: account.String()}).Find(a).Error
 	if err == nil {
 		return &Fee{
 			FeePolicy:   a.FeePolicy,
@@ -74,7 +74,9 @@ func GetAccountFeePolicy(account common.Address) (fee *Fee) {
 			FeePercent:  a.FeePercentPart,
 		}
 	}
-	return defaultFee
+	return &Fee{
+		defaultFee.FeePolicy, defaultFee.FeeConstant, defaultFee.FeePercent,
+	}
 }
 
 // GetAccountTokenFee 获取账户针对某个token的缺省收费设置
@@ -105,7 +107,7 @@ func UpdateAccountTokenFee(account, token common.Address, fee *Fee) (err error) 
 	atf.FeeConstantPart = bigIntToString(fee.FeeConstant)
 	atf.FeePercentPart = fee.FeePercent
 	if err == nil {
-		return db.Updates(atf).Error
+		return db.Save(atf).Error
 	}
 	return db.Create(atf).Error
 }
