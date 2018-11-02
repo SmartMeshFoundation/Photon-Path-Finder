@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/nkbai/log_bak"
+	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 

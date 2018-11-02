@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/nkbai/log_bak"
+	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 	"github.com/ant0ine/go-json-rest/rest"
