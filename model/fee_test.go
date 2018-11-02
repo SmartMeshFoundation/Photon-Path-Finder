@@ -26,6 +26,12 @@ func TestGetAccountFeePolicy(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	fee.FeePercent = 30
+	err = UpdateAccountDefaultFeePolicy(a, fee)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	fee2 := GetAccountFeePolicy(a)
 	if !reflect.DeepEqual(fee2, fee) {
 		t.Error("not equal")

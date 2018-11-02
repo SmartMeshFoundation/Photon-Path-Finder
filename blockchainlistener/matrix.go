@@ -54,8 +54,12 @@ type MatrixObserver struct {
 	running  bool
 	listener MatrixPresenceListener
 }
+
+//MatrixPresenceListener for notification from matrix
 type MatrixPresenceListener interface {
+	//an account is online
 	Online(address common.Address, deviceType string)
+	//an account is offline
 	Offline(address common.Address)
 }
 

@@ -34,7 +34,6 @@ func init() {
 		"github.com/SmartMeshFoundation/Photon-Path-Finder/vendor/github.com/SmartMeshFoundation/Photon/",
 		"github.com/SmartMeshFoundation/Photon-Path-Finder",
 	)
-
 }
 
 //StartMain entry point of Photon app
@@ -65,7 +64,7 @@ func StartMain() {
 		},
 		cli.StringFlag{
 			Name:  "dbconnection",
-			Usage: "database connection string",
+			Usage: "database connection string.\nfor sqlite3 : ./photon.db \nfor postgres:  \"host=localhost user=pfs dbname=pfs_xxx sslmode=disable password=123456\"",
 			Value: "./photon.db",
 		},
 	}
@@ -91,7 +90,6 @@ func StartMain() {
 }
 
 func mainCtx(ctx *cli.Context) error {
-
 	var err error
 	fmt.Printf("Welcom to Photon Path Finder,version %s\n", ctx.App.Version)
 	config(ctx)
@@ -104,6 +102,8 @@ func mainCtx(ctx *cli.Context) error {
 	}
 	params.DBType = ctx.String("dbtype")
 	params.DBPath = ctx.String("dbconnection")
+	params.DebugMode = ctx.Bool("debug")
+	log.Info(fmt.Sprintf("debug=%v", params.DebugMode))
 	model.SetUpDB(params.DBType, params.DBPath)
 	key, _ := utils.MakePrivateKeyAddress()
 	ce := blockchainlistener.NewChainEvents(key, client, params.RegistryAddress)

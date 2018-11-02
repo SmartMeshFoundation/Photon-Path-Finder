@@ -1,9 +1,11 @@
 package rest
 
 import (
+	"fmt"
 	"math/big"
 	"net/http"
 
+	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ant0ine/go-json-rest/rest"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -25,10 +27,7 @@ func GetPaths(w rest.ResponseWriter, r *rest.Request) {
 	var req pathRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	var peerFrom = req.PeerFrom
@@ -39,14 +38,11 @@ func GetPaths(w rest.ResponseWriter, r *rest.Request) {
 	var sortDemand = req.SortDemand
 	pathResult, err := tn.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: pathResult,
-	})
+	err = w.WriteJson(pathResult)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }

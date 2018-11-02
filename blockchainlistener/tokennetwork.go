@@ -229,7 +229,7 @@ type pathResult struct {
 	Result  []common.Address `json:"result"`
 }
 
-// GetPaths get shortest path
+// GetPaths get the lowest fee  path
 func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, tokenAddress common.Address,
 	value *big.Int, limitPaths int, sortDemand string) (pathinfos []*pathResult, err error) {
 	//todo 1\移除余额不够的边,2\移除节点不在线所处的通道,3\移除节点类型是手机的节点所处的通道matrix,4\移除节点不在线所处的所有通道matrix,5\移除节点网络状态为不在线的matrix

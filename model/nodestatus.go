@@ -7,12 +7,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+//NodeStatus photon account status
 type NodeStatus struct {
 	Address    string `gorm:"primary_key"`
 	DeviceType string
 	IsOnline   bool
 }
 
+//GetAllNodes get all matrix account
 func GetAllNodes() []*NodeStatus {
 	var nodes []*NodeStatus
 
@@ -22,6 +24,7 @@ func GetAllNodes() []*NodeStatus {
 	return nodes
 }
 
+//NewOrUpdateNodeOnline  update node's status
 func NewOrUpdateNodeOnline(address common.Address, isOnline bool) {
 	var node = &NodeStatus{}
 	node.Address = address.String()
@@ -36,6 +39,8 @@ func NewOrUpdateNodeOnline(address common.Address, isOnline bool) {
 		log.Error(fmt.Sprintf("update online err %s", err))
 	}
 }
+
+//NewOrUpdateNodeStatus update node's online info
 func NewOrUpdateNodeStatus(address common.Address, isOnline bool, deviceType string) {
 	var node = &NodeStatus{}
 	node.Address = address.String()

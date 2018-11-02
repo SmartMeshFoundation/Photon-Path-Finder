@@ -40,6 +40,9 @@ var ObserverKey = "0bb2d0315029cd6048c0a756c076f3dd80e84cff4ff4bd80aad4a8d1d7f62
 //MatrixServer the matrix server for path finder use
 var MatrixServer = "transport01.smartmesh.cn"
 
+//DebugMode for debug setting
+var DebugMode = false
+
 //DefaultDataDir default work directory
 func DefaultDataDir() string {
 	// Try to place the data folder in the user's home dir

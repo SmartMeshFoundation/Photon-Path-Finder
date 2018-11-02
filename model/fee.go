@@ -50,9 +50,9 @@ func UpdateAccountDefaultFeePolicy(account common.Address, fee *Fee) error {
 		FeeConstantPart: bigIntToString(fee.FeeConstant),
 		FeePercentPart:  fee.FeePercent,
 	}
-	err := db.Where(&AccountFee{Account: account.String()}).Find(&AccountFee{})
+	err := db.Where(&AccountFee{Account: account.String()}).Find(&AccountFee{}).Error
 	if err == nil {
-		return db.Updates(a).Error
+		return db.Save(a).Error
 	}
 	return db.Create(a).Error
 }

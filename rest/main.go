@@ -14,11 +14,6 @@ import (
 var ce *blockchainlistener.ChainEvents
 var tn *blockchainlistener.TokenNetwork
 
-type response struct {
-	Code int
-	JSON interface{} `json:"json,omitempty"`
-}
-
 /*
 Start the restful server
 */
@@ -26,7 +21,12 @@ func Start(e *blockchainlistener.ChainEvents, t *blockchainlistener.TokenNetwork
 	ce = e
 	tn = t
 	api := rest.NewApi()
-	api.Use(rest.DefaultDevStack...)
+	if params.DebugMode {
+		api.Use(rest.DefaultDevStack...)
+	} else {
+		api.Use(rest.DefaultProdStack...)
+	}
+
 	router, err := rest.MakeRouter(
 		//peer 提交Partner的BalanceProof,更新Partner的余额
 		rest.Put("/api/1/:peer/balance", UpdateBalanceProof),

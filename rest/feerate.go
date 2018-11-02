@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/utils"
 
 	"github.com/ant0ine/go-json-rest/rest"
@@ -33,9 +34,8 @@ func verifyAndGetFeePolicy(req *SetFeeRateRequest) (policy int, err error) {
 		if req.FeeConstant == nil || req.FeeConstant.Cmp(utils.BigInt0) < 0 {
 			err = fmt.Errorf("fee arg err constant=%s,percent=%d", req.FeeConstant, req.FeePercent)
 			return
-		} else {
-			policy = model.FeePolicyCombined
 		}
+		policy = model.FeePolicyCombined
 	}
 	return
 }
@@ -47,27 +47,18 @@ func setChannelRate(w rest.ResponseWriter, r *rest.Request) {
 	var req SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//validate json-input
 	err = verifySinatureSetFeeRate(&req, peerAddress)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	policy, err := verifyAndGetFeePolicy(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fee := &model.Fee{
@@ -77,16 +68,13 @@ func setChannelRate(w rest.ResponseWriter, r *rest.Request) {
 	}
 	err = tn.UpdateChannelFeeRate(channel, peerAddress, fee)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err = w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }
 
 // getChannelFeeRate reponse fee_rate data
@@ -96,17 +84,14 @@ func getChannelRate(w rest.ResponseWriter, r *rest.Request) {
 	channelID := common.HexToHash(r.PathParam("channel"))
 	fee, err := model.GetChannelFeeRate(channelID, peerAddress)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err = w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 	return
 }
 
@@ -116,27 +101,18 @@ func setTokenRate(w rest.ResponseWriter, r *rest.Request) {
 	var req SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//validate json-input
 	err = verifySinatureSetFeeRate(&req, peerAddress)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	policy, err := verifyAndGetFeePolicy(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fee := &model.Fee{
@@ -146,33 +122,27 @@ func setTokenRate(w rest.ResponseWriter, r *rest.Request) {
 	}
 	err = model.UpdateAccountTokenFee(peerAddress, token, fee)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err = w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }
 func getTokenRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 	token := common.HexToAddress(r.PathParam("token"))
 	fee, err := model.GetAccountTokenFee(peerAddress, token)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err = w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 	return
 }
 func setAccountRate(w rest.ResponseWriter, r *rest.Request) {
@@ -181,27 +151,18 @@ func setAccountRate(w rest.ResponseWriter, r *rest.Request) {
 	var req SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//validate json-input
 	err = verifySinatureSetFeeRate(&req, peerAddress)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	policy, err := verifyAndGetFeePolicy(&req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fee := &model.Fee{
@@ -211,25 +172,22 @@ func setAccountRate(w rest.ResponseWriter, r *rest.Request) {
 	}
 	err = model.UpdateAccountDefaultFeePolicy(peerAddress, fee)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err = w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }
 func getAccountRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 
 	fee := model.GetAccountFeePolicy(peerAddress)
 
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: fee,
-	})
+	err := w.WriteJson(fee)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 	return
 }

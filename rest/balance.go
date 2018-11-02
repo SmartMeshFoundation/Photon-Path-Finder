@@ -1,8 +1,11 @@
 package rest
 
 import (
+	"fmt"
 	"math/big"
 	"net/http"
+
+	"github.com/nkbai/log_bak"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 	"github.com/ant0ine/go-json-rest/rest"
@@ -24,33 +27,24 @@ func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
 	var req = &balanceProofRequest{}
 	err := r.DecodeJsonPayload(req)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	//var locksAmount *big.Int
 	partner, err := verifyBalanceProofSignature(req, peerAddress)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = tn.UpdateBalance(peerAddress, partner, req.LockedAmount, req.BalanceProof)
 	if err != nil {
-		w.WriteJson(&response{
-			Code: http.StatusBadRequest,
-			JSON: err.Error(),
-		})
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	w.WriteJson(&response{
-		Code: http.StatusOK,
-		JSON: nil,
-	})
+	err = w.WriteJson(nil)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }
