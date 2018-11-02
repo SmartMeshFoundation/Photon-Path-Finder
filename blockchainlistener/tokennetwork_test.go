@@ -400,3 +400,36 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	}
 
 }
+
+func TestTokenNetwork_handleNewChannel(t *testing.T) {
+
+	model.SetupTestDB()
+	tn := NewTokenNetwork(nil)
+	token := utils.NewRandomAddress()
+	tokenNetwork := utils.NewRandomAddress()
+	tn.decimals = map[common.Address]int{
+		token: 0,
+	}
+	tn.token2TokenNetwork = map[common.Address]common.Address{
+		token: tokenNetwork,
+	}
+	tn.tokenNetwork2Token = map[common.Address]common.Address{
+		tokenNetwork: token,
+	}
+	channid := utils.NewRandomHash()
+	p1 := utils.NewRandomAddress()
+	p2 := utils.NewRandomAddress()
+	err := tn.handleChannelOpenedEvent(tokenNetwork, channid, p1, p2, 3)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	c := tn.channels[channid]
+	assert.EqualValues(t, c.Participant1, p1)
+	assert.EqualValues(t, c.Participant2, p2)
+	_, err = model.GetChannelFeeRate(channid, p1)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}

@@ -112,7 +112,7 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenNetwork common.Address, cha
 	cs := t.channelViews[token]
 	cs = append(cs, c2)
 	t.channelViews[token] = cs
-	t.channels[common.HexToHash(c.ChannelID)] = c2
+	t.channels[channelID] = c2
 	return
 }
 func (t *TokenNetwork) handleTokenNetworkAdded(token, tokenNetwork common.Address, blockNumber int64, decimal uint8) (err error) {
