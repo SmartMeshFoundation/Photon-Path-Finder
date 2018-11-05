@@ -29,14 +29,14 @@ func Start(e *blockchainlistener.ChainEvents, t *blockchainlistener.TokenNetwork
 
 	router, err := rest.MakeRouter(
 		//peer 提交Partner的BalanceProof,更新Partner的余额
-		rest.Put("/api/1/:peer/balance", UpdateBalanceProof),
-		rest.Put("/api/1/channel_rate/:channel/:peer", setChannelRate),
-		rest.Get("/api/1/channel_rate/:channel/:peer", getChannelRate),
-		rest.Put("/api/1/token_rate/:token/:peer", setTokenRate),
-		rest.Get("/api/1/token_rate/:token/:peer", getTokenRate),
-		rest.Put("/api/1/account_rate/:peer", setAccountRate),
-		rest.Get("/api/1/account_rate/:peer", getAccountRate),
-		rest.Post("/api/1/paths", GetPaths),
+		rest.Put("/pfs/1/:peer/balance", UpdateBalanceProof),
+		rest.Put("/pfs/1/channel_rate/:channel/:peer", setChannelRate),
+		rest.Get("/pfs/1/channel_rate/:channel/:peer", getChannelRate),
+		rest.Put("/pfs/1/token_rate/:token/:peer", setTokenRate),
+		rest.Get("/pfs/1/token_rate/:token/:peer", getTokenRate),
+		rest.Put("/pfs/1/account_rate/:peer", setAccountRate),
+		rest.Get("/pfs/1/account_rate/:peer", getAccountRate),
+		rest.Post("/pfs/1/paths", GetPaths),
 	)
 	if err != nil {
 		log.Crit(fmt.Sprintf("maker router :%s", err))
