@@ -433,3 +433,79 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 		return
 	}
 }
+
+func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
+	model.SetupTestDB()
+	nodesNumber := 10000
+	nodes := make(map[int]common.Address)
+	tn := NewTokenNetwork(nil)
+	token := utils.NewRandomAddress()
+	tokenNetwork := utils.NewRandomAddress()
+	tn.decimals = map[common.Address]int{
+		token: 18,
+	}
+	base := big.NewInt(int64(math.Pow10(18)))
+	balance := big.NewInt(20)
+	balance = balance.Mul(balance, base)
+	tn.token2TokenNetwork = map[common.Address]common.Address{
+		token: tokenNetwork,
+	}
+	tn.tokenNetwork2Token = map[common.Address]common.Address{
+		tokenNetwork: token,
+	}
+	lastAddr := utils.NewRandomAddress()
+	tn.participantStatus[lastAddr] = nodeStatus{false, true}
+	for i := 0; i < nodesNumber; i++ {
+		nodes[i] = lastAddr
+		addr := utils.NewRandomAddress()
+		tn.participantStatus[addr] = nodeStatus{false, true}
+		c := &channel{
+			Participant1: lastAddr,
+			Participant2: addr,
+			Participant1Fee: &model.Fee{
+				FeePercent:  model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePercent:  model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(100000),
+			Participant2Balance: big.NewInt(100000),
+		}
+		cid := calcChannelID(tokenNetwork, lastAddr, addr)
+		cs := tn.channelViews[token]
+		cs = append(cs, c)
+		tn.channels[cid] = c
+		tn.channelViews[token] = cs
+
+		//for next channel
+		lastAddr = addr
+	}
+	b.N = 100
+	for i := 0; i < b.N; i++ {
+		from := nodes[utils.NewRandomInt(nodesNumber)]
+		to := nodes[utils.NewRandomInt(nodesNumber)]
+		//go func(from, to common.Address) {
+		paths, err := tn.GetPaths(from, to, token, big.NewInt(10), 5, "")
+		if err != nil {
+			b.Error(err)
+			return
+		}
+		if len(paths) != 1 {
+			b.Errorf("length should be 1,paths=%s", utils.StringInterface(paths, 3))
+			return
+		}
+		//}(from, to)
+
+	}
+
+	/*
+		1秒(s)=1000000000纳秒(ns)
+			在顺序进行的情况下,占用内存2.14g(比较稳定,与N没关系,b.N=100依然如此)
+															1000000000
+			BenchmarkTokenNetwork_GetPaths-8   	     100	1102199349 ns/op
+			在并发进行的情况下,占满这个电脑内存(16g),
+			BenchmarkTokenNetwork_GetPaths-8   	     100	 306597751 ns/op
+	*/
+}
