@@ -152,7 +152,7 @@ func (ce *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNew
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
 	participant2 := st2.Participant2
-	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelOpened data: %s", utils.StringInterface(st2, 2))))
+	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelOpened data: %s", utils.StringInterface(st2, 3))))
 	err := ce.TokenNetwork.handleChannelOpenedEvent(tokenNetwork, channelID, participant1, participant2, st2.BlockNumber)
 	if err != nil {
 		log.Error(fmt.Sprintf("Handle channel open event error,err=%s", err))
