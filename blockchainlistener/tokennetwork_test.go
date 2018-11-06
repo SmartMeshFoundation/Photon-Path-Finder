@@ -130,8 +130,56 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		return
 	}
 }
+func TestTokenNetwork_getWeight(t *testing.T) {
+	model.SetupTestDB()
+	tn := NewTokenNetwork(nil)
+	token := utils.NewRandomAddress()
+	tokenNetwork := utils.NewRandomAddress()
+	tn.decimals = map[common.Address]int{
+		token: 18,
+	}
+	base := big.NewInt(int64(math.Pow10(18)))
+	balance := big.NewInt(20)
+	balance = balance.Mul(balance, base)
+	tn.token2TokenNetwork = map[common.Address]common.Address{
+		token: tokenNetwork,
+	}
+	tn.tokenNetwork2Token = map[common.Address]common.Address{
+		tokenNetwork: token,
+	}
+	w := tn.getWeight(token, &model.Fee{
+		FeePolicy:   model.FeePolicyConstant,
+		FeeConstant: big.NewInt(3000000000),
+	}, big.NewInt(20))
+	//because of accuracy
+	assert.EqualValues(t, w, 0)
+	w = tn.getWeight(token, &model.Fee{
+		FeePolicy:   model.FeePolicyConstant,
+		FeeConstant: big.NewInt(300000000000000000),
+	}, big.NewInt(20))
+	assert.EqualValues(t, w, 30000)
+	w = tn.getWeight(token, &model.Fee{
+		FeePolicy:   model.FeePolicyPercent,
+		FeeConstant: big.NewInt(0),
+		FeePercent:  10000,
+	}, big.NewInt(20))
+	assert.EqualValues(t, w, 0)
+	w = tn.getWeight(token, &model.Fee{
+		FeePolicy:   model.FeePolicyPercent,
+		FeeConstant: big.NewInt(0),
+		FeePercent:  10000,
+	}, big.NewInt(2000000))
+	assert.EqualValues(t, w, 0)
 
+	w = tn.getWeight(token, &model.Fee{
+		FeePolicy:   model.FeePolicyPercent,
+		FeeConstant: big.NewInt(0),
+		FeePercent:  10000,
+	}, big.NewInt(2000000000000000000))
+	assert.EqualValues(t, w, 20)
+}
 func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
+	model.SetupTestDB()
 	tn := NewTokenNetwork(nil)
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
@@ -518,4 +566,15 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 			在并发进行的情况下,占满这个电脑内存(16g),
 			BenchmarkTokenNetwork_GetPaths-8   	     100	 306597751 ns/op
 	*/
+}
+
+func TestDeleteSlice(t *testing.T) {
+	var cs []int
+	//cs = []int{1, 2, 3}
+	for k, v := range cs {
+		if v == 1 {
+			cs = append(cs[:k], cs[k+1:]...)
+			//break
+		}
+	}
 }
