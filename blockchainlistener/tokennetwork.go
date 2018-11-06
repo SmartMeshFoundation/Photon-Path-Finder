@@ -178,6 +178,10 @@ func (t *TokenNetwork) handleChannelClosedEvent(tokenNetwork common.Address, cha
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
 	c := t.channels[channelID]
+	if c == nil {
+		return fmt.Errorf("channelID %s is unkown when close", channelID.String())
+	}
+	delete(t.channels, channelID)
 	cs := t.channelViews[token]
 	//c must not be nil
 	for k, v := range cs {

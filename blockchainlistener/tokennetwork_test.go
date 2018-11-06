@@ -432,6 +432,16 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	err = tn.handleChannelClosedEvent(tokenNetwork, channid)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	err = tn.handleChannelClosedEvent(tokenNetwork, channid)
+	if err == nil {
+		t.Error("should error")
+		return
+	}
 }
 
 func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
