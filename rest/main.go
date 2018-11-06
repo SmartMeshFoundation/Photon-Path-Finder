@@ -36,6 +36,7 @@ func Start(e *blockchainlistener.ChainEvents, t *blockchainlistener.TokenNetwork
 		rest.Get("/pfs/1/token_rate/:token/:peer", getTokenRate),
 		rest.Put("/pfs/1/account_rate/:peer", setAccountRate),
 		rest.Get("/pfs/1/account_rate/:peer", getAccountRate),
+		rest.Put("/pfs/1/feerate/:peer", setAllFeeRate),
 		rest.Post("/pfs/1/paths", GetPaths),
 	)
 	if err != nil {

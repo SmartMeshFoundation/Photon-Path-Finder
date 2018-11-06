@@ -20,6 +20,14 @@ type SetFeeRateRequest struct {
 	FeeConstant *big.Int `json:"fee_constant"`
 	FeePercent  int64    `json:"fee_percent"`
 	Signature   []byte   `json:"signature"`
+	fee         *model.Fee
+}
+
+//SetAllFeeRateRequest is json request for all fee rate
+type SetAllFeeRateRequest struct {
+	AccountFee  *SetFeeRateRequest                    `json:"account_fee"`
+	TokensFee   map[common.Address]*SetFeeRateRequest `json:"token_fee_map"`
+	ChannelsFee map[common.Hash]*SetFeeRateRequest    `json:"channel_fee_map"`
 }
 
 func verifyAndGetFeePolicy(req *SetFeeRateRequest) (policy int, err error) {
@@ -190,4 +198,78 @@ func getAccountRate(w rest.ResponseWriter, r *rest.Request) {
 		log.Error(fmt.Sprintf("write json err %s", err))
 	}
 	return
+}
+func verifySetFeeRate(f *SetFeeRateRequest, peerAddress common.Address) (fee *model.Fee, err error) {
+	err = verifySinatureSetFeeRate(f, peerAddress)
+	if err != nil {
+		return
+	}
+	policy, err := verifyAndGetFeePolicy(f)
+	if err != nil {
+		return
+	}
+	fee = &model.Fee{
+		FeePolicy:   policy,
+		FeePercent:  f.FeePercent,
+		FeeConstant: f.FeeConstant,
+	}
+	return
+}
+func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
+	peerAddress := common.HexToAddress(r.PathParam("peer"))
+
+	var req SetAllFeeRateRequest
+	err := r.DecodeJsonPayload(&req)
+	if err != nil {
+		rest.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	//validate json-input
+	if req.AccountFee != nil {
+		req.AccountFee.fee, err = verifySetFeeRate(req.AccountFee, peerAddress)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	for t, f := range req.TokensFee {
+		req.TokensFee[t].fee, err = verifySetFeeRate(f, peerAddress)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	for c, f := range req.ChannelsFee {
+		req.ChannelsFee[c].fee, err = verifySetFeeRate(f, peerAddress)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	//save fee rate to db
+	if req.AccountFee != nil {
+		err = model.UpdateAccountDefaultFeePolicy(peerAddress, req.AccountFee.fee)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	for t, f := range req.TokensFee {
+		err = model.UpdateAccountTokenFee(peerAddress, t, f.fee)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	for c, f := range req.ChannelsFee {
+		_, err = model.UpdateChannelFeeRate(c, peerAddress, f.fee)
+		if err != nil {
+			rest.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	err = w.WriteJson(&req)
+	if err != nil {
+		log.Error(fmt.Sprintf("write json err %s", err))
+	}
 }
