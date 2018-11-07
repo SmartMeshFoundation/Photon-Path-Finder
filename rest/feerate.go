@@ -224,6 +224,8 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Trace("peer=%s", peerAddress.String())
+	log.Trace("req=%s", utils.StringInterface(req, 3))
 	//validate json-input
 	if req.AccountFee != nil {
 		req.AccountFee.fee, err = verifySetFeeRate(req.AccountFee, peerAddress)
@@ -262,7 +264,7 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 		}
 	}
 	for c, f := range req.ChannelsFee {
-		_, err = model.UpdateChannelFeeRate(c, peerAddress, f.fee)
+		err = tn.UpdateChannelFeeRate(c, peerAddress, f.fee)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
