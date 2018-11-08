@@ -310,7 +310,6 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		sinPathInfo.PathHop = len(pathSlice) - 2
 		var xaddr []common.Address
 		var totalfeerates = new(big.Int)
-		var lastAddress common.Address
 
 		//跳过源节点,他是不会收费的
 		for i := 1; i < len(pathSlice)-1; i++ {
@@ -325,7 +324,6 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 					}
 				} else if index == pathSlice[i+1] {
 					p2 = addr
-					lastAddress = p2
 					foundNumber++
 					if foundNumber >= 2 {
 						break
@@ -338,6 +336,17 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			totalfeerates = totalfeerates.Add(totalfeerates, xfee)
 		}
 		//把Target添加到路由列表中
+		var lastAddress common.Address
+		for addr, index := range gPeerToIndex {
+			if index == pathSlice[len(pathSlice)-1] {
+				lastAddress = addr
+				break
+			}
+		}
+		if lastAddress == utils.EmptyAddress {
+			err = fmt.Errorf("impossible error, no target in path")
+			return
+		}
 		xaddr = append(xaddr, lastAddress)
 		sinPathInfo.Fee = totalfeerates
 		sinPathInfo.Result = xaddr
