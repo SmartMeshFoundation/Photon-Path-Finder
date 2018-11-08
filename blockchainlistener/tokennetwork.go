@@ -220,8 +220,8 @@ func (t *TokenNetwork) UpdateBalance(participant, partner common.Address, locked
 
 // PathResult is the json response for GetPaths
 type PathResult struct {
-	PathID  int              `json:"path_id"`
-	PathHop int              `json:"path_hop"`
+	PathID  int              `json:"path_id"`  //从0开始
+	PathHop int              `json:"path_hop"` //中间有多少跳,不计入源,目的节点
 	Fee     *big.Int         `json:"fee"`
 	Result  []common.Address `json:"result"`
 }
@@ -310,6 +310,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		sinPathInfo.PathHop = len(pathSlice) - 2
 		var xaddr []common.Address
 		var totalfeerates = new(big.Int)
+		var lastAddress common.Address
 
 		//跳过源节点,他是不会收费的
 		for i := 1; i < len(pathSlice)-1; i++ {
@@ -324,6 +325,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 					}
 				} else if index == pathSlice[i+1] {
 					p2 = addr
+					lastAddress = p2
 					foundNumber++
 					if foundNumber >= 2 {
 						break
@@ -335,6 +337,8 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			xfee := t.calcFeeByParticipantPartner(tokenAddress, p1, p2, value)
 			totalfeerates = totalfeerates.Add(totalfeerates, xfee)
 		}
+		//把Target添加到路由列表中
+		xaddr = append(xaddr, lastAddress)
 		sinPathInfo.Fee = totalfeerates
 		sinPathInfo.Result = xaddr
 		pathinfos = append(pathinfos, sinPathInfo)

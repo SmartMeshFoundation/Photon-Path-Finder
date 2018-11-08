@@ -88,7 +88,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 0 {
+	if len(paths[0].Result) != 1 || paths[0].PathHop != 0 {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
@@ -120,7 +120,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 1 {
+	if len(paths[0].Result) != 2 || paths[0].PathHop != 1 {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
@@ -224,7 +224,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 0 {
+	if len(paths[0].Result) != 1 || paths[0].PathHop != 0 {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
@@ -259,7 +259,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 1 {
+	if len(paths[0].Result) != 2 || paths[0].PathHop != 1 {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
@@ -318,7 +318,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 0 {
+	if len(paths[0].Result) != 1 || paths[0].PathHop != 0 {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
@@ -350,7 +350,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if len(paths[0].Result) != 1 {
+	if len(paths[0].Result) != 2 || paths[0].PathHop != 1 {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
@@ -429,7 +429,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		return
 	}
 	t.Logf("paths=%s", utils.StringInterface(paths, 5))
-	if len(paths[0].Result) != 2 {
+	if len(paths[0].Result) != 3 || paths[0].PathHop != 2 {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
@@ -437,7 +437,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	if len(paths[1].Result) != 2 {
+	if len(paths[1].Result) != 3 || paths[0].PathHop != 2 {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
