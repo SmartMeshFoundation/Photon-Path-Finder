@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/utils"
@@ -13,8 +14,8 @@ import (
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/dijkstra"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/nkbai/dijkstra"
 )
 
 type channel struct {
@@ -237,6 +238,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		err = fmt.Errorf("unkown token %s", tokenAddress.String())
 		return
 	}
+	start := time.Now()
 	//fmt.Println(fmt.Sprintf("-->s%",utils.StringInterface(latestJudgements,2)))
 	djGraph := *dijkstra.NewEmptyGraph()
 	gPeerToIndex := make(map[common.Address]int)
@@ -266,10 +268,12 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			continue
 		} else {
 			if _, exist := gPeerToIndex[c.Participant1]; !exist {
+				djGraph.AddVertex()
 				gIndex++
 				gPeerToIndex[c.Participant1] = gIndex
 			}
 			if _, exist := gPeerToIndex[c.Participant2]; !exist {
+				djGraph.AddVertex()
 				gIndex++
 				gPeerToIndex[c.Participant2] = gIndex
 			}
@@ -298,10 +302,12 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	}
 	xsource := gPeerToIndex[source]
 	xtarget := gPeerToIndex[target]
-	djResult := djGraph.AllShortestPath(xsource, xtarget)
+	buildtime := time.Now()
+	djResult := djGraph.AllShortestPath(xsource, xtarget, dijkstra.DefaultCostGetter)
 	if djResult == nil {
 		return nil, errors.New("There is no suitable path")
 	}
+	calcpathtime := time.Now()
 	//log.Trace(fmt.Sprintf("result=%s,index=%s", utils.StringInterface(djResult, 5), utils.StringInterface(gPeerToIndex, 3)))
 	//将所有可能的最短路径转换为Address结果,同时计算费用
 	for k, pathSlice := range djResult {
@@ -352,6 +358,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		sinPathInfo.Result = xaddr
 		pathinfos = append(pathinfos, sinPathInfo)
 	}
+	log.Info(fmt.Sprintf("buildgraph=%s,path=%s", buildtime.Sub(start), calcpathtime.Sub(buildtime)))
 	return
 }
 func calcFee(value *big.Int, fee *model.Fee) (w *big.Int) {
