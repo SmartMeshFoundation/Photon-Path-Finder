@@ -244,6 +244,18 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 	if err != nil {
 		return nil, err
 	}
+
+	// special dealing for specrum main net
+	var head *types.Header
+	head,err = c.transactor.HeaderByNumber(ensureContext(opts.Context),big.NewInt(1))
+	if err!=nil{
+		return nil,err
+	}
+	if  head != nil && head.Hash() == common.HexToHash("0x57e682b80257aad73c4f3ad98d20435b4e1644d8762ef1ea1ff2806c27a5fa3d") {
+		fmt.Printf("change chainid to 20180430\n")
+		networkID = big.NewInt(20180430)
+	}
+
 	signedTx, err := opts.Signer(types.NewEIP155Signer(networkID), opts.From, rawTx)
 	if err != nil {
 		return nil, err
