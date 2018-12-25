@@ -37,7 +37,6 @@ type TokenNetwork struct {
 	channelViews        map[common.Address][]*channel //token to channels
 	channels            map[common.Hash]*channel      //channel id to chann
 	token2TokenNetwork  map[common.Address]common.Address
-	tokenNetwork2Token  map[common.Address]common.Address
 	decimals            map[common.Address]int
 	viewlock            sync.RWMutex
 	participantStatus   map[common.Address]nodeStatus
@@ -51,13 +50,11 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address) (twor
 		channelViews:       make(map[common.Address][]*channel),
 		channels:           make(map[common.Hash]*channel),
 		token2TokenNetwork: make(map[common.Address]common.Address),
-		tokenNetwork2Token: make(map[common.Address]common.Address),
 		decimals:           make(map[common.Address]int),
 		participantStatus:  make(map[common.Address]nodeStatus),
 	}
 	for t, tn := range token2TokenNetwork {
 		twork.token2TokenNetwork[t] = tn
-		twork.tokenNetwork2Token[tn] = t
 	}
 	for token := range twork.token2TokenNetwork {
 		cs, err := model.GetAllTokenChannels(token)
@@ -90,16 +87,11 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address) (twor
 }
 
 // handleChannelOpenedEvent Handle ChannelOpened Event
-func (t *TokenNetwork) handleChannelOpenedEvent(tokenNetwork common.Address, channelID common.Hash, participant1, participant2 common.Address, blockNumber int64) (err error) {
-
-	token := t.tokenNetwork2Token[tokenNetwork]
-	if token == utils.EmptyAddress {
-		return fmt.Errorf("tokennetwork %s is unknown", tokenNetwork.String())
-	}
+func (t *TokenNetwork) handleChannelOpenedEvent(tokenAddress common.Address, channelID common.Hash, participant1, participant2 common.Address, blockNumber int64) (err error) {
 	if t.channels[channelID] != nil {
 		return fmt.Errorf("channel open duplicate for %s", channelID.String())
 	}
-	c, err := model.AddChannel(token, participant1, participant2, channelID, blockNumber)
+	c, err := model.AddChannel(tokenAddress, participant1, participant2, channelID, blockNumber)
 	if err != nil {
 		return
 	}
@@ -113,29 +105,25 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenNetwork common.Address, cha
 	}
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
-	cs := t.channelViews[token]
+	cs := t.channelViews[tokenAddress]
 	cs = append(cs, c2)
-	t.channelViews[token] = cs
+	t.channelViews[tokenAddress] = cs
 	t.channels[channelID] = c2
 	return
 }
-func (t *TokenNetwork) handleTokenNetworkAdded(token, tokenNetwork common.Address, blockNumber int64, decimal uint8) (err error) {
-	t.tokenNetwork2Token[tokenNetwork] = token
-	t.token2TokenNetwork[token] = tokenNetwork
+func (t *TokenNetwork) handleTokenNetworkAdded(token common.Address, blockNumber int64, decimal uint8) (err error) {
+
+	t.token2TokenNetwork[token] = utils.EmptyAddress
 	t.decimals[token] = int(decimal)
-	err = model.AddTokeNetwork(token, tokenNetwork, blockNumber)
+	err = model.AddTokeNetwork(token, utils.EmptyAddress, blockNumber)
 	return nil
 }
 
-func (t *TokenNetwork) handleChannelSettled(tokenNetwork common.Address, channelID common.Hash) (err error) {
+func (t *TokenNetwork) handleChannelSettled(channelID common.Hash) (err error) {
 	_, err = model.SettleChannel(channelID)
 	return //do nothing ,already removed when closed
 }
-func (t *TokenNetwork) doRemoveChannel(tokenNetwork common.Address, channelID common.Hash) (err error) {
-	token := t.tokenNetwork2Token[tokenNetwork]
-	if token == utils.EmptyAddress {
-		return fmt.Errorf("unknown token network %s", tokenNetwork)
-	}
+func (t *TokenNetwork) doRemoveChannel(token common.Address, channelID common.Hash) (err error) {
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
 	c := t.channels[channelID]
@@ -153,16 +141,16 @@ func (t *TokenNetwork) doRemoveChannel(tokenNetwork common.Address, channelID co
 	t.channelViews[token] = cs
 	return
 }
-func (t *TokenNetwork) handleChannelCooperativeSettled(tokenNetwork common.Address, channelID common.Hash) (err error) {
-	_, err = model.SettleChannel(channelID)
+func (t *TokenNetwork) handleChannelCooperativeSettled(channelID common.Hash) (err error) {
+	c, err := model.SettleChannel(channelID)
 	if err != nil {
 		return
 	}
-	return t.doRemoveChannel(tokenNetwork, channelID)
+	return t.doRemoveChannel(common.StringToAddress(c.Token), channelID)
 }
 
 // handleChannelDepositEvent Handle Channel Deposit Event
-func (t *TokenNetwork) handleChannelDepositEvent(tokenNetwork common.Address, channelID common.Hash, partner common.Address, totalDeposit *big.Int) (err error) {
+func (t *TokenNetwork) handleChannelDepositEvent(channelID common.Hash, partner common.Address, totalDeposit *big.Int) (err error) {
 	c, err := model.UpdateChannelDeposit(channelID, partner, totalDeposit)
 	if err != nil {
 		return
@@ -178,16 +166,16 @@ func (t *TokenNetwork) handleChannelDepositEvent(tokenNetwork common.Address, ch
 }
 
 // handleChannelClosedEvent Handle Channel Closed Event
-func (t *TokenNetwork) handleChannelClosedEvent(tokenNetwork common.Address, channelID common.Hash) (err error) {
-	_, err = model.CloseChannel(channelID)
+func (t *TokenNetwork) handleChannelClosedEvent(channelID common.Hash) (err error) {
+	c, err := model.CloseChannel(channelID)
 	if err != nil {
 		return
 	}
-	return t.doRemoveChannel(tokenNetwork, channelID)
+	return t.doRemoveChannel(common.StringToAddress(c.Token), channelID)
 }
 
 // handleChannelWithdrawEvent Handle Channel Withdaw Event
-func (t *TokenNetwork) handleChannelWithdrawEvent(tokenNetwork common.Address, channelID common.Hash,
+func (t *TokenNetwork) handleChannelWithdrawEvent(channelID common.Hash,
 	participant1, participant2 common.Address, participant1Balance, participant2Balance *big.Int, blockNumber int64) (err error) {
 	c, err := model.WithDrawChannel(channelID, participant1, participant2, participant1Balance, participant2Balance, blockNumber)
 	if err != nil {
@@ -404,20 +392,20 @@ func (t *TokenNetwork) getWeight(token common.Address, fee *model.Fee, value *bi
 }
 
 //注意与合约上计算方式保持完全一致.
-func calcChannelID(tokenNetwork, p1, p2 common.Address) common.Hash {
+func calcChannelID(token, p1, p2 common.Address) common.Hash {
 	var channelID common.Hash
 	//log.Trace(fmt.Sprintf("p1=%s,p2=%s,tokennetwork=%s", p1.String(), p2.String(), tokenNetwork.String()))
 	if bytes.Compare(p1[:], p2[:]) < 0 {
-		channelID = utils.Sha3(p1[:], p2[:], tokenNetwork[:])
+		channelID = utils.Sha3(p1[:], p2[:], token[:])
 	} else {
-		channelID = utils.Sha3(p2[:], p1[:], tokenNetwork[:])
+		channelID = utils.Sha3(p2[:], p1[:], token[:])
 	}
 	return channelID
 }
 
 // calcFeeByParticipantPartner get fee_rate when the peer in some channel
 func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address, value *big.Int) (xfee *big.Int) {
-	channelID := calcChannelID(t.token2TokenNetwork[token], p1, p2)
+	channelID := calcChannelID(token, p1, p2)
 	c := t.channels[channelID]
 	if c == nil {
 		//todo fixme 在发布的时候应该替换为返回0,并记录错误

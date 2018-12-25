@@ -46,7 +46,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	//logrus.in
 	ce := &ChainEvents{
 		client:       client,
-		be:           blockchain.NewBlockChainEvents(client, bcs, token2TokenNetwork),
+		be:           blockchain.NewBlockChainEvents(client, bcs),
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
@@ -111,14 +111,14 @@ func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 
 func (ce *ChainEvents) handleChannelSettled(st2 *mediatedtransfer.ContractSettledStateChange) {
 	log.Trace(fmt.Sprintf("receive ContractSettledStateChange %s", utils.StringInterface(st2, 3)))
-	err := ce.TokenNetwork.handleChannelSettled(st2.TokenNetworkAddress, st2.ChannelIdentifier)
+	err := ce.TokenNetwork.handleChannelSettled(st2.ChannelIdentifier)
 	if err != nil {
 		log.Error(fmt.Sprintf("handleChannelSettled err %s", err))
 	}
 }
 func (ce *ChainEvents) handleChannelCooperativeSettled(st2 *mediatedtransfer.ContractCooperativeSettledStateChange) {
 	log.Trace(fmt.Sprintf("receive ContractCooperativeSettledStateChange %s", utils.StringInterface(st2, 3)))
-	err := ce.TokenNetwork.handleChannelCooperativeSettled(st2.TokenNetworkAddress, st2.ChannelIdentifier)
+	err := ce.TokenNetwork.handleChannelCooperativeSettled(st2.ChannelIdentifier)
 	if err != nil {
 		log.Error(fmt.Sprintf("handleChannelCooperativeSettled err %s", err))
 	}
@@ -133,7 +133,7 @@ func (ce *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.Contrac
 		return
 	}
 	decimal, err := tokenProxy.Token.Decimals(nil)
-	err = ce.TokenNetwork.handleTokenNetworkAdded(st2.TokenAddress, st2.TokenNetworkAddress, st2.BlockNumber, decimal)
+	err = ce.TokenNetwork.handleTokenNetworkAdded(st2.TokenAddress, st2.BlockNumber, decimal)
 	if err != nil {
 		log.Error(fmt.Sprintf("handleTokenNetworkAdded err %s ", err))
 	}
@@ -145,15 +145,14 @@ func (ce *ChainEvents) handleBlockNumber(n int64) {
 
 // handleNewChannelStateChange Open channel
 func (ce *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange) {
-	tokenNetwork := st2.TokenNetworkAddress
 
-	log.Trace(fmt.Sprintf("Received ChannelOpened event for token network %s", tokenNetwork.String()))
+	log.Trace(fmt.Sprintf("Received ChannelOpened event for token   %s", st2.TokenAddress))
 
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
 	participant2 := st2.Participant2
 	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelOpened data: %s", utils.StringInterface(st2, 3))))
-	err := ce.TokenNetwork.handleChannelOpenedEvent(tokenNetwork, channelID, participant1, participant2, st2.BlockNumber)
+	err := ce.TokenNetwork.handleChannelOpenedEvent(st2.TokenAddress, channelID, participant1, participant2, st2.BlockNumber)
 	if err != nil {
 		log.Error(fmt.Sprintf("Handle channel open event error,err=%s", err))
 	}
@@ -162,15 +161,13 @@ func (ce *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNew
 
 // handleDepositStateChange deposit
 func (ce *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractBalanceStateChange) {
-	tokenNetwork := st2.TokenNetworkAddress
-
-	log.Trace(fmt.Sprintf("Received ChannelDeposit event for token network %s", tokenNetwork.String()))
+	log.Trace(fmt.Sprintf("Received ChannelDeposit event for  %s", st2.ChannelIdentifier.String()))
 
 	channelID := st2.ChannelIdentifier
 	participantAddress := st2.ParticipantAddress
 	totalDeposit := st2.Balance
 	log.Trace(fmt.Sprintf(fmt.Sprintf("Received ChannelDeposit data: %s", utils.StringInterface(st2, 2))))
-	err := ce.TokenNetwork.handleChannelDepositEvent(tokenNetwork, channelID, participantAddress, totalDeposit)
+	err := ce.TokenNetwork.handleChannelDepositEvent(channelID, participantAddress, totalDeposit)
 	if err != nil {
 		log.Error(fmt.Sprintf("Handle channel deposit event error,err=%s", err))
 	}
@@ -178,12 +175,11 @@ func (ce *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractB
 
 // handleChainChannelClosed Close Channel
 func (ce *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractClosedStateChange) {
-	tokenNetwork := st2.TokenNetworkAddress
 
-	log.Trace(fmt.Sprintf("Received ChannelClosed event for token network %s", tokenNetwork.String()))
+	log.Trace(fmt.Sprintf("Received ChannelClosed event for channel  %s", st2.ChannelIdentifier.String()))
 
 	channelID := st2.ChannelIdentifier
-	err := ce.TokenNetwork.handleChannelClosedEvent(tokenNetwork, channelID)
+	err := ce.TokenNetwork.handleChannelClosedEvent(channelID)
 	if err != nil {
 		log.Error(fmt.Sprintf("Handle channel close event error,err=%s", err))
 	}
@@ -191,9 +187,8 @@ func (ce *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractCl
 
 // handleWithdrawStateChange Withdraw
 func (ce *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractChannelWithdrawStateChange) {
-	tokenNetwork := st2.TokenNetworkAddress
 
-	log.Trace(fmt.Sprintf("Received ChannelWithdraw event for token network %s", tokenNetwork.String()))
+	log.Trace(fmt.Sprintf("Received ChannelWithdraw event for  %s", st2.ChannelIdentifier.String()))
 
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
@@ -201,7 +196,7 @@ func (ce *ChainEvents) handleWithdrawStateChange(st2 *mediatedtransfer.ContractC
 	participant1Balance := st2.Participant1Balance
 	participant2Balance := st2.Participant2Balance
 
-	err := ce.TokenNetwork.handleChannelWithdrawEvent(tokenNetwork, channelID, participant1, participant2, participant1Balance, participant2Balance, st2.BlockNumber)
+	err := ce.TokenNetwork.handleChannelWithdrawEvent(channelID, participant1, participant2, participant1Balance, participant2Balance, st2.BlockNumber)
 	if err != nil {
 		log.Error(fmt.Sprintf("Handle channel withdaw event error,err=%s", err))
 	}

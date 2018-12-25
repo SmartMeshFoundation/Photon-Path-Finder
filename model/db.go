@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
@@ -53,7 +54,7 @@ func CloseDB() {
 
 //SetupTestDB for test only
 func SetupTestDB() {
-	dbPath := "/tmp/test.db"
+	dbPath := path.Join(os.TempDir(), "test.db")
 	err := os.Remove(dbPath)
 	if err != nil {
 		//ignore

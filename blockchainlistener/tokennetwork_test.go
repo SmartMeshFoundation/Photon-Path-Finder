@@ -18,32 +18,32 @@ import (
 )
 
 type channelIDStruct struct {
-	p1           common.Address
-	p2           common.Address
-	tokenNetwork common.Address
-	channelID    common.Hash
+	p1        common.Address
+	p2        common.Address
+	token     common.Address
+	channelID common.Hash
 }
 
 func TestCalcChannelID(t *testing.T) {
 	model.SetupTestDB()
 	cases := []channelIDStruct{
 		{
-			p1:           common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
-			p2:           common.HexToAddress("0x192650FEe408320D888E06Ed89D938294EA42f99"),
-			tokenNetwork: common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
-			channelID:    common.HexToHash("0xd8b6510752125b1c3b826bfe730f3dc280792fad7c8c1d95415f468da955a154"),
+			p1:        common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
+			p2:        common.HexToAddress("0x192650FEe408320D888E06Ed89D938294EA42f99"),
+			token:     common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
+			channelID: common.HexToHash("0xd8b6510752125b1c3b826bfe730f3dc280792fad7c8c1d95415f468da955a154"),
 		},
 		{
-			p1:           common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
-			p2:           common.HexToAddress("0x4B89Bff01009928784eB7e7d10Bf773e6D166066"),
-			tokenNetwork: common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
-			channelID:    common.HexToHash("0x12b4e8dd0d831a92de199b6b814861547b3109e2155841a673475053a42f8306"),
+			p1:        common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
+			p2:        common.HexToAddress("0x4B89Bff01009928784eB7e7d10Bf773e6D166066"),
+			token:     common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
+			channelID: common.HexToHash("0x12b4e8dd0d831a92de199b6b814861547b3109e2155841a673475053a42f8306"),
 		},
 	}
 	for _, c := range cases {
-		cid := calcChannelID(c.tokenNetwork, c.p1, c.p2)
+		cid := calcChannelID(c.token, c.p1, c.p2)
 		assert.EqualValues(t, cid, c.channelID)
-		cid = calcChannelID(c.tokenNetwork, c.p2, c.p1)
+		cid = calcChannelID(c.token, c.p2, c.p1)
 		assert.EqualValues(t, cid, c.channelID)
 	}
 }
@@ -59,15 +59,12 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
 	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	tn.participantStatus[addr1] = nodeStatus{false, true}
 	tn.participantStatus[addr2] = nodeStatus{false, true}
 	tn.participantStatus[addr3] = nodeStatus{false, true}
-	c1Id := calcChannelID(tokenNetwork, addr1, addr2)
-	tn.handleChannelOpenedEvent(tokenNetwork, c1Id, addr1, addr2, 3)
+	c1Id := calcChannelID(token, addr1, addr2)
+	tn.handleChannelOpenedEvent(token, c1Id, addr1, addr2, 3)
 	tn.channels[c1Id].Participant1Balance = big.NewInt(20)
 	tn.channels[c1Id].Participant2Balance = big.NewInt(20)
 	tn.channels[c1Id].Participant1Fee = &model.Fee{
@@ -94,8 +91,8 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		return
 	}
 
-	c2Id := calcChannelID(tokenNetwork, addr2, addr3)
-	tn.handleChannelOpenedEvent(tokenNetwork, c2Id, addr2, addr3, 3)
+	c2Id := calcChannelID(token, addr2, addr3)
+	tn.handleChannelOpenedEvent(token, c2Id, addr2, addr3, 3)
 	tn.channels[c2Id].Participant1Balance = big.NewInt(20)
 	tn.channels[c2Id].Participant2Balance = big.NewInt(20)
 	tn.channels[c2Id].Participant1Fee = &model.Fee{
@@ -134,9 +131,6 @@ func TestTokenNetwork_getWeight(t *testing.T) {
 	balance = balance.Mul(balance, base)
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
-	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
 	}
 	w := tn.getWeight(token, &model.Fee{
 		FeePolicy:   model.FeePolicyConstant,
@@ -183,9 +177,6 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
 	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	tn.participantStatus[addr1] = nodeStatus{false, true}
 	tn.participantStatus[addr2] = nodeStatus{false, true}
@@ -193,8 +184,8 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	fee := big.NewInt(1)
 	fee.Mul(fee, base)
 
-	c1Id := calcChannelID(tokenNetwork, addr1, addr2)
-	tn.handleChannelOpenedEvent(tokenNetwork, c1Id, addr1, addr2, 3)
+	c1Id := calcChannelID(token, addr1, addr2)
+	tn.handleChannelOpenedEvent(token, c1Id, addr1, addr2, 3)
 	tn.channels[c1Id].Participant1Fee = &model.Fee{
 		FeePolicy:   model.FeePolicyConstant,
 		FeeConstant: fee,
@@ -222,8 +213,8 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 		t.Error("should no path")
 		return
 	}
-	c2Id := calcChannelID(tokenNetwork, addr2, addr3)
-	tn.handleChannelOpenedEvent(tokenNetwork, c2Id, addr2, addr3, 3)
+	c2Id := calcChannelID(token, addr2, addr3)
+	tn.handleChannelOpenedEvent(token, c2Id, addr2, addr3, 3)
 	tn.channels[c2Id].Participant1Fee = &model.Fee{
 		FeePolicy:   model.FeePolicyCombined,
 		FeeConstant: fee,
@@ -266,9 +257,6 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
 	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	addr4 := utils.NewRandomAddress()
 	addr5 := utils.NewRandomAddress()
@@ -293,7 +281,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c1Id := calcChannelID(tokenNetwork, addr1, addr2)
+	c1Id := calcChannelID(token, addr1, addr2)
 	tn.channelViews[token] = []*channel{c1}
 	tn.channels[c1Id] = c1
 	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "")
@@ -324,7 +312,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c2Id := calcChannelID(tokenNetwork, addr2, addr3)
+	c2Id := calcChannelID(token, addr2, addr3)
 	tn.channelViews[token] = []*channel{c1, c2}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -357,7 +345,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c3Id := calcChannelID(tokenNetwork, addr3, addr5)
+	c3Id := calcChannelID(token, addr3, addr5)
 	tn.channelViews[token] = []*channel{c1, c2, c3}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -377,7 +365,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c4Id := calcChannelID(tokenNetwork, addr4, addr5)
+	c4Id := calcChannelID(token, addr4, addr5)
 	tn.channelViews[token] = []*channel{c1, c2, c3, c4}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -398,7 +386,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c5Id := calcChannelID(tokenNetwork, addr2, addr4)
+	c5Id := calcChannelID(token, addr2, addr4)
 	tn.channelViews[token] = []*channel{c1, c2, c3, c4, c5}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -444,13 +432,10 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
 	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
-	}
 	channid := utils.NewRandomHash()
 	p1 := utils.NewRandomAddress()
 	p2 := utils.NewRandomAddress()
-	err := tn.handleChannelOpenedEvent(tokenNetwork, channid, p1, p2, 3)
+	err := tn.handleChannelOpenedEvent(token, channid, p1, p2, 3)
 	if err != nil {
 		t.Error(err)
 		return
@@ -463,12 +448,12 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	err = tn.handleChannelClosedEvent(tokenNetwork, channid)
+	err = tn.handleChannelClosedEvent(channid)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = tn.handleChannelClosedEvent(tokenNetwork, channid)
+	err = tn.handleChannelClosedEvent(channid)
 	if err == nil {
 		t.Error("should error")
 		return
@@ -491,9 +476,6 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 	tn.token2TokenNetwork = map[common.Address]common.Address{
 		token: tokenNetwork,
 	}
-	tn.tokenNetwork2Token = map[common.Address]common.Address{
-		tokenNetwork: token,
-	}
 	lastAddr := utils.NewRandomAddress()
 	tn.participantStatus[lastAddr] = nodeStatus{false, true}
 	for i := 0; i < nodesNumber; i++ {
@@ -514,7 +496,7 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 			Participant1Balance: big.NewInt(100000),
 			Participant2Balance: big.NewInt(100000),
 		}
-		cid := calcChannelID(tokenNetwork, lastAddr, addr)
+		cid := calcChannelID(token, lastAddr, addr)
 		cs := tn.channelViews[token]
 		cs = append(cs, c)
 		tn.channels[cid] = c
