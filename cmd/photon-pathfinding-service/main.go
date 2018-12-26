@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/signal"
 
@@ -98,6 +99,11 @@ func mainCtx(ctx *cli.Context) error {
 	client, err := helper.NewSafeClient(ethEndpoint)
 	if err != nil {
 		log.Error(fmt.Sprintf("cannot connect to geth :%s err=%s", ethEndpoint, err))
+		utils.SystemExit(1)
+	}
+	params.ChainID, err = client.NetworkID(context.Background())
+	if err != nil {
+		log.Error(fmt.Sprintf("get network id err %s", err))
 		utils.SystemExit(1)
 	}
 	params.DBType = ctx.String("dbtype")
