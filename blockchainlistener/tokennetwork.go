@@ -33,25 +33,26 @@ type nodeStatus struct {
 
 // TokenNetwork token network view
 type TokenNetwork struct {
-	TokenNetworkAddress common.Address
-	channelViews        map[common.Address][]*channel //token to channels
-	channels            map[common.Hash]*channel      //channel id to chann
-	token2TokenNetwork  map[common.Address]common.Address
-	decimals            map[common.Address]int
-	viewlock            sync.RWMutex
-	participantStatus   map[common.Address]nodeStatus
-	nodeLock            sync.Mutex
+	TokensNetworkAddress common.Address
+	channelViews         map[common.Address][]*channel //token to channels
+	channels             map[common.Hash]*channel      //channel id to chann
+	token2TokenNetwork   map[common.Address]common.Address
+	decimals             map[common.Address]int
+	viewlock             sync.RWMutex
+	participantStatus    map[common.Address]nodeStatus
+	nodeLock             sync.Mutex
 }
 
 // NewTokenNetwork token network initialization
-func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address) (twork *TokenNetwork) {
+func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, tokensNetworkAddress common.Address) (twork *TokenNetwork) {
 	//read channel view from db
 	twork = &TokenNetwork{
-		channelViews:       make(map[common.Address][]*channel),
-		channels:           make(map[common.Hash]*channel),
-		token2TokenNetwork: make(map[common.Address]common.Address),
-		decimals:           make(map[common.Address]int),
-		participantStatus:  make(map[common.Address]nodeStatus),
+		TokensNetworkAddress: tokensNetworkAddress,
+		channelViews:         make(map[common.Address][]*channel),
+		channels:             make(map[common.Hash]*channel),
+		token2TokenNetwork:   make(map[common.Address]common.Address),
+		decimals:             make(map[common.Address]int),
+		participantStatus:    make(map[common.Address]nodeStatus),
 	}
 	for t, tn := range token2TokenNetwork {
 		twork.token2TokenNetwork[t] = tn
@@ -392,20 +393,20 @@ func (t *TokenNetwork) getWeight(token common.Address, fee *model.Fee, value *bi
 }
 
 //注意与合约上计算方式保持完全一致.
-func calcChannelID(token, p1, p2 common.Address) common.Hash {
+func calcChannelID(token, tokensNetwork, p1, p2 common.Address) common.Hash {
 	var channelID common.Hash
 	//log.Trace(fmt.Sprintf("p1=%s,p2=%s,tokennetwork=%s", p1.String(), p2.String(), tokenNetwork.String()))
 	if bytes.Compare(p1[:], p2[:]) < 0 {
-		channelID = utils.Sha3(p1[:], p2[:], token[:])
+		channelID = utils.Sha3(p1[:], p2[:], token[:], tokensNetwork[:])
 	} else {
-		channelID = utils.Sha3(p2[:], p1[:], token[:])
+		channelID = utils.Sha3(p2[:], p1[:], token[:], tokensNetwork[:])
 	}
 	return channelID
 }
 
 // calcFeeByParticipantPartner get fee_rate when the peer in some channel
 func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address, value *big.Int) (xfee *big.Int) {
-	channelID := calcChannelID(token, p1, p2)
+	channelID := calcChannelID(token, p1, p2, t.TokensNetworkAddress)
 	c := t.channels[channelID]
 	if c == nil {
 		//todo fixme 在发布的时候应该替换为返回0,并记录错误

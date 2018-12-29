@@ -50,7 +50,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
-		TokenNetwork: NewTokenNetwork(token2TokenNetwork),
+		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress),
 	}
 	ce.matrix = NewMatrixObserver(ce.TokenNetwork)
 	return ce
