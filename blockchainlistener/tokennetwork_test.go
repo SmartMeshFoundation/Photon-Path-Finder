@@ -18,35 +18,38 @@ import (
 )
 
 type channelIDStruct struct {
-	p1        common.Address
-	p2        common.Address
-	token     common.Address
-	channelID common.Hash
+	p1            common.Address
+	p2            common.Address
+	token         common.Address
+	tokensNetwork common.Address
+	channelID     common.Hash
 }
 
-//func TestCalcChannelID(t *testing.T) {
-//	model.SetupTestDB()
-//	cases := []channelIDStruct{
-//		{
-//			p1:        common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
-//			p2:        common.HexToAddress("0x192650FEe408320D888E06Ed89D938294EA42f99"),
-//			token:     common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
-//			channelID: common.HexToHash("0xd8b6510752125b1c3b826bfe730f3dc280792fad7c8c1d95415f468da955a154"),
-//		},
-//		{
-//			p1:        common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
-//			p2:        common.HexToAddress("0x4B89Bff01009928784eB7e7d10Bf773e6D166066"),
-//			token:     common.HexToAddress("0x6021334197e07966330BEd0dB7561a2EC5DC9A8A"),
-//			channelID: common.HexToHash("0x12b4e8dd0d831a92de199b6b814861547b3109e2155841a673475053a42f8306"),
-//		},
-//	}
-//	for _, c := range cases {
-//		cid := calcChannelID(c.token, c.p1, c.p2, utils.EmptyAddress)
-//		assert.EqualValues(t, cid, c.channelID)
-//		cid = calcChannelID(c.token, c.p2, c.p1, utils.EmptyAddress)
-//		assert.EqualValues(t, cid, c.channelID)
-//	}
-//}
+func TestCalcChannelID(t *testing.T) {
+	model.SetupTestDB()
+	cases := []channelIDStruct{
+		{
+			p1:            common.HexToAddress("0x4B89Bff01009928784eB7e7d10Bf773e6D166066"),
+			p2:            common.HexToAddress("0x3af7fbddef2CeBEeB850328a0834Aa9a29684332"),
+			token:         common.HexToAddress("0x10642C068d38f1567d97E3ED1EEAFb8c2420ff54"),
+			tokensNetwork: common.HexToAddress("0x3e4D30AAba71670921C448A1951AEb0a1414ba09"),
+			channelID:     common.HexToHash("0x23ac04787505ab7fd9fe0519df0b12ce4296dd6e14632f594dd195e32b20a36a"),
+		},
+		{
+			p1:            common.HexToAddress("0x292650fee408320D888e06ed89D938294Ea42f99"),
+			p2:            common.HexToAddress("0x4B89Bff01009928784eB7e7d10Bf773e6D166066"),
+			token:         common.HexToAddress("0x10642C068d38f1567d97E3ED1EEAFb8c2420ff54"),
+			tokensNetwork: common.HexToAddress("0x3e4D30AAba71670921C448A1951AEb0a1414ba09"),
+			channelID:     common.HexToHash("0x9653fe73704182cb7b1377cfae1471a304ab94eb824979be5a22464b507dd8cc"),
+		},
+	}
+	for _, c := range cases {
+		cid := calcChannelID(c.token, c.tokensNetwork, c.p1, c.p2)
+		assert.EqualValues(t, cid, c.channelID)
+		cid = calcChannelID(c.token, c.tokensNetwork, c.p2, c.p1)
+		assert.EqualValues(t, cid, c.channelID)
+	}
+}
 
 func TestTokenNetwork_GetPaths(t *testing.T) {
 	model.SetupTestDB()

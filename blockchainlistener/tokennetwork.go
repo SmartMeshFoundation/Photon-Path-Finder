@@ -406,9 +406,12 @@ func calcChannelID(token, tokensNetwork, p1, p2 common.Address) common.Hash {
 
 // calcFeeByParticipantPartner get fee_rate when the peer in some channel
 func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address, value *big.Int) (xfee *big.Int) {
-	channelID := calcChannelID(token, p1, p2, t.TokensNetworkAddress)
+	channelID := calcChannelID(token, t.TokensNetworkAddress, p1, p2)
 	c := t.channels[channelID]
 	if c == nil {
+		log.Trace(fmt.Sprintf("channels=%s", utils.StringInterface(t.channels, 5)))
+		log.Trace(fmt.Sprintf("token=%s,p1=%s,p2=%s,tokennetwork=%s", utils.APex2(token),
+			utils.APex2(p1), utils.APex2(p2), utils.APex2(t.TokensNetworkAddress)))
 		//todo fixme 在发布的时候应该替换为返回0,并记录错误
 		panic(fmt.Sprintf("channel not found,p1=%s,p2=%s,token=%s", p1.String(), p2.String(), token.String()))
 	}
