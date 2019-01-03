@@ -146,7 +146,7 @@ func (ce *ChainEvents) handleBlockNumber(n int64) {
 // handleNewChannelStateChange Open channel
 func (ce *ChainEvents) handleChainChannelOpend(st2 *mediatedtransfer.ContractNewChannelStateChange) {
 
-	log.Trace(fmt.Sprintf("Received ChannelOpened event for token   %s", st2.TokenAddress))
+	log.Trace(fmt.Sprintf("Received ChannelOpened event for token   %s", st2.TokenAddress.String()))
 
 	channelID := st2.ChannelIdentifier.ChannelIdentifier
 	participant1 := st2.Participant1
