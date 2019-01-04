@@ -54,19 +54,19 @@ func TestCalcChannelID(t *testing.T) {
 func TestTokenNetwork_GetPaths(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
-	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tokensNetwork := utils.NewRandomAddress()
+	tn := NewTokenNetwork(nil, tokensNetwork)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}
 	tn.token2TokenNetwork = map[common.Address]common.Address{
-		token: tokenNetwork,
+		token: tokensNetwork,
 	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	tn.participantStatus[addr1] = nodeStatus{false, true}
 	tn.participantStatus[addr2] = nodeStatus{false, true}
 	tn.participantStatus[addr3] = nodeStatus{false, true}
-	c1Id := calcChannelID(token, addr1, addr2, tokenNetwork)
+	c1Id := calcChannelID(token, tokensNetwork, addr1, addr2)
 	tn.handleChannelOpenedEvent(token, c1Id, addr1, addr2, 3)
 	tn.channels[c1Id].Participant1Balance = big.NewInt(20)
 	tn.channels[c1Id].Participant2Balance = big.NewInt(20)
@@ -94,7 +94,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		return
 	}
 
-	c2Id := calcChannelID(token, addr2, addr3, tokenNetwork)
+	c2Id := calcChannelID(token, tokensNetwork, addr2, addr3)
 	tn.handleChannelOpenedEvent(token, c2Id, addr2, addr3, 3)
 	tn.channels[c2Id].Participant1Balance = big.NewInt(20)
 	tn.channels[c2Id].Participant2Balance = big.NewInt(20)
@@ -187,7 +187,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	fee := big.NewInt(1)
 	fee.Mul(fee, base)
 
-	c1Id := calcChannelID(token, addr1, addr2, tokenNetwork)
+	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
 	tn.handleChannelOpenedEvent(token, c1Id, addr1, addr2, 3)
 	tn.channels[c1Id].Participant1Fee = &model.Fee{
 		FeePolicy:   model.FeePolicyConstant,
@@ -216,7 +216,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 		t.Error("should no path")
 		return
 	}
-	c2Id := calcChannelID(token, addr2, addr3, tokenNetwork)
+	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
 	tn.handleChannelOpenedEvent(token, c2Id, addr2, addr3, 3)
 	tn.channels[c2Id].Participant1Fee = &model.Fee{
 		FeePolicy:   model.FeePolicyCombined,
@@ -284,7 +284,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c1Id := calcChannelID(token, addr1, addr2, tokenNetwork)
+	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
 	tn.channelViews[token] = []*channel{c1}
 	tn.channels[c1Id] = c1
 	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "")
@@ -315,7 +315,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c2Id := calcChannelID(token, addr2, addr3, tokenNetwork)
+	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
 	tn.channelViews[token] = []*channel{c1, c2}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -348,7 +348,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c3Id := calcChannelID(token, addr3, addr5, tokenNetwork)
+	c3Id := calcChannelID(token, tokenNetwork, addr3, addr5)
 	tn.channelViews[token] = []*channel{c1, c2, c3}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -368,7 +368,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c4Id := calcChannelID(token, addr4, addr5, tokenNetwork)
+	c4Id := calcChannelID(token, tokenNetwork, addr4, addr5)
 	tn.channelViews[token] = []*channel{c1, c2, c3, c4}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -389,7 +389,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		Participant1Balance: big.NewInt(20),
 		Participant2Balance: big.NewInt(20),
 	}
-	c5Id := calcChannelID(token, addr2, addr4, tokenNetwork)
+	c5Id := calcChannelID(token, tokenNetwork, addr2, addr4)
 	tn.channelViews[token] = []*channel{c1, c2, c3, c4, c5}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
@@ -499,7 +499,7 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 			Participant1Balance: big.NewInt(100000),
 			Participant2Balance: big.NewInt(100000),
 		}
-		cid := calcChannelID(token, lastAddr, addr, tokenNetwork)
+		cid := calcChannelID(token, tokenNetwork, lastAddr, addr)
 		cs := tn.channelViews[token]
 		cs = append(cs, c)
 		tn.channels[cid] = c

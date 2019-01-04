@@ -110,6 +110,7 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenAddress common.Address, cha
 	cs = append(cs, c2)
 	t.channelViews[tokenAddress] = cs
 	t.channels[channelID] = c2
+	//log.Trace(fmt.Sprintf("handleChannelOpenedEvent token=%s, channelViews=%s", utils.APex2(tokenAddress), utils.StringInterface(cs, 5)))
 	return
 }
 func (t *TokenNetwork) handleTokenNetworkAdded(token common.Address, blockNumber int64, decimal uint8) (err error) {
@@ -133,11 +134,18 @@ func (t *TokenNetwork) doRemoveChannel(token common.Address, channelID common.Ha
 	}
 	delete(t.channels, channelID)
 	cs := t.channelViews[token]
+	found := false
 	//c must not be nil
 	for k, v := range cs {
 		if v == c {
 			cs = append(cs[:k], cs[k+1:]...)
+			found = true
+			break
 		}
+	}
+	if !found {
+		log.Error(fmt.Sprintf("doRemoveChannel channle not found  t,oken=%s %s,", utils.APex2(token), utils.StringInterface(c, 3)))
+		log.Error(fmt.Sprintf("channelViews=%s", utils.StringInterface(cs, 5)))
 	}
 	t.channelViews[token] = cs
 	return
@@ -147,7 +155,7 @@ func (t *TokenNetwork) handleChannelCooperativeSettled(channelID common.Hash) (e
 	if err != nil {
 		return
 	}
-	return t.doRemoveChannel(common.StringToAddress(c.Token), channelID)
+	return t.doRemoveChannel(common.HexToAddress(c.Token), channelID)
 }
 
 // handleChannelDepositEvent Handle Channel Deposit Event
@@ -172,7 +180,7 @@ func (t *TokenNetwork) handleChannelClosedEvent(channelID common.Hash) (err erro
 	if err != nil {
 		return
 	}
-	return t.doRemoveChannel(common.StringToAddress(c.Token), channelID)
+	return t.doRemoveChannel(common.HexToAddress(c.Token), channelID)
 }
 
 // handleChannelWithdrawEvent Handle Channel Withdaw Event

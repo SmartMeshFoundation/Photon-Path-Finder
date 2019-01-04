@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
-
 	"log"
 	"os"
 
@@ -24,10 +22,10 @@ func SetUpDB(dbtype, path string) {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	if params.DebugMode {
-		db = db.Debug()
-		db.LogMode(true)
-	}
+	//if params.DebugMode {
+	//	db = db.Debug()
+	//	db.LogMode(true)
+	//}
 	//db.SetLogger(gorm.Logger{revel.TRACE})
 	db.SetLogger(log.New(os.Stdout, "\r\n", 0))
 	db.AutoMigrate(&Channel{})

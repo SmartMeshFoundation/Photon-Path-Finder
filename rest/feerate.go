@@ -224,8 +224,8 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Trace("peer=%s", peerAddress.String())
-	log.Trace("req=%s", utils.StringInterface(req, 3))
+	log.Trace(fmt.Sprintf("peer=%s", peerAddress.String()))
+	log.Trace(fmt.Sprintf("req=%s", utils.StringInterface(req, 3)))
 	//validate json-input
 	if req.AccountFee != nil {
 		req.AccountFee.fee, err = verifySetFeeRate(req.AccountFee, peerAddress)
