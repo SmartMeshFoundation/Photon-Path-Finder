@@ -106,6 +106,8 @@ func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 		ce.handleChannelSettled(st2)
 	case *mediatedtransfer.ContractCooperativeSettledStateChange:
 		ce.handleChannelCooperativeSettled(st2)
+	default:
+		log.Trace(fmt.Sprintf("unkown statechange %s", utils.StringInterface(st, 3)))
 	}
 }
 
@@ -176,7 +178,7 @@ func (ce *ChainEvents) handleChainChannelDeposit(st2 *mediatedtransfer.ContractB
 // handleChainChannelClosed Close Channel
 func (ce *ChainEvents) handleChainChannelClosed(st2 *mediatedtransfer.ContractClosedStateChange) {
 
-	log.Trace(fmt.Sprintf("Received ChannelClosed event for channel  %s", st2.ChannelIdentifier.String()))
+	log.Trace(fmt.Sprintf("Received ChannelClosed event for channel  %s", utils.StringInterface(st2, 2)))
 
 	channelID := st2.ChannelIdentifier
 	err := ce.TokenNetwork.handleChannelClosedEvent(channelID)
