@@ -226,7 +226,7 @@ type PathResult struct {
 
 // GetPaths get the lowest fee  path
 func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, tokenAddress common.Address,
-	value *big.Int, limitPaths int, sortDemand string) (pathinfos []*PathResult, err error) {
+	value *big.Int, limitPaths int, sortDemand string, sourceChargeFee bool) (pathinfos []*PathResult, err error) {
 	//todo 1\移除余额不够的边,2\移除节点不在线所处的通道,3\移除节点类型是手机的节点所处的通道matrix,4\移除节点不在线所处的所有通道matrix,5\移除节点网络状态为不在线的matrix
 	t.viewlock.RLock()
 	cs, ok := t.channelViews[tokenAddress]
@@ -278,14 +278,14 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		//有可能是双向的,有可能是单向的,根据金额来决定
 		if p1Balance.Cmp(value) >= 0 {
 			weight := t.getWeight(tokenAddress, c.Participant1Fee, value)
-			if c.Participant1 == source {
+			if c.Participant1 == source && !sourceChargeFee {
 				weight = 0
 			}
 			djGraph.AddEdge(gPeerToIndex[c.Participant1], gPeerToIndex[c.Participant2], weight) //int(peerBalance0)
 		}
 		if p2Balance.Cmp(value) >= 0 {
 			weight := t.getWeight(tokenAddress, c.Participant2Fee, value)
-			if c.Participant2 == source {
+			if c.Participant2 == source && !sourceChargeFee {
 				weight = 0
 			}
 			djGraph.AddEdge(gPeerToIndex[c.Participant2], gPeerToIndex[c.Participant1], weight)
@@ -314,8 +314,12 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		var xaddr []common.Address
 		var totalfeerates = new(big.Int)
 
-		//跳过源节点,他是不会收费的
-		for i := 1; i < len(pathSlice)-1; i++ {
+		//要区分源节点是否收费
+		var i = 1
+		if sourceChargeFee {
+			i = 0
+		}
+		for ; i < len(pathSlice)-1; i++ {
 			var p1, p2 common.Address
 			foundNumber := 0
 			for addr, index := range gPeerToIndex {
@@ -351,6 +355,10 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			return
 		}
 		xaddr = append(xaddr, lastAddress)
+		//无论源节点是否收费,都不能把源节点放到路径中去
+		if sourceChargeFee && len(xaddr) > 0 {
+			xaddr = xaddr[1:]
+		}
 		sinPathInfo.Fee = totalfeerates
 		sinPathInfo.Result = xaddr
 		pathinfos = append(pathinfos, sinPathInfo)

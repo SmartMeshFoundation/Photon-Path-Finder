@@ -13,13 +13,14 @@ import (
 
 // pathRequest is the json request for GetPaths
 type pathRequest struct {
-	PeerFrom     common.Address `json:"peer_from"`
-	PeerTo       common.Address `json:"peer_to"`
-	TokenAddress common.Address `json:"token_address"`
-	LimitPaths   int            `json:"limit_paths"`
-	SendAmount   *big.Int       `json:"send_amount"`
-	SortDemand   string         `json:"sort_demand"`
-	Signature    []byte
+	PeerFrom          common.Address `json:"peer_from"`
+	PeerTo            common.Address `json:"peer_to"`
+	TokenAddress      common.Address `json:"token_address"`
+	LimitPaths        int            `json:"limit_paths"`
+	SendAmount        *big.Int       `json:"send_amount"`
+	SortDemand        string         `json:"sort_demand"`
+	Signature         []byte
+	PeerFromChargeFee bool `json:"peer_from_charge_fee"`
 }
 
 // GetPaths handle the request with GetPaths,implements POST /paths
@@ -36,7 +37,7 @@ func GetPaths(w rest.ResponseWriter, r *rest.Request) {
 	var limitPaths = req.LimitPaths
 	var sendAmount = req.SendAmount
 	var sortDemand = req.SortDemand
-	pathResult, err := tn.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand)
+	pathResult, err := tn.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand, req.PeerFromChargeFee)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return

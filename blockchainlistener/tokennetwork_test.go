@@ -79,7 +79,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		FeeConstant: big.NewInt(1),
 	}
 
-	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "")
+	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -88,7 +88,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "")
+	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "", false)
 	if err == nil {
 		t.Error("should no path")
 		return
@@ -106,7 +106,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		FeePolicy:   model.FeePolicyConstant,
 		FeeConstant: big.NewInt(1),
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -115,7 +115,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", false)
 	if err == nil {
 		t.Error("should not path")
 		return
@@ -201,7 +201,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	tn.channels[c1Id].Participant2Balance = balance
 
 	v := big.NewInt(10)
-	paths, err := tn.GetPaths(addr1, addr2, token, v.Mul(v, base), 3, "")
+	paths, err := tn.GetPaths(addr1, addr2, token, v.Mul(v, base), 3, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -211,7 +211,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 		return
 	}
 	v = big.NewInt(30)
-	paths, err = tn.GetPaths(addr1, addr2, token, v.Mul(v, base), 3, "")
+	paths, err = tn.GetPaths(addr1, addr2, token, v.Mul(v, base), 3, "", false)
 	if err == nil {
 		t.Error("should no path")
 		return
@@ -231,7 +231,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	tn.channels[c2Id].Participant2Balance = balance
 
 	v = big.NewInt(3)
-	paths, err = tn.GetPaths(addr1, addr3, token, v.Mul(v, base), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, v.Mul(v, base), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -242,7 +242,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	}
 	t.Logf("paths=%s", utils.StringInterface(paths, 3))
 	v = big.NewInt(30)
-	paths, err = tn.GetPaths(addr1, addr3, token, v.Mul(v, base), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, v.Mul(v, base), 5, "", false)
 	if err == nil {
 		t.Error("should not path")
 		return
@@ -287,7 +287,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
 	tn.channelViews[token] = []*channel{c1}
 	tn.channels[c1Id] = c1
-	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "")
+	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -296,7 +296,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "")
+	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "", false)
 	if err == nil {
 		t.Error("should no path")
 		return
@@ -319,7 +319,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	tn.channelViews[token] = []*channel{c1, c2}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -328,7 +328,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", false)
 	if err == nil {
 		t.Error("should not path")
 		return
@@ -397,7 +397,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	tn.channels[c4Id] = c4
 	tn.channels[c5Id] = c5
 	//1-2-3-5 or 1-2-4-5
-	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -415,7 +415,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", false)
 	if err == nil {
 		t.Error("should not path")
 		return
@@ -513,7 +513,7 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 		from := nodes[utils.NewRandomInt(nodesNumber)]
 		to := nodes[utils.NewRandomInt(nodesNumber)]
 		//go func(from, to common.Address) {
-		paths, err := tn.GetPaths(from, to, token, big.NewInt(10), 5, "")
+		paths, err := tn.GetPaths(from, to, token, big.NewInt(10), 5, "", false)
 		if err != nil {
 			b.Error(err)
 			return
@@ -585,7 +585,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
 	tn.channelViews[token] = []*channel{c1}
 	tn.channels[c1Id] = c1
-	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "")
+	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -594,7 +594,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "")
+	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "", false)
 	if err == nil {
 		t.Error("should no path")
 		return
@@ -617,7 +617,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 	tn.channelViews[token] = []*channel{c1, c2}
 	tn.channels[c2Id] = c2
 	tn.channels[c1Id] = c1
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -626,7 +626,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "")
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", false)
 	if err == nil {
 		t.Error("should not path")
 		return
@@ -695,7 +695,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 	//tn.channels[c4Id] = c4
 	tn.channels[c5Id] = c5
 	//1-2-3-5 or 1-2-4-5
-	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
 		return
@@ -710,7 +710,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		return
 	}
 
-	paths, err = tn.GetPaths(addr2, addr5, token, big.NewInt(3), 5, "")
+	paths, err = tn.GetPaths(addr2, addr5, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error("should have one path")
 		return
@@ -720,4 +720,187 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		return
 	}
 
+}
+
+func TestTokenNetwork_GetPaths3(t *testing.T) {
+	model.SetupTestDB()
+	token := utils.NewRandomAddress()
+	tokenNetwork := utils.NewRandomAddress()
+	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn.decimals = map[common.Address]int{
+		token: 0,
+	}
+	tn.token2TokenNetwork = map[common.Address]common.Address{
+		token: tokenNetwork,
+	}
+	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
+	addr4 := utils.NewRandomAddress()
+	addr5 := utils.NewRandomAddress()
+	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
+		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
+	tn.participantStatus[addr1] = nodeStatus{false, true}
+	tn.participantStatus[addr2] = nodeStatus{false, true}
+	tn.participantStatus[addr3] = nodeStatus{false, true}
+	tn.participantStatus[addr4] = nodeStatus{false, true}
+	tn.participantStatus[addr5] = nodeStatus{false, true}
+	c1 := &channel{
+		Participant1: addr1,
+		Participant2: addr2,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: big.NewInt(20),
+		Participant2Balance: big.NewInt(20),
+	}
+	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
+	tn.channelViews[token] = []*channel{c1}
+	tn.channels[c1Id] = c1
+	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(paths[0].Result) != 1 || paths[0].PathHop != 0 || paths[0].Fee.Cmp(big.NewInt(1)) != 0 {
+		t.Errorf("length should be 0,paths=%s", utils.StringInterface(paths, 3))
+		return
+	}
+	paths, err = tn.GetPaths(addr1, addr2, token, big.NewInt(30), 3, "", true)
+	if err == nil {
+		t.Error("should no path")
+		return
+	}
+	c2 := &channel{
+		Participant1: addr2,
+		Participant2: addr3,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: big.NewInt(20),
+		Participant2Balance: big.NewInt(20),
+	}
+	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
+	tn.channelViews[token] = []*channel{c1, c2}
+	tn.channels[c2Id] = c2
+	tn.channels[c1Id] = c1
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(paths[0].Result) != 2 || paths[0].PathHop != 1 || paths[0].Fee.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
+		return
+	}
+	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", true)
+	if err == nil {
+		t.Error("should not path")
+		return
+	}
+
+	c3 := &channel{
+		Participant1: addr3,
+		Participant2: addr5,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: big.NewInt(20),
+		Participant2Balance: big.NewInt(20),
+	}
+	c3Id := calcChannelID(token, tokenNetwork, addr3, addr5)
+	tn.channelViews[token] = []*channel{c1, c2, c3}
+	tn.channels[c2Id] = c2
+	tn.channels[c1Id] = c1
+	tn.channels[c3Id] = c3
+
+	//c4 := &channel{
+	//	Participant1: addr4,
+	//	Participant2: addr5,
+	//	Participant1Fee: &model.Fee{
+	//		FeePolicy:   model.FeePolicyConstant,
+	//		FeeConstant: big.NewInt(1),
+	//	},
+	//	Participant2Fee: &model.Fee{
+	//		FeePolicy:   model.FeePolicyConstant,
+	//		FeeConstant: big.NewInt(1),
+	//	},
+	//	Participant1Balance: big.NewInt(20),
+	//	Participant2Balance: big.NewInt(20),
+	//}
+	//c4Id := calcChannelID(token, tokenNetwork, addr4, addr5)
+	//tn.channelViews[token] = []*channel{c1, c2, c3, c4}
+	//tn.channels[c2Id] = c2
+	//tn.channels[c1Id] = c1
+	//tn.channels[c3Id] = c3
+	//tn.channels[c4Id] = c4
+
+	c5 := &channel{
+		Participant1: addr2,
+		Participant2: addr5,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(10),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: big.NewInt(20),
+		Participant2Balance: big.NewInt(20),
+	}
+	c5Id := calcChannelID(token, tokenNetwork, addr2, addr5)
+	tn.channelViews[token] = []*channel{c1, c2, c3, c5}
+	tn.channels[c2Id] = c2
+	tn.channels[c1Id] = c1
+	tn.channels[c3Id] = c3
+	//tn.channels[c4Id] = c4
+	tn.channels[c5Id] = c5
+	//1-2-3-5 or 1-2-4-5
+	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Logf("paths=%s", utils.StringInterface(paths, 5))
+	if len(paths[0].Result) != 3 || paths[0].PathHop != 2 || paths[0].Fee.Cmp(big.NewInt(3)) != 0 {
+		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
+		return
+	}
+	if len(paths) != 1 {
+		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
+		return
+	}
+
+	paths, err = tn.GetPaths(addr2, addr5, token, big.NewInt(3), 5, "", false)
+	if err != nil {
+		t.Error("should have one path")
+		return
+	}
+	if len(paths[0].Result) != 1 || paths[0].PathHop != 0 || paths[0].Fee.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
+		return
+	}
+	paths, err = tn.GetPaths(addr2, addr5, token, big.NewInt(3), 5, "", true)
+	if err != nil {
+		t.Error("should have one path")
+		return
+	}
+	if len(paths[0].Result) != 2 || paths[0].PathHop != 1 || paths[0].Fee.Cmp(big.NewInt(2)) != 0 {
+		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
+		return
+	}
 }
