@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
+
 	"log"
 	"os"
 
@@ -37,8 +39,10 @@ func SetUpDB(dbtype, path string) {
 	db.AutoMigrate(&latestBlockNumber{})
 	db.AutoMigrate(&tokenNetwork{})
 	db.AutoMigrate(&AccountFee{}, &AccountTokenFee{}, &TokenFee{}, &NodeStatus{})
-
+	db.AutoMigrate(&xmpp{})
+	db.AutoMigrate(&observerKey{})
 	db.FirstOrCreate(lb)
+	params.ObserverKey = GetObserverKey
 	return
 }
 

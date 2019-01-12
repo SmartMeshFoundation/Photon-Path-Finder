@@ -33,16 +33,16 @@ const (
 	ROOMPREFIX = "photon"
 	// ROOMSEP with ',' to separate room name's part
 	ROOMSEP = "_"
-	// PATHPREFIX0 the lastest matrix client api version
+	// PATHPREFIX0 the lastest transport client api version
 	PATHPREFIX0 = "/_matrix/client/r0"
 
 	// LOGINTYPE login type we used
 	LOGINTYPE = "m.login.password"
 )
 
-// MatrixObserver represents a matrix transport Instantiation
+// MatrixObserver represents a transport transport Instantiation
 type MatrixObserver struct {
-	matrixcli      *gomatrix.MatrixClient //the instantiated matrix
+	matrixcli      *gomatrix.MatrixClient //the instantiated transport
 	key            *ecdsa.PrivateKey      //key
 	nodeAddresses  common.Address
 	serverURL      string
@@ -52,11 +52,11 @@ type MatrixObserver struct {
 
 	log      log.Logger
 	running  bool
-	listener MatrixPresenceListener
+	listener NodePresenceListener
 }
 
-//MatrixPresenceListener for notification from matrix
-type MatrixPresenceListener interface {
+//NodePresenceListener for notification from transport
+type NodePresenceListener interface {
 	//an account is online
 	Online(address common.Address, deviceType string)
 	//an account is offline
@@ -74,21 +74,14 @@ var (
 	DISCOVERYROOMSERVER = params.DiscoveryServer
 )
 
-// NewMatrixObserver init matrix
-func NewMatrixObserver(listener MatrixPresenceListener) *MatrixObserver {
-	keybin, err := hex.DecodeString(pparams.ObserverKey)
-	if err != nil {
-		panic(fmt.Sprintf("ObserverKey err %s", pparams.ObserverKey))
-	}
-	key, err := crypto.ToECDSA(keybin)
-	if err != nil {
-		panic(fmt.Sprintf("ObserverKey is not valid key %s", err))
-	}
+// NewMatrixObserver init transport
+func NewMatrixObserver(listener NodePresenceListener) *MatrixObserver {
+	key := pparams.ObserverKey()
 	mtr := &MatrixObserver{
 		nodeAddresses:  crypto.PubkeyToAddress(key.PublicKey),
 		key:            key,
 		nodeDeviceType: "other",
-		log:            log.New("matrix", "finder"),
+		log:            log.New("transport", "finder"),
 		serverURL:      fmt.Sprintf("http://%s:8008", pparams.MatrixServer),
 		serverName:     pparams.MatrixServer,
 		running:        true,
@@ -98,7 +91,7 @@ func NewMatrixObserver(listener MatrixPresenceListener) *MatrixObserver {
 	return mtr
 }
 
-// Stop Does Stop need to destroy matrix resource ?
+// Stop Does Stop need to destroy transport resource ?
 func (m *MatrixObserver) Stop() {
 	m.running = false
 	if m.matrixcli != nil {
@@ -115,7 +108,7 @@ func (m *MatrixObserver) Stop() {
 	}
 }
 
-// Start matrix
+// Start transport
 func (m *MatrixObserver) start() {
 
 	for {
@@ -126,7 +119,7 @@ func (m *MatrixObserver) start() {
 		}
 		m.matrixcli, err = gomatrix.NewClient(fmt.Sprintf("http://%s:8008", pparams.MatrixServer), "", "", PATHPREFIX0, m.log)
 		if err != nil {
-			log.Error(fmt.Sprintf("matrix connection error %s", err))
+			log.Error(fmt.Sprintf("transport connection error %s", err))
 			time.Sleep(time.Second * 5)
 			continue
 		}
@@ -223,7 +216,7 @@ func (m *MatrixObserver) onHandlePresenceChange(event *gomatrix.Event) {
 //register new user on homeserver using application service
 func (m *MatrixObserver) register(username, password string) (userID string, err error) {
 	type reg struct {
-		LocalPart   string `json:"localpart"`   //@someone:matrix.org someone is localpoart,matrix.org is domain
+		LocalPart   string `json:"localpart"`   //@someone:transport.org someone is localpoart,transport.org is domain
 		DisplayName string `json:"displayname"` // displayname of this user
 		Password    string `json:"password,omitempty"`
 	}
@@ -278,7 +271,7 @@ func (m *MatrixObserver) loginOrRegister() (err error) {
 			}
 			if httpErr.Code == 403 { //Invalid username or password
 				if i > 0 {
-					m.log.Trace(fmt.Sprintf("couldn't sign in for matrix,trying register %s", username))
+					m.log.Trace(fmt.Sprintf("couldn't sign in for transport,trying register %s", username))
 				}
 				userID, rerr := m.register(username, password)
 				if rerr != nil {
@@ -288,7 +281,7 @@ func (m *MatrixObserver) loginOrRegister() (err error) {
 				continue
 			}
 		} else {
-			//cache the node's and report the UserID and AccessToken to matrix
+			//cache the node's and report the UserID and AccessToken to transport
 			m.matrixcli.SetCredentials(resplogin.UserID, resplogin.AccessToken)
 			m.UserID = resplogin.UserID
 			m.nodeAddresses = baseAddress
@@ -377,4 +370,14 @@ func extractUserLocalpart(userID string) (string, error) {
 		return "", fmt.Errorf("%s is not a valid user id", userID)
 	}
 	return strings.SplitN(userID[1:], ":", 2)[0], nil
+}
+
+//SubscribeNeighbors for Transporter interface only
+func (m *MatrixObserver) SubscribeNeighbors(addrs []common.Address) error {
+	return nil
+}
+
+//Unsubscribe for Transporter interface only
+func (m *MatrixObserver) Unsubscribe(addr common.Address) error {
+	return nil
 }

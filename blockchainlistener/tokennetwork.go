@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SmartMeshFoundation/Photon/log"
+	"github.com/SmartMeshFoundation/Photon/params"
 	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/kataras/go-errors"
 
@@ -41,10 +42,11 @@ type TokenNetwork struct {
 	viewlock             sync.RWMutex
 	participantStatus    map[common.Address]nodeStatus
 	nodeLock             sync.Mutex
+	transport            Transporter
 }
 
 // NewTokenNetwork token network initialization
-func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, tokensNetworkAddress common.Address) (twork *TokenNetwork) {
+func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, tokensNetworkAddress common.Address, useMatrix bool) (twork *TokenNetwork) {
 	//read channel view from db
 	twork = &TokenNetwork{
 		TokensNetworkAddress: tokensNetworkAddress,
@@ -56,6 +58,15 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 	}
 	for t, tn := range token2TokenNetwork {
 		twork.token2TokenNetwork[t] = tn
+	}
+	if useMatrix {
+		twork.transport = NewMatrixObserver(twork)
+	} else {
+		var err error
+		twork.transport, err = NewXMPPConnection(params.DefaultXMPPServer, dbXMPPWrapper{}, twork)
+		if err != nil {
+			log.Crit(fmt.Sprintf("NewXMPPConnection err %s", err))
+		}
 	}
 	for token := range twork.token2TokenNetwork {
 		cs, err := model.GetAllTokenChannels(token)
@@ -74,6 +85,10 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 			}
 			cs2 = append(cs2, c2)
 			twork.channels[common.HexToHash(c.ChannelID)] = c2
+			err = twork.transport.SubscribeNeighbors([]common.Address{c2.Participant1, c2.Participant2})
+			if err != nil {
+				log.Error(fmt.Sprintf("SubscribeNeighbors err %s", err))
+			}
 		}
 		twork.channelViews[token] = cs2
 	}
@@ -84,6 +99,7 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 			isMobile: n.DeviceType == "mobile",
 		}
 	}
+
 	return
 }
 
@@ -103,6 +119,10 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenAddress common.Address, cha
 		Participant2Balance: big.NewInt(0),
 		Participant1Fee:     c.Participants[0].Fee(),
 		Participant2Fee:     c.Participants[1].Fee(),
+	}
+	err = t.transport.SubscribeNeighbors([]common.Address{c2.Participant1, c2.Participant2})
+	if err != nil {
+		log.Error(fmt.Sprintf("SubscribeNeighbors err %s", err))
 	}
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
@@ -131,6 +151,14 @@ func (t *TokenNetwork) doRemoveChannel(token common.Address, channelID common.Ha
 	c := t.channels[channelID]
 	if c == nil {
 		return fmt.Errorf("handleChannelCooperativeSettled but channel %s not found", channelID.String())
+	}
+	err = t.transport.Unsubscribe(c.Participant1)
+	if err != nil {
+		log.Error(fmt.Sprintf("Unsubscribe %s err %s", c.Participant1.String(), err))
+	}
+	err = t.transport.Unsubscribe(c.Participant2)
+	if err != nil {
+		log.Error(fmt.Sprintf("Unsubscribe %s err %s", c.Participant1.String(), err))
 	}
 	delete(t.channels, channelID)
 	cs := t.channelViews[token]
@@ -442,7 +470,7 @@ func (t *TokenNetwork) calcFeeByParticipantPartner(token, p1, p2 common.Address,
 	return calcFee(value, fee)
 }
 
-//Online implements MatrixPresenceListener
+//Online implements NodePresenceListener
 func (t *TokenNetwork) Online(address common.Address, deviceType string) {
 	t.nodeLock.Lock()
 	defer t.nodeLock.Unlock()
@@ -450,16 +478,18 @@ func (t *TokenNetwork) Online(address common.Address, deviceType string) {
 		isMobile: deviceType == "mobile",
 		isOnline: true,
 	}
+	log.Trace(fmt.Sprintf("%s online ,type=%s", address.String(), deviceType))
 	model.NewOrUpdateNodeStatus(address, true, deviceType)
 }
 
-//Offline implements MatrixPresenceListener
+//Offline implements NodePresenceListener
 func (t *TokenNetwork) Offline(address common.Address) {
 	t.nodeLock.Lock()
 	defer t.nodeLock.Unlock()
 	t.participantStatus[address] = nodeStatus{
 		isOnline: false,
 	}
+	log.Trace(fmt.Sprintf("%s offliine", address.String()))
 	model.NewOrUpdateNodeOnline(address, false)
 }
 
@@ -480,4 +510,8 @@ func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress c
 	}
 	_, err := model.UpdateChannelFeeRate(channelID, peerAddress, fee)
 	return err
+}
+
+func (t *TokenNetwork) Stop() {
+	t.transport.Stop()
 }

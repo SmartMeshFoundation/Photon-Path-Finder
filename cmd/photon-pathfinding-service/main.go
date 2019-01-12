@@ -68,6 +68,14 @@ func StartMain() {
 			Usage: "database connection string.\nfor sqlite3 : ./photon.db \nfor postgres:  \"host=localhost user=pfs dbname=pfs_xxx sslmode=disable password=123456\"",
 			Value: "./photon.db",
 		},
+		cli.BoolFlag{
+			Name:  "matrix",
+			Usage: "use maxtrix as node online offline discover,default is xmpp",
+		},
+		cli.BoolTFlag{
+			Name:  "xmpp",
+			Usage: "use xmpp as node online offline discover,default is xmpp",
+		},
 	}
 	app.Flags = append(app.Flags, debug.Flags...)
 	app.Action = mainCtx
@@ -112,7 +120,8 @@ func mainCtx(ctx *cli.Context) error {
 	log.Info(fmt.Sprintf("debug=%v", params.DebugMode))
 	model.SetUpDB(params.DBType, params.DBPath)
 	key, _ := utils.MakePrivateKeyAddress()
-	ce := blockchainlistener.NewChainEvents(key, client, params.RegistryAddress)
+	useMatrx := ctx.Bool("matrix")
+	ce := blockchainlistener.NewChainEvents(key, client, params.RegistryAddress, useMatrx)
 	err = ce.Start()
 	if err != nil {
 		log.Error(fmt.Sprintf("ce start err =%s ", err))

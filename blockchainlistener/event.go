@@ -25,11 +25,22 @@ type ChainEvents struct {
 	quitChan     chan struct{}
 	stopped      bool
 	TokenNetwork *TokenNetwork
-	matrix       *MatrixObserver
+}
+type dbXMPPWrapper struct {
+}
+
+func (dbXMPPWrapper) XMPPIsAddrSubed(addr common.Address) bool {
+	return model.XMPPIsAddrSubed(addr)
+}
+func (dbXMPPWrapper) XMPPMarkAddrSubed(addr common.Address) {
+	model.XMPPMarkAddrSubed(addr)
+}
+func (dbXMPPWrapper) XMPPUnMarkAddr(addr common.Address) {
+	model.XMPPUnMarkAddr(addr)
 }
 
 // NewChainEvents create chain events
-func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address) *ChainEvents { //, db *models.ModelDB
+func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address, useMatrix bool) *ChainEvents { //, db *models.ModelDB
 	log.Info(fmt.Sprintf("Token Network registry address=%s", tokenNetworkRegistryAddress.String()))
 	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client)
 	if err != nil {
@@ -50,9 +61,9 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
-		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress),
+		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix),
 	}
-	ce.matrix = NewMatrixObserver(ce.TokenNetwork)
+
 	return ce
 }
 
@@ -66,7 +77,7 @@ func (ce *ChainEvents) Start() error {
 // Stop service
 func (ce *ChainEvents) Stop() {
 	ce.be.Stop()
-	ce.matrix.Stop()
+	ce.TokenNetwork.Stop()
 	close(ce.quitChan)
 }
 

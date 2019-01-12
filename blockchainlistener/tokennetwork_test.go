@@ -55,7 +55,7 @@ func TestTokenNetwork_GetPaths(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokensNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokensNetwork)
+	tn := NewTokenNetwork(nil, tokensNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}
@@ -125,7 +125,7 @@ func TestTokenNetwork_getWeight(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 18,
 	}
@@ -170,7 +170,7 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 18,
 	}
@@ -253,7 +253,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}
@@ -428,7 +428,7 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}
@@ -469,7 +469,7 @@ func BenchmarkTokenNetwork_GetPaths(b *testing.B) {
 	nodes := make(map[int]common.Address)
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 18,
 	}
@@ -551,7 +551,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}
@@ -726,7 +726,7 @@ func TestTokenNetwork_GetPaths3(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
 	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork)
+	tn := NewTokenNetwork(nil, tokenNetwork, true)
 	tn.decimals = map[common.Address]int{
 		token: 0,
 	}

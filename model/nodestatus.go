@@ -29,9 +29,10 @@ func NewOrUpdateNodeOnline(address common.Address, isOnline bool) {
 	var node = &NodeStatus{}
 	node.Address = address.String()
 	if err := db.Where(node).Find(node).Error; err != nil {
-		log.Error(fmt.Sprintf("NewOrUpdateNodeOnline but cannot found node %s", address.String()))
-		//return
-		db.Create(node)
+		err = db.Create(node).Error
+		if err != nil {
+			log.Error(fmt.Sprintf("NewOrUpdateNodeOnline but cannot found node %s", address.String()))
+		}
 	}
 	node.IsOnline = isOnline
 	err := db.Model(node).UpdateColumn("IsOnline", isOnline).Error

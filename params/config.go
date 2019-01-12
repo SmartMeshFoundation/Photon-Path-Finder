@@ -1,6 +1,7 @@
 package params
 
 import (
+	"crypto/ecdsa"
 	"math/big"
 	"os"
 	"os/user"
@@ -35,13 +36,16 @@ var DBPath string
 var Port int
 
 //ObserverKey is the key login to matrix server to observer other's presence
-var ObserverKey = "0bb2d0315029cd6048c0a756c076f3dd80e84cff4ff4bd80aad4a8d1d7f62598"
+var ObserverKey func() *ecdsa.PrivateKey
 
 //MatrixServer the matrix server for path finder use
 var MatrixServer = "transport01.smartmesh.cn"
 
 //DebugMode for debug setting
 var DebugMode = false
+
+//DefaultXMPPServer xmpp server
+const DefaultXMPPServer = "193.112.248.133:5222"
 
 //DefaultDataDir default work directory
 func DefaultDataDir() string {
