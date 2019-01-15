@@ -387,6 +387,7 @@ func (x *XMPPConnection) Unsubscribe(addr common.Address) error {
 			ID:   utils.RandomString(10),
 		}
 		_, err := x.sendSyncPresence(&p)
+		x.db.XMPPUnMarkAddr(addr)
 		return err
 	}
 	x.addrMap[addr] = cnt

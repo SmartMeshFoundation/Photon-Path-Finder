@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +27,7 @@ func (m *mockListener) Offline(address common.Address) {
 	m.t.Logf("offline %s", address.String())
 }
 func TestNewMatrixObserver(t *testing.T) {
+	model.SetupTestDB()
 	m := NewMatrixObserver(&mockListener{t})
 	time.Sleep(time.Second * 15)
 	m.Stop()
