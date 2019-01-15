@@ -198,6 +198,7 @@ func TestCloseChannel(t *testing.T) {
 func TestSettleChannel(t *testing.T) {
 	SetupTestDB()
 	c := testCreateChannel(t)
+	assert.EqualValues(t, len(c.Participants), 2)
 	_, err := SettleChannel(common.HexToHash(c.ChannelID))
 	if err != nil {
 		t.Error(err)
@@ -207,6 +208,20 @@ func TestSettleChannel(t *testing.T) {
 	if err == nil {
 		t.Error("should deleted")
 	}
+	//AddChannel(token, participant1, participant2 common.Address, ChannelIdentifier common.Hash, blockNumber int64)
+	c2, err := AddChannel(common.HexToAddress(c.Token), common.HexToAddress(c.Participants[0].Participant),
+		common.HexToAddress(c.Participants[1].Participant), common.HexToHash(c.ChannelID), c.OpenBlockNumber)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.EqualValues(t, len(c2.Participants), 2)
+	c3, err := getChannel(c.ChannelID)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.EqualValues(t, len(c3.Participants), 2)
 }
 
 func TestUpdateChannelDeposit(t *testing.T) {

@@ -234,6 +234,16 @@ func SettleChannel(channelIdentifier common.Hash) (c *Channel, err error) {
 		tx.Rollback()
 		return
 	}
+	err = tx.Delete(c.Participants[0]).Error
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+	err = tx.Delete(c.Participants[1]).Error
+	if err != nil {
+		tx.Rollback()
+		return
+	}
 	s := &SettledChannel{
 		ChannelID:    c.ChannelID,
 		Participant1: c.Participants[0].Participant,
