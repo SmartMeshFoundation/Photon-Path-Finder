@@ -53,7 +53,18 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 
 	token2TokenNetwork := model.GetAllTokenNetworks()
 	log.Trace(fmt.Sprintf("token2TokenNetwork startup=%s", utils.StringInterface(token2TokenNetwork, 2)))
-
+	decimals := make(map[common.Address]int)
+	for t := range token2TokenNetwork {
+		tokenProxy, err := bcs.Token(t)
+		if err != nil {
+			log.Crit(fmt.Sprintf("Token proxy create error %s", err))
+		}
+		decimal, err := tokenProxy.Token.Decimals(nil)
+		if err != nil {
+			log.Error(fmt.Sprintf("get decimal error for token %s, this token may don't have decimal field", t.String()))
+		}
+		decimals[t] = int(decimal)
+	}
 	//logrus.in
 	ce := &ChainEvents{
 		client:       client,
@@ -61,7 +72,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
-		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix),
+		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix, decimals),
 	}
 
 	return ce

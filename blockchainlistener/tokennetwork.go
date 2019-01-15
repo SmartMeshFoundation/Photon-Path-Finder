@@ -46,7 +46,7 @@ type TokenNetwork struct {
 }
 
 // NewTokenNetwork token network initialization
-func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, tokensNetworkAddress common.Address, useMatrix bool) (twork *TokenNetwork) {
+func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, tokensNetworkAddress common.Address, useMatrix bool, decimals map[common.Address]int) (twork *TokenNetwork) {
 	//read channel view from db
 	twork = &TokenNetwork{
 		TokensNetworkAddress: tokensNetworkAddress,
@@ -55,6 +55,9 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 		token2TokenNetwork:   make(map[common.Address]common.Address),
 		decimals:             make(map[common.Address]int),
 		participantStatus:    make(map[common.Address]nodeStatus),
+	}
+	if decimals != nil {
+		twork.decimals = decimals
 	}
 	for t, tn := range token2TokenNetwork {
 		twork.token2TokenNetwork[t] = tn
@@ -428,8 +431,8 @@ func (t *TokenNetwork) getWeight(token common.Address, fee *model.Fee, value *bi
 	}
 	maxWeight := big.NewInt(int64(math.MaxInt32))
 	if w.Cmp(maxWeight) > 0 {
-		log.Error(fmt.Sprintf("weight overflow token=%s,value=%s,feeconstant=%s,feepercent=%d",
-			token.String(), value, fee.FeeConstant, fee.FeePercent))
+		log.Error(fmt.Sprintf("weight overflow token=%s,value=%s,feeconstant=%s,feepercent=%d,decimal=%d",
+			token.String(), value, fee.FeeConstant, fee.FeePercent, decimal))
 		return math.MaxInt32
 	}
 	weight = int(w.Int64())
