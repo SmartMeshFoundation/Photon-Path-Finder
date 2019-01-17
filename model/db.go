@@ -2,11 +2,15 @@ package model
 
 import (
 	"fmt"
+	log2 "log"
 	"path"
+
+	"github.com/SmartMeshFoundation/Photon/utils"
+
+	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
-	"log"
 	"os"
 
 	"github.com/jinzhu/gorm"
@@ -29,7 +33,7 @@ func SetUpDB(dbtype, path string) {
 	//	db.LogMode(true)
 	//}
 	//db.SetLogger(gorm.Logger{revel.TRACE})
-	db.SetLogger(log.New(os.Stdout, "\r\n", 0))
+	db.SetLogger(log2.New(os.Stdout, "\r\n", 0))
 	db.AutoMigrate(&Channel{})
 	if err = db.AutoMigrate(&ChannelParticipantInfo{}).Error; err != nil {
 		panic(err)
@@ -41,6 +45,7 @@ func SetUpDB(dbtype, path string) {
 	db.AutoMigrate(&AccountFee{}, &AccountTokenFee{}, &TokenFee{}, &NodeStatus{})
 	db.AutoMigrate(&xmpp{})
 	db.AutoMigrate(&observerKey{})
+	db.AutoMigrate(&ChannelParticipantFee{})
 	db.FirstOrCreate(lb)
 	params.ObserverKey = GetObserverKey
 	return
@@ -50,13 +55,14 @@ func SetUpDB(dbtype, path string) {
 func CloseDB() {
 	err := db.Close()
 	if err != nil {
-		log.Printf(fmt.Sprintf("closedb err %s", err))
+		log.Error(fmt.Sprintf("closedb err %s", err))
 	}
 }
 
 //SetupTestDB for test only
 func SetupTestDB() {
-	dbPath := path.Join(os.TempDir(), "test.db")
+	dbPath := path.Join(utils.GetHomePath(), "test.db")
+	log.Trace(fmt.Sprintf(dbPath))
 	err := os.Remove(dbPath)
 	if err != nil {
 		//ignore

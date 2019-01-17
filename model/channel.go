@@ -55,9 +55,19 @@ type ChannelParticipantInfo struct {
 	Deposit          string
 	LockedAmount     string
 	TransferedAmount string
-	FeePolicy        int
-	FeeConstantPart  string //固定部分是一个整数,比如一次收取1token
-	FeePercentPart   int64  //0表示不收费,1000表示收费千分之一
+}
+
+/*
+ChannelParticipantFee 存储通道一方的收费信息
+*/
+type ChannelParticipantFee struct {
+	ID              int
+	ChannelID       string `gorm:"index"`
+	Participant     string `gorm:"index"`
+	Token           string
+	FeePolicy       int
+	FeeConstantPart string //固定部分是一个整数,比如一次收取1token
+	FeePercentPart  int64  //0表示不收费,1000表示收费千分之一
 }
 
 //BalanceValue return this participant's available balance
@@ -66,13 +76,8 @@ func (c *ChannelParticipantInfo) BalanceValue() *big.Int {
 }
 
 //Fee return this participant's charge fee
-func (c *ChannelParticipantInfo) Fee() *Fee {
-	f := &Fee{
-		FeePolicy:   c.FeePolicy,
-		FeeConstant: stringToBigInt(c.FeeConstantPart),
-		FeePercent:  c.FeePercentPart,
-	}
-	return f
+func (c *ChannelParticipantInfo) Fee(token common.Address) *Fee {
+	return GetChannelFeeRate(common.HexToHash(c.ChannelID), common.HexToAddress(c.Participant), token)
 }
 
 //Channel Channel基本信息
@@ -84,7 +89,8 @@ type Channel struct {
 	Participants    []*ChannelParticipantInfo `gorm:"ForeignKey:ChannelID"`
 }
 
-func getChannel(channelID string) (c *Channel, err error) {
+//GetChannel from db
+func GetChannel(channelID string) (c *Channel, err error) {
 	c = &Channel{
 		ChannelID: channelID,
 	}
@@ -104,7 +110,7 @@ func GetAllTokenChannels(token common.Address) (cs []*Channel, err error) {
 //AddChannel add channel to db
 func AddChannel(token, participant1, participant2 common.Address, ChannelIdentifier common.Hash, blockNumber int64) (c *Channel, err error) {
 	channelID := ChannelIdentifier.String()
-	c, err = getChannel(channelID)
+	c, err = GetChannel(channelID)
 	if err == nil {
 		err = fmt.Errorf("channelId %s duplicate", channelID)
 		return
@@ -116,23 +122,9 @@ func AddChannel(token, participant1, participant2 common.Address, ChannelIdentif
 	p1 := &ChannelParticipantInfo{
 		Participant: participant1.String(),
 	}
-	fee, err := GetAccountTokenFee(participant1, token)
-	if err != nil {
-		fee = GetAccountFeePolicy(participant1)
-	}
-	p1.FeePercentPart = fee.FeePercent
-	p1.FeeConstantPart = bigIntToString(fee.FeeConstant)
-	p1.FeePolicy = fee.FeePolicy
 	p2 := &ChannelParticipantInfo{
 		Participant: participant2.String(),
 	}
-	fee, err = GetAccountTokenFee(participant1, token)
-	if err != nil {
-		fee = GetAccountFeePolicy(participant1)
-	}
-	p2.FeePercentPart = fee.FeePercent
-	p2.FeeConstantPart = bigIntToString(fee.FeeConstant)
-	p2.FeePolicy = fee.FeePolicy
 	c.Participants = []*ChannelParticipantInfo{p1, p2}
 	err = db.Create(c).Error
 	return
@@ -166,7 +158,7 @@ func verifyParticipants(c *Channel, participant1, participant2 common.Address) (
 
 //UpdateChannelBalanceProof update balance proof
 func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *BalanceProof) (c *Channel, err error) {
-	c, err = getChannel(partnerBalanceProof.ChannelID.String())
+	c, err = GetChannel(partnerBalanceProof.ChannelID.String())
 	if err != nil {
 		return
 	}
@@ -196,7 +188,7 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 
 //UpdateChannelDeposit 链上发生了deposit事件,需要更新信息
 func UpdateChannelDeposit(channelIdentifier common.Hash, participant common.Address, deposit *big.Int) (c *Channel, err error) {
-	c, err = getChannel(channelIdentifier.String())
+	c, err = GetChannel(channelIdentifier.String())
 	if err != nil {
 		return
 	}
@@ -212,7 +204,7 @@ func UpdateChannelDeposit(channelIdentifier common.Hash, participant common.Addr
 
 //CloseChannel because of channel closed event
 func CloseChannel(channelIdentifier common.Hash) (c *Channel, err error) {
-	c, err = getChannel(channelIdentifier.String())
+	c, err = GetChannel(channelIdentifier.String())
 	if err != nil {
 		return
 	}
@@ -223,7 +215,7 @@ func CloseChannel(channelIdentifier common.Hash) (c *Channel, err error) {
 
 //SettleChannel because of channel settled event
 func SettleChannel(channelIdentifier common.Hash) (c *Channel, err error) {
-	c, err = getChannel(channelIdentifier.String())
+	c, err = GetChannel(channelIdentifier.String())
 	if err != nil {
 		return
 	}
@@ -267,7 +259,7 @@ func SettleChannel(channelIdentifier common.Hash) (c *Channel, err error) {
 
 //WithDrawChannel because of withdraw event
 func WithDrawChannel(channelIdentifier common.Hash, p1Address, p2Address common.Address, p1Balance, p2Balance *big.Int, blockNumber int64) (c *Channel, err error) {
-	c, err = getChannel(channelIdentifier.String())
+	c, err = GetChannel(channelIdentifier.String())
 	if err != nil {
 		return
 	}
@@ -329,47 +321,49 @@ func updateBalance(p1, p2 *ChannelParticipantInfo) (err error) {
 	return tx.Commit().Error
 }
 
+func getDirectChannelFee(channelIdentifier common.Hash, participant common.Address) (cf *ChannelParticipantFee, err error) {
+	cf = &ChannelParticipantFee{
+		ChannelID:   channelIdentifier.String(),
+		Participant: participant.String(),
+	}
+	err = db.Where(cf).Find(cf).Error
+	return
+}
+
 //UpdateChannelFeeRate update channel's fee rate
-func UpdateChannelFeeRate(channelIdentifier common.Hash, participant common.Address, fee *Fee) (c *Channel, err error) {
-	c, err = getChannel(channelIdentifier.String())
+func UpdateChannelFeeRate(channelIdentifier common.Hash, participant, token common.Address, fee *Fee) (err error) {
+	cf, err := getDirectChannelFee(channelIdentifier, participant)
 	if err != nil {
-		return
+		cf = &ChannelParticipantFee{
+			ChannelID:   channelIdentifier.String(),
+			Token:       token.String(),
+			Participant: participant.String(),
+		}
 	}
-	var p *ChannelParticipantInfo
-	if participant.String() == c.Participants[0].Participant {
-		p = c.Participants[0]
-	} else if participant.String() == c.Participants[1].Participant {
-		p = c.Participants[1]
-	} else {
-		err = fmt.Errorf("participant %s not found for channel %s", participant.String(), channelIdentifier.String())
-		return
-	}
-	p.FeeConstantPart = bigIntToString(fee.FeeConstant)
-	p.FeePercentPart = fee.FeePercent
-	p.FeePolicy = fee.FeePolicy
-	err = db.Save(p).Error
+	cf.FeePolicy = fee.FeePolicy
+	cf.FeeConstantPart = bigIntToString(fee.FeeConstant)
+	cf.FeePercentPart = fee.FeePercent
+
+	err = db.Save(cf).Error
 	return
 }
 
 //GetChannelFeeRate get channel's fee rate
-func GetChannelFeeRate(channelIdentifier common.Hash, participant common.Address) (fee *Fee, err error) {
-	c, err := getChannel(channelIdentifier.String())
-	if err != nil {
+func GetChannelFeeRate(channelIdentifier common.Hash, participant, token common.Address) (fee *Fee) {
+	cf, err := getDirectChannelFee(channelIdentifier, participant)
+	if err == nil {
+		fee = &Fee{
+			FeePolicy:   cf.FeePolicy,
+			FeeConstant: stringToBigInt(cf.FeeConstantPart),
+			FeePercent:  cf.FeePercentPart,
+		}
 		return
 	}
-	var p *ChannelParticipantInfo
-	if c.Participants[0].Participant == participant.String() {
-		p = c.Participants[0]
-	} else if c.Participants[1].Participant == participant.String() {
-		p = c.Participants[1]
-	} else {
-		err = fmt.Errorf("participant %s not found", participant)
+	//从来没有针对通道设置过
+	fee, err = GetAccountTokenFee(participant, token)
+	if err == nil {
 		return
 	}
-	fee = &Fee{
-		FeePolicy:   p.FeePolicy,
-		FeeConstant: stringToBigInt(p.FeeConstantPart),
-		FeePercent:  p.FeePercentPart,
-	}
+	fee = GetAccountFeePolicy(participant)
 	return
 }

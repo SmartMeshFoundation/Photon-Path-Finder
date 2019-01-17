@@ -26,6 +26,7 @@ type channel struct {
 	Participant2Balance *big.Int
 	Participant1Fee     *model.Fee
 	Participant2Fee     *model.Fee
+	Token               common.Address
 }
 type nodeStatus struct {
 	isMobile bool
@@ -78,13 +79,15 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 		}
 		var cs2 []*channel
 		for _, c := range cs {
+			token := common.HexToAddress(c.Token)
 			c2 := &channel{
 				Participant1:        common.HexToAddress(c.Participants[0].Participant),
 				Participant2:        common.HexToAddress(c.Participants[1].Participant),
 				Participant1Balance: c.Participants[0].BalanceValue(),
 				Participant2Balance: c.Participants[1].BalanceValue(),
-				Participant1Fee:     c.Participants[0].Fee(),
-				Participant2Fee:     c.Participants[1].Fee(),
+				Participant1Fee:     c.Participants[0].Fee(token),
+				Participant2Fee:     c.Participants[1].Fee(token),
+				Token:               token,
 			}
 			cs2 = append(cs2, c2)
 			twork.channels[common.HexToHash(c.ChannelID)] = c2
@@ -120,8 +123,9 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenAddress common.Address, cha
 		Participant2:        common.HexToAddress(c.Participants[1].Participant),
 		Participant1Balance: big.NewInt(0),
 		Participant2Balance: big.NewInt(0),
-		Participant1Fee:     c.Participants[0].Fee(),
-		Participant2Fee:     c.Participants[1].Fee(),
+		Participant1Fee:     c.Participants[0].Fee(tokenAddress),
+		Participant2Fee:     c.Participants[1].Fee(tokenAddress),
+		Token:               tokenAddress,
 	}
 	err = t.transport.SubscribeNeighbors([]common.Address{c2.Participant1, c2.Participant2})
 	if err != nil {
@@ -511,8 +515,7 @@ func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress c
 	} else {
 		return fmt.Errorf("peer %s not match channel %s", peerAddress.String(), channelID.String())
 	}
-	_, err := model.UpdateChannelFeeRate(channelID, peerAddress, fee)
-	return err
+	return model.UpdateChannelFeeRate(channelID, peerAddress, c.Token, fee)
 }
 
 func (t *TokenNetwork) Stop() {

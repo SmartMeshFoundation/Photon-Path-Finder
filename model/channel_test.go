@@ -6,8 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/SmartMeshFoundation/Photon/utils"
@@ -96,7 +94,7 @@ func testCreateChannel(t *testing.T) (c2 *Channel) {
 		t.Error(err)
 		return
 	}
-	c2, err = getChannel(c.ChannelID)
+	c2, err = GetChannel(c.ChannelID)
 	if err != nil {
 		t.Error(err)
 		panic(err)
@@ -126,7 +124,7 @@ func TestAddChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, err := getChannel(c.ChannelID)
+	c2, err := GetChannel(c.ChannelID)
 	assert.EqualValues(t, c.ChannelID, c2.ChannelID)
 	assert.EqualValues(t, c.Status, c2.Status)
 	assert.EqualValues(t, c.Token, c2.Token)
@@ -134,9 +132,6 @@ func TestAddChannel(t *testing.T) {
 	assert.EqualValues(t, c.Participants[0].Nonce, c2.Participants[0].Nonce)
 	assert.EqualValues(t, c.Participants[1].Participant, c2.Participants[1].Participant)
 	assert.EqualValues(t, c.Participants[1].Nonce, c2.Participants[1].Nonce)
-	assert.EqualValues(t, c2.Participants[0].FeePolicy, params.DefaultFeePolicy)
-	assert.EqualValues(t, c2.Participants[1].FeeConstantPart, params.DefaultFeeConstantPart.String())
-	assert.EqualValues(t, c2.Participants[0].FeePercentPart, params.DefaultFeePercentPart)
 }
 func TestGetAllTokenChannels(t *testing.T) {
 	SetupTestDB()
@@ -187,7 +182,7 @@ func TestCloseChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, err := getChannel(c.ChannelID)
+	c2, err := GetChannel(c.ChannelID)
 	if err != nil {
 		t.Error(err)
 		return
@@ -204,7 +199,7 @@ func TestSettleChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	_, err = getChannel(c.ChannelID)
+	_, err = GetChannel(c.ChannelID)
 	if err == nil {
 		t.Error("should deleted")
 	}
@@ -216,7 +211,7 @@ func TestSettleChannel(t *testing.T) {
 		return
 	}
 	assert.EqualValues(t, len(c2.Participants), 2)
-	c3, err := getChannel(c.ChannelID)
+	c3, err := GetChannel(c.ChannelID)
 	if err != nil {
 		t.Error(err)
 		return
@@ -235,14 +230,14 @@ func TestUpdateChannelDeposit(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, _ := getChannel(c.ChannelID)
+	c2, _ := GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(20).String())
 	_, err = UpdateChannelDeposit(channelIdentifier, common.HexToAddress(p2.Participant), big.NewInt(30))
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	c2, _ = getChannel(c.ChannelID)
+	c2, _ = GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(20).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(30).String())
 }
@@ -291,7 +286,7 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 		t.Error("should failed because of transfer amount decrease")
 		return
 	}
-	c2, _ := getChannel(c.ChannelID)
+	c2, _ := GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(18).String())
 	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
@@ -304,7 +299,7 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, _ = getChannel(c.ChannelID)
+	c2, _ = GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(22).String())
 	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(50).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(28).String())
@@ -356,7 +351,7 @@ func TestWithDrawChannel(t *testing.T) {
 		t.Error("should failed because of transfer amount decrease")
 		return
 	}
-	c2, _ := getChannel(c.ChannelID)
+	c2, _ := GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(18).String())
 	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
@@ -369,7 +364,7 @@ func TestWithDrawChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, _ = getChannel(c.ChannelID)
+	c2, _ = GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(22).String())
 	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(50).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(28).String())
@@ -381,7 +376,7 @@ func TestWithDrawChannel(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, _ = getChannel(c.ChannelID)
+	c2, _ = GetChannel(c.ChannelID)
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(10).String())
 	assert.EqualValues(t, c2.Participants[0].LockedAmount, big.NewInt(0).String())
 	assert.EqualValues(t, c2.Participants[0].TransferedAmount, big.NewInt(0).String())
@@ -397,8 +392,38 @@ func TestUpdateChannelFeeRate(t *testing.T) {
 	c := testCreateChannel(t)
 	channelIdentifier := common.HexToHash(c.ChannelID)
 	participant := common.HexToAddress(c.Participants[0].Participant)
+	token := common.HexToAddress(c.Token)
 
-	_, err := UpdateChannelFeeRate(channelIdentifier, participant, &Fee{
+	err := UpdateAccountDefaultFeePolicy(common.HexToAddress(c.Participants[0].Participant), &Fee{
+		FeePolicy:   FeePolicyConstant,
+		FeeConstant: big.NewInt(30),
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	fee := GetChannelFeeRate(common.HexToHash(c.ChannelID), common.HexToAddress(c.Participants[0].Participant), token)
+
+	assert.EqualValues(t, fee.FeePolicy, FeePolicyConstant)
+	assert.EqualValues(t, fee.FeeConstant, big.NewInt(30))
+	assert.EqualValues(t, fee.FeePercent, 0)
+
+	err = UpdateAccountTokenFee(common.HexToAddress(c.Participants[0].Participant), common.HexToAddress(c.Token), &Fee{
+		FeePolicy:  FeePolicyPercent,
+		FeePercent: 500,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fee = GetChannelFeeRate(common.HexToHash(c.ChannelID), common.HexToAddress(c.Participants[0].Participant), token)
+
+	assert.EqualValues(t, fee.FeePolicy, FeePolicyPercent)
+	assert.EqualValues(t, fee.FeeConstant, big.NewInt(0))
+	assert.EqualValues(t, fee.FeePercent, 500)
+
+	err = UpdateChannelFeeRate(channelIdentifier, participant, common.HexToAddress(c.Token), &Fee{
 		FeePolicy:   FeePolicyCombined,
 		FeeConstant: big.NewInt(30),
 		FeePercent:  50,
@@ -407,14 +432,24 @@ func TestUpdateChannelFeeRate(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	c2, _ := getChannel(c.ChannelID)
+	fee = GetChannelFeeRate(channelIdentifier, participant, token)
 
-	assert.EqualValues(t, c2.Participants[0].FeePolicy, FeePolicyCombined)
-	assert.EqualValues(t, c2.Participants[0].FeePercentPart, 50)
-	assert.EqualValues(t, c2.Participants[0].FeeConstantPart, big.NewInt(30).String())
-
-	fee, err := GetChannelFeeRate(channelIdentifier, participant)
 	assert.EqualValues(t, fee.FeePolicy, FeePolicyCombined)
 	assert.EqualValues(t, fee.FeePercent, 50)
 	assert.EqualValues(t, fee.FeeConstant, big.NewInt(30))
+
+	err = UpdateChannelFeeRate(channelIdentifier, participant, common.HexToAddress(c.Token), &Fee{
+		FeePolicy:   FeePolicyCombined,
+		FeeConstant: big.NewInt(50),
+		FeePercent:  10,
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	fee = GetChannelFeeRate(channelIdentifier, participant, token)
+	assert.EqualValues(t, fee.FeePolicy, FeePolicyCombined)
+	assert.EqualValues(t, fee.FeePercent, 10)
+	assert.EqualValues(t, fee.FeeConstant, big.NewInt(50))
 }

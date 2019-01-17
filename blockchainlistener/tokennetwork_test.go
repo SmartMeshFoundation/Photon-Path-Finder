@@ -455,11 +455,7 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 	c := tn.channels[channid]
 	assert.EqualValues(t, c.Participant1, p1)
 	assert.EqualValues(t, c.Participant2, p2)
-	_, err = model.GetChannelFeeRate(channid, p1)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+
 	err = tn.handleChannelClosedEvent(channid)
 	if err != nil {
 		t.Error(err)

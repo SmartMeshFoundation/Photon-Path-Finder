@@ -90,12 +90,12 @@ func getChannelRate(w rest.ResponseWriter, r *rest.Request) {
 
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 	channelID := common.HexToHash(r.PathParam("channel"))
-	fee, err := model.GetChannelFeeRate(channelID, peerAddress)
+	c, err := model.GetChannel(channelID.String())
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	fee := model.GetChannelFeeRate(channelID, peerAddress, common.HexToAddress(c.Token))
 	err = w.WriteJson(fee)
 	if err != nil {
 		log.Error(fmt.Sprintf("write json err %s", err))
