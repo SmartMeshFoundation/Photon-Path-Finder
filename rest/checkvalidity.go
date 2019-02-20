@@ -37,6 +37,10 @@ func verifyBalanceProofSignature(bpr *balanceProofRequest, participant common.Ad
 		err = fmt.Errorf("illegal signature of balance message, for participant")
 		return
 	}
+	//ignore empty balance proof
+	if bpr.BalanceProof.Nonce == 0 {
+		return
+	}
 	//检查是谁的balance proof
 	bpBuf := new(bytes.Buffer)
 	_, err = bpBuf.Write(smparams.ContractSignaturePrefix)
