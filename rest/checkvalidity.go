@@ -30,6 +30,7 @@ func verifyBalanceProofSignature(bpr *balanceProofRequest, participant common.Ad
 	_, err = tmpBuf.Write(bpr.BalanceProof.AdditionalHash[:])                      //additional_hash
 	_, err = tmpBuf.Write(bpr.BalanceProof.Signature)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(bpr.LockedAmount)) //locks_amount
+	_, err = tmpBuf.Write(bpr.ProofSigner[:])
 	messageHash := utils.Sha3(tmpBuf.Bytes())
 	messageSignature := bpr.BalanceSignature
 	signer, err := utils.Ecrecover(messageHash, messageSignature)
@@ -39,6 +40,7 @@ func verifyBalanceProofSignature(bpr *balanceProofRequest, participant common.Ad
 	}
 	//ignore empty balance proof
 	if bpr.BalanceProof.Nonce == 0 {
+		partner = bpr.ProofSigner
 		return
 	}
 	//检查是谁的balance proof

@@ -17,6 +17,7 @@ import (
 type balanceProofRequest struct {
 	BalanceProof     *model.BalanceProof `json:"balance_proof"`
 	BalanceSignature []byte              `json:"balance_signature"`
+	ProofSigner      common.Address      `json:"proof_signer"`
 	LockedAmount     *big.Int            `json:"lock_amount"`
 }
 
