@@ -909,3 +909,93 @@ func TestTokenNetwork_GetPaths3(t *testing.T) {
 		return
 	}
 }
+func strtobigint(s string) *big.Int {
+	i := new(big.Int)
+	_, b := i.SetString(s, 0)
+	if !b {
+		panic("parce error")
+	}
+	return i
+}
+
+/*
+测试A-B-C金额不对称情况下路由查错问题
+A 1000--1000 B
+B 200 5000 C
+查找从C到A,金额为300的路径,失败
+*/
+func TestTokenNetwork_GetPaths4(t *testing.T) {
+	model.SetupTestDB()
+	token := utils.NewRandomAddress()
+	tokenNetwork := utils.NewRandomAddress()
+	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
+	tn.decimals = map[common.Address]int{
+		token: 0,
+	}
+	tn.token2TokenNetwork = map[common.Address]common.Address{
+		token: tokenNetwork,
+	}
+	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
+	addr4 := utils.NewRandomAddress()
+	addr5 := utils.NewRandomAddress()
+	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
+		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
+	tn.participantStatus[addr1] = nodeStatus{false, true}
+	tn.participantStatus[addr2] = nodeStatus{false, true}
+	tn.participantStatus[addr3] = nodeStatus{false, true}
+	tn.participantStatus[addr4] = nodeStatus{false, true}
+	tn.participantStatus[addr5] = nodeStatus{false, true}
+	c1 := &channel{
+		Participant1: addr1,
+		Participant2: addr2,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: strtobigint("400000000000000000000"),
+		Participant2Balance: strtobigint("300000000000000000000"),
+	}
+	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
+	tn.channelViews[token] = []*channel{c1}
+	tn.channels[c1Id] = c1
+	c2 := &channel{
+		Participant1: addr2,
+		Participant2: addr3,
+		Participant1Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant2Fee: &model.Fee{
+			FeePolicy:   model.FeePolicyConstant,
+			FeeConstant: big.NewInt(1),
+		},
+		Participant1Balance: strtobigint("200000000000000000000"),
+		Participant2Balance: strtobigint("3800000000000000000000"),
+	}
+	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
+	tn.channelViews[token] = []*channel{c1, c2}
+	tn.channels[c2Id] = c2
+	tn.channels[c1Id] = c1
+	paths, err := tn.GetPaths(addr3, addr1, token, strtobigint("200000000000000000000"), 5, "", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(paths) != 1 {
+		t.Error("path error")
+		return
+	}
+	paths, err = tn.GetPaths(addr3, addr1, token, strtobigint("210000000000000000000"), 5, "", true)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(paths) != 1 {
+		t.Error("path error")
+		return
+	}
+}

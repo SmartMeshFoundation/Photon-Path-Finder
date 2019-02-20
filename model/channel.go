@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/SmartMeshFoundation/Photon/log"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
+	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/jinzhu/gorm"
@@ -166,18 +167,21 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 	if err != nil {
 		return
 	}
-	if p.Nonce > partnerBalanceProof.Nonce {
-		err = fmt.Errorf("nonce not match,now=%d,got=%d", p.Nonce, partnerBalanceProof.Nonce)
-		return
-	}
-	if p.Nonce == partnerBalanceProof.Nonce {
-		log.Info(fmt.Sprintf("duplicate nonce update"))
-		return
-	}
-	bi := stringToBigInt(p.TransferedAmount)
-	if bi.Cmp(partnerBalanceProof.TransferAmount) > 0 {
-		err = fmt.Errorf("transfer amount cannot decrease now=%s,got=%s", bi, partnerBalanceProof.TransferAmount)
-		return
+	//在测试链上的时候,启用debug mode,这样节点删除数据库也不影响,否则会导致删除之后交易不能提交.
+	if !params.DebugMode {
+		if p.Nonce > partnerBalanceProof.Nonce {
+			err = fmt.Errorf("nonce not match,now=%d,got=%d", p.Nonce, partnerBalanceProof.Nonce)
+			return
+		}
+		if p.Nonce == partnerBalanceProof.Nonce {
+			log.Info(fmt.Sprintf("duplicate nonce update"))
+			return
+		}
+		bi := stringToBigInt(p.TransferedAmount)
+		if bi.Cmp(partnerBalanceProof.TransferAmount) > 0 {
+			err = fmt.Errorf("transfer amount cannot decrease now=%s,got=%s", bi, partnerBalanceProof.TransferAmount)
+			return
+		}
 	}
 	p.Nonce = partnerBalanceProof.Nonce
 	p.TransferedAmount = bigIntToString(partnerBalanceProof.TransferAmount)
@@ -308,6 +312,12 @@ func updateBalance(p1, p2 *ChannelParticipantInfo) (err error) {
 	p2Balance := p2Deposit.Add(p2Deposit, p1TransferAmount).Sub(p2Deposit, p2TransferAmount).Sub(p2Deposit, p2LockedAmount)
 	p1.Balance = p1Balance.String()
 	p2.Balance = p2Balance.String()
+	if p1Balance.Cmp(utils.BigInt0) < 0 {
+		return fmt.Errorf("p1 %s balance is negative  %s", p1.Participant, p1Balance)
+	}
+	if p2Balance.Cmp(utils.BigInt0) < 0 {
+		return fmt.Errorf("p2 %s balance is negative %s", p2.Participant, p2Balance)
+	}
 	tx := db.Begin()
 	err = tx.Save(p1).Error
 	if err != nil {

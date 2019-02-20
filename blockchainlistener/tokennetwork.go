@@ -194,8 +194,8 @@ func (t *TokenNetwork) handleChannelCooperativeSettled(channelID common.Hash) (e
 }
 
 // handleChannelDepositEvent Handle Channel Deposit Event
-func (t *TokenNetwork) handleChannelDepositEvent(channelID common.Hash, partner common.Address, totalDeposit *big.Int) (err error) {
-	c, err := model.UpdateChannelDeposit(channelID, partner, totalDeposit)
+func (t *TokenNetwork) handleChannelDepositEvent(channelID common.Hash, participant common.Address, totalDeposit *big.Int) (err error) {
+	c, err := model.UpdateChannelDeposit(channelID, participant, totalDeposit)
 	if err != nil {
 		return
 	}
@@ -270,6 +270,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		err = fmt.Errorf("unkown token %s", tokenAddress.String())
 		return
 	}
+	//log.Info(fmt.Sprintf("t=%s", utils.StringInterface(t, 7)))
 	start := time.Now()
 	//fmt.Println(fmt.Sprintf("-->s%",utils.StringInterface(latestJudgements,2)))
 	djGraph := *dijkstra.NewEmptyGraph()
