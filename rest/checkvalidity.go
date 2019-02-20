@@ -129,6 +129,7 @@ func SignDataForBalanceProofMessage0(peerKey *ecdsa.PrivateKey, r *balanceProofR
 	_, err = tmpBuf.Write(r.BalanceProof.AdditionalHash[:])
 	_, err = tmpBuf.Write(r.BalanceProof.Signature[:])
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(r.LockedAmount))
+	_, err = tmpBuf.Write(r.ProofSigner[:])
 	r.BalanceSignature, err = utils.SignData(peerKey, tmpBuf.Bytes())
 	return
 }

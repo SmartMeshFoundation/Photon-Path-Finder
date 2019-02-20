@@ -30,8 +30,36 @@ func TestVerifySinature(t *testing.T) {
 	brm := &balanceProofRequest{
 		BalanceProof: br,
 		LockedAmount: big.NewInt(0),
+		ProofSigner:  addr1,
 	}
 	err = SignDataForBalanceProofMessage0(key2, brm)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	maddr, err := verifyBalanceProofSignature(brm, addr2)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.EqualValues(t, maddr, addr1)
+}
+
+func TestVerifySinatureEmptyBalanceProof(t *testing.T) {
+	br := &model.BalanceProof{
+		TransferAmount: big.NewInt(0),
+	}
+
+	_, addr1 := utils.MakePrivateKeyAddress()
+	key2, addr2 := utils.MakePrivateKeyAddress()
+
+	brm := &balanceProofRequest{
+		BalanceProof: br,
+		LockedAmount: big.NewInt(0),
+		ProofSigner:  addr1,
+	}
+	err := SignDataForBalanceProofMessage0(key2, brm)
 	if err != nil {
 		t.Error(err)
 		return
