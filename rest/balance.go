@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/nkbai/goutils"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
@@ -31,7 +33,9 @@ func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	defer func() {
+		log.Trace(fmt.Sprintf("UpdateBalanceProof op req=%s,err=%s", utils.StringInterface(req, 5), err))
+	}()
 	//var locksAmount *big.Int
 	partner, err := verifyBalanceProofSignature(req, peerAddress)
 	if err != nil {
