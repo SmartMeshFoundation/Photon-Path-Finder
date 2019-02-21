@@ -25,17 +25,18 @@ type balanceProofRequest struct {
 
 // UpdateBalanceProof handle the request with balance proof,implements GET and POST /balance
 func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
+	var req = &balanceProofRequest{}
+	var err error
+	defer func() {
+		log.Trace(fmt.Sprintf("UpdateBalanceProof op req=%s,err=%s", utils.StringInterface(req, 5), err))
+	}()
 	peer := r.PathParam("peer")
 	peerAddress := common.HexToAddress(peer)
-	var req = &balanceProofRequest{}
-	err := r.DecodeJsonPayload(req)
+	err = r.DecodeJsonPayload(req)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer func() {
-		log.Trace(fmt.Sprintf("UpdateBalanceProof op req=%s,err=%s", utils.StringInterface(req, 5), err))
-	}()
 	//var locksAmount *big.Int
 	partner, err := verifyBalanceProofSignature(req, peerAddress)
 	if err != nil {
