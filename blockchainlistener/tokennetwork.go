@@ -274,6 +274,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		utils.APex2(source), utils.APex2(target), utils.APex2(tokenAddress), value,
 	))
 	log.Trace(fmt.Sprintf("channels=%s", utils.StringInterface(cs, 7)))
+	log.Trace(fmt.Sprintf("nodestatus=%s", utils.StringInterface(t.participantStatus, 5)))
 	start := time.Now()
 	//fmt.Println(fmt.Sprintf("-->s%",utils.StringInterface(latestJudgements,2)))
 	djGraph := *dijkstra.NewEmptyGraph()
