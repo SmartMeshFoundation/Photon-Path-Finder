@@ -90,12 +90,24 @@ type Channel struct {
 	Participants    []*ChannelParticipantInfo `gorm:"ForeignKey:ChannelID"`
 }
 
+func orderParticipants(p1, p2 *ChannelParticipantInfo) (rp1, rp2 *ChannelParticipantInfo) {
+	if p1.Participant < p2.Participant {
+		return p1, p2
+	} else {
+		return p2, p1
+	}
+}
+
 //GetChannel from db
 func GetChannel(channelID string) (c *Channel, err error) {
 	c = &Channel{
 		ChannelID: channelID,
 	}
 	err = db.Where(c).Preload("Participants").Find(c).Error
+	if err != nil {
+		return
+	}
+	c.Participants[0], c.Participants[1] = orderParticipants(c.Participants[0], c.Participants[1])
 	return
 }
 
@@ -105,6 +117,12 @@ func GetAllTokenChannels(token common.Address) (cs []*Channel, err error) {
 		Token:  token.String(),
 		Status: ChannelStatusOpen,
 	}).Preload("Participants").Find(&cs).Error
+	if err != nil {
+		return
+	}
+	for _, c := range cs {
+		c.Participants[0], c.Participants[1] = orderParticipants(c.Participants[0], c.Participants[1])
+	}
 	return
 }
 
