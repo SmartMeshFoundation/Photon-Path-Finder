@@ -187,6 +187,10 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 	p.TransferedAmount = bigIntToString(partnerBalanceProof.TransferAmount)
 	p.LockedAmount = bigIntToString(lockedAmount)
 	err = updateBalance(p, p1)
+	if err != nil {
+		return
+	}
+	c, err = GetChannel(partnerBalanceProof.ChannelID.String())
 	return
 }
 
