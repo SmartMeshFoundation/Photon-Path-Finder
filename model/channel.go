@@ -126,7 +126,7 @@ func GetAllTokenChannels(token common.Address) (cs []*Channel, err error) {
 	return
 }
 
-//AddChannel add channel to db
+//AddChannel add channel to db, 必须将相应的participant 信息清空.
 func AddChannel(token, participant1, participant2 common.Address, ChannelIdentifier common.Hash, blockNumber int64) (c *Channel, err error) {
 	channelID := ChannelIdentifier.String()
 	c, err = GetChannel(channelID)
@@ -334,11 +334,17 @@ func updateBalance(p1, p2 *ChannelParticipantInfo) (err error) {
 	p2Balance := p2Deposit.Add(p2Deposit, p1TransferAmount).Sub(p2Deposit, p2TransferAmount).Sub(p2Deposit, p2LockedAmount)
 	p1.Balance = p1Balance.String()
 	p2.Balance = p2Balance.String()
+	/*
+		虽然正常情况下是不会出现负数,但是问题就在于如果一方无网,一方有网,就会出现负数的情况. 如果无网一方不提交balance proof,
+		那么会造成有网一方也不能提交. 这会造成不必要的麻烦.
+	*/
 	if p1Balance.Cmp(utils.BigInt0) < 0 {
-		return fmt.Errorf("p1 %s balance is negative  %s", p1.Participant, p1Balance)
+		p1.Balance = utils.BigInt0.String()
+		//return fmt.Errorf("p1 %s balance is negative  %s", p1.Participant, p1Balance)
 	}
 	if p2Balance.Cmp(utils.BigInt0) < 0 {
-		return fmt.Errorf("p2 %s balance is negative %s", p2.Participant, p2Balance)
+		p2.Balance = utils.BigInt0.String()
+		//return fmt.Errorf("p2 %s balance is negative %s", p2.Participant, p2Balance)
 	}
 	tx := db.Begin()
 	err = tx.Save(p1).Error
