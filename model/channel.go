@@ -144,6 +144,7 @@ func AddChannel(token, participant1, participant2 common.Address, ChannelIdentif
 	p2 := &ChannelParticipantInfo{
 		Participant: participant2.String(),
 	}
+	p1, p2 = orderParticipants(p1, p2)
 	c.Participants = []*ChannelParticipantInfo{p1, p2}
 	err = db.Create(c).Error
 	return

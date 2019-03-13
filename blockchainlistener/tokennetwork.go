@@ -16,6 +16,7 @@ import (
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/dijkstra"
+	pparams "github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -259,6 +260,16 @@ type PathResult struct {
 	Result  []common.Address `json:"result"`
 }
 
+func (t *TokenNetwork) checkorder(cs []*channel) {
+	if pparams.DebugMode {
+		for _, c := range cs {
+			if c.Participant1.String() > c.Participant2.String() {
+				panic(fmt.Sprintf("channel order error c=%s", utils.StringInterface(c, 3)))
+			}
+		}
+	}
+}
+
 // GetPaths get the lowest fee  path
 func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, tokenAddress common.Address,
 	value *big.Int, limitPaths int, sortDemand string, sourceChargeFee bool) (pathinfos []*PathResult, err error) {
@@ -266,6 +277,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	t.viewlock.RLock()
 	cs, ok := t.channelViews[tokenAddress]
 	t.viewlock.RUnlock()
+	t.checkorder(cs)
 	if !ok {
 		err = fmt.Errorf("unkown token %s", tokenAddress.String())
 		return

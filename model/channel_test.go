@@ -121,6 +121,7 @@ func TestAddChannel(t *testing.T) {
 	c.Participants[1] = &ChannelParticipantInfo{
 		Participant: participant2.String(),
 	}
+	c.Participants[0], c.Participants[1] = orderParticipants(c.Participants[0], c.Participants[1])
 	_, err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
 	if err != nil {
 		t.Error(err)
