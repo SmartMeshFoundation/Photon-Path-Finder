@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/nkbai/goutils"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ant0ine/go-json-rest/rest"
 
@@ -38,6 +40,7 @@ func GetPaths(w rest.ResponseWriter, r *rest.Request) {
 	var sendAmount = req.SendAmount
 	var sortDemand = req.SortDemand
 	pathResult, err := tn.GetPaths(peerFrom, peerTo, tokenAddress, sendAmount, limitPaths, sortDemand, req.PeerFromChargeFee)
+	log.Trace(fmt.Sprintf("GetPaths err=%s,result=%s", err, utils.StringInterface(pathResult, 3)))
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return

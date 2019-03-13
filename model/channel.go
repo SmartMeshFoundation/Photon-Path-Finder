@@ -206,10 +206,8 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 	p.TransferedAmount = bigIntToString(partnerBalanceProof.TransferAmount)
 	p.LockedAmount = bigIntToString(lockedAmount)
 	err = updateBalance(p, p1)
-	if err != nil {
-		return
-	}
-	c, err = GetChannel(partnerBalanceProof.ChannelID.String())
+	//没必要再来查一次了,c中的就已经是最新的了
+	//c, err = GetChannel(partnerBalanceProof.ChannelID.String())
 	return
 }
 
@@ -279,7 +277,7 @@ func SettleChannel(channelIdentifier common.Hash) (c *Channel, err error) {
 		tx.Rollback()
 		return
 	}
-	tx.Commit()
+	err = tx.Commit().Error
 	return
 
 }
