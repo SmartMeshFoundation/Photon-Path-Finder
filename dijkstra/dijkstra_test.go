@@ -5,47 +5,6 @@ import (
 )
 
 func TestGraph_AllShortestPath(t *testing.T) {
-	v := []*Vertex{
-		{
-			ID: 0,
-			Arcs: map[int]int{
-				1: 0,
-				2: 0,
-			},
-		},
-		{
-			ID: 1,
-			Arcs: map[int]int{
-				0: 0,
-				3: 0,
-			},
-		},
-		{
-			ID: 2,
-			Arcs: map[int]int{
-				0: 0,
-				3: 0,
-			},
-		},
-		{
-			ID: 3,
-			Arcs: map[int]int{
-				1: 0,
-				2: 0,
-			},
-		},
-	}
-	g := NewGraph(v)
-	result := g.AllShortestPath(0, 3, DefaultCostGetter)
-	/*
-		result:=[[0,1,3],[0,2,3]]
-	*/
-	if len(result) != 2 {
-		t.Error("shoude be two shortest path")
-	}
-}
-
-func TestGraph_AllShortestPath2(t *testing.T) {
 	w := 1 //w=0 将会导致不能找到所有有效路径,必须保证weight不能为0,最小是1
 	v := []*Vertex{
 		{

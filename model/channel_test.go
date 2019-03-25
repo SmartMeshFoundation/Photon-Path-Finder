@@ -77,26 +77,14 @@ func TestChannel(t *testing.T) {
 func testCreateChannel(t *testing.T) (c2 *Channel) {
 	token := utils.NewRandomAddress()
 	channelIdentifier := utils.NewRandomHash()
-	c := &Channel{
-		ChannelID: channelIdentifier.String(),
-		Status:    ChannelStatusOpen,
-		Token:     token.String(),
-	}
 	participant1 := utils.NewRandomAddress()
 	participant2 := utils.NewRandomAddress()
-	c.Participants = make([]*ChannelParticipantInfo, 2)
-	c.Participants[0] = &ChannelParticipantInfo{
-		Participant: participant1.String(),
-	}
-	c.Participants[1] = &ChannelParticipantInfo{
-		Participant: participant2.String(),
-	}
 	_, err := AddChannel(token, participant1, participant2, channelIdentifier, 3)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	c2, err = GetChannel(c.ChannelID)
+	c2, err = GetChannel(channelIdentifier.String())
 	if err != nil {
 		t.Error(err)
 		panic(err)
@@ -265,10 +253,11 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 	ast.EqualValues(c2.Participants[1].Balance, "70")
 
 	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-		ChannelID:      common.HexToHash(c.ChannelID),
-		TransferAmount: big.NewInt(32),
-		Nonce:          1,
-		LocksRoot:      utils.NewRandomHash(),
+		ChannelID:       common.HexToHash(c.ChannelID),
+		OpenBlockNumber: c.OpenBlockNumber,
+		TransferAmount:  big.NewInt(32),
+		Nonce:           1,
+		LocksRoot:       utils.NewRandomHash(),
 	})
 	if err != nil {
 		t.Error(err)
@@ -276,20 +265,22 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 	}
 	if !params.DebugMode {
 		_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-			ChannelID:      common.HexToHash(c.ChannelID),
-			TransferAmount: big.NewInt(32),
-			Nonce:          0,
-			LocksRoot:      utils.NewRandomHash(),
+			ChannelID:       common.HexToHash(c.ChannelID),
+			OpenBlockNumber: c.OpenBlockNumber,
+			TransferAmount:  big.NewInt(32),
+			Nonce:           0,
+			LocksRoot:       utils.NewRandomHash(),
 		})
 		if err == nil {
 			t.Error("should failed because of nonce")
 			return
 		}
 		_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-			ChannelID:      common.HexToHash(c.ChannelID),
-			TransferAmount: big.NewInt(22),
-			Nonce:          3,
-			LocksRoot:      utils.NewRandomHash(),
+			ChannelID:       common.HexToHash(c.ChannelID),
+			OpenBlockNumber: c.OpenBlockNumber,
+			TransferAmount:  big.NewInt(22),
+			Nonce:           3,
+			LocksRoot:       utils.NewRandomHash(),
 		})
 		if err == nil {
 			t.Error("should failed because of transfer amount decrease")
@@ -301,10 +292,11 @@ func TestUpdateChannelBalanceProof(t *testing.T) {
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(38).String())
 	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
-		ChannelID:      common.HexToHash(c.ChannelID),
-		TransferAmount: big.NewInt(10),
-		Nonce:          1,
-		LocksRoot:      utils.NewRandomHash(),
+		ChannelID:       common.HexToHash(c.ChannelID),
+		OpenBlockNumber: c.OpenBlockNumber,
+		TransferAmount:  big.NewInt(10),
+		Nonce:           1,
+		LocksRoot:       utils.NewRandomHash(),
 	})
 	if err != nil {
 		t.Error(err)
@@ -333,10 +325,11 @@ func TestWithDrawChannel(t *testing.T) {
 		return
 	}
 	_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-		ChannelID:      common.HexToHash(c.ChannelID),
-		TransferAmount: big.NewInt(32),
-		Nonce:          1,
-		LocksRoot:      utils.NewRandomHash(),
+		ChannelID:       common.HexToHash(c.ChannelID),
+		OpenBlockNumber: c.OpenBlockNumber,
+		TransferAmount:  big.NewInt(32),
+		Nonce:           1,
+		LocksRoot:       utils.NewRandomHash(),
 	})
 	if err != nil {
 		t.Error(err)
@@ -344,20 +337,22 @@ func TestWithDrawChannel(t *testing.T) {
 	}
 	if !params.DebugMode {
 		_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-			ChannelID:      common.HexToHash(c.ChannelID),
-			TransferAmount: big.NewInt(32),
-			Nonce:          0,
-			LocksRoot:      utils.NewRandomHash(),
+			ChannelID:       common.HexToHash(c.ChannelID),
+			OpenBlockNumber: c.OpenBlockNumber,
+			TransferAmount:  big.NewInt(32),
+			Nonce:           0,
+			LocksRoot:       utils.NewRandomHash(),
 		})
 		if err == nil {
 			t.Error("should failed because of nonce")
 			return
 		}
 		_, err = UpdateChannelBalanceProof(participant, partner, big.NewInt(0), &BalanceProof{
-			ChannelID:      common.HexToHash(c.ChannelID),
-			TransferAmount: big.NewInt(22),
-			Nonce:          3,
-			LocksRoot:      utils.NewRandomHash(),
+			ChannelID:       common.HexToHash(c.ChannelID),
+			OpenBlockNumber: c.OpenBlockNumber,
+			TransferAmount:  big.NewInt(22),
+			Nonce:           3,
+			LocksRoot:       utils.NewRandomHash(),
 		})
 		if err == nil {
 			t.Error("should failed because of transfer amount decrease")
@@ -369,10 +364,11 @@ func TestWithDrawChannel(t *testing.T) {
 	assert.EqualValues(t, c2.Participants[0].Balance, big.NewInt(82).String())
 	assert.EqualValues(t, c2.Participants[1].Balance, big.NewInt(18).String())
 	_, err = UpdateChannelBalanceProof(partner, participant, big.NewInt(50), &BalanceProof{
-		ChannelID:      common.HexToHash(c.ChannelID),
-		TransferAmount: big.NewInt(10),
-		Nonce:          1,
-		LocksRoot:      utils.NewRandomHash(),
+		ChannelID:       common.HexToHash(c.ChannelID),
+		OpenBlockNumber: c.OpenBlockNumber,
+		TransferAmount:  big.NewInt(10),
+		Nonce:           1,
+		LocksRoot:       utils.NewRandomHash(),
 	})
 	if err != nil {
 		t.Error(err)
