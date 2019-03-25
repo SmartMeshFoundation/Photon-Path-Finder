@@ -202,6 +202,10 @@ func (m *MatrixObserver) onHandlePresenceChange(event *gomatrix.Event) {
 		return
 	}
 	deviceType, _ := event.ViewContent("status_msg") //newest network status
+	// 如果deviceType为空,说明是历史消息,直接忽略
+	if deviceType == "" {
+		return
+	}
 	address := m.userIDToAddress(event.Sender)
 
 	if presence == ONLINE {
