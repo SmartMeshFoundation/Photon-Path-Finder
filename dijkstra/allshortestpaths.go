@@ -1,6 +1,7 @@
 package dijkstra
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -8,7 +9,7 @@ type CostGetter func(g *Graph, source, target int) (weight int)
 
 //refer: http://www.linkedin.com/pulse/20140901041720-91330360-find-all-possible-shortest-paths-with-dijkstra-s-algorithm?trk=mp-reader-card
 /**
-* Computes all shortest paths between 2 Vertices using the
+* Computes all shortest paths between 2 vertices using the
 * Dijkstra's shortest path algorithm.
 *
 * @param source: starting vertex from which to find the shortest paths.
@@ -17,14 +18,14 @@ type CostGetter func(g *Graph, source, target int) (weight int)
 *   return nil if there is no path
 */
 func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
-	//number of Vertices
-	num := len(g.Vertices)
+	//number of vertices
+	num := len(g.vertices)
 	//Distance to source vertex
 	dist := make([]int, num)
-	// Previous Vertices in shortest path from source to target.
-	// Note: One vertex might have multiple previous Vertices
+	// Previous vertices in shortest path from source to target.
+	// Note: One vertex might have multiple previous vertices
 	prevs := make([][]int, num)
-	// Initially all Vertices is unvisited
+	// Initially all vertices is unvisited
 	// 1: Visited; 0: unvisited
 	visited := make([]bool, num)
 	for i := 0; i < num; i++ {
@@ -35,7 +36,7 @@ func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
 	// Distance from source to source
 	dist[source] = 0
 	//source is the current vertex
-	var cur int = source
+	var cur = source
 	//Mark source as Visited
 	visited[cur] = true
 	// main loop
@@ -55,7 +56,7 @@ func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
 				if d < dist[i] {
 					//A shorter path to vertex i is found
 					dist[i] = d
-					//Clean up previous Vertices of i
+					//Clean up previous vertices of i
 					prevs[i] = nil
 					//Add cur as a unique previous vertex of i
 					prevs[i] = append(prevs[i], cur)
@@ -72,10 +73,11 @@ func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
 				}
 			}
 		}
-		//All the unvisited Vertices are not reachable
+		//All the unvisited vertices are not reachable
 		if min == math.MaxInt32 {
 			break
 		}
+		fmt.Printf("cur=%d\n", m)
 		cur = m
 		visited[cur] = true
 	}
@@ -83,7 +85,7 @@ func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
 	if visited[target] == false {
 		return nil
 	}
-	//fmt.Printf("prevs:%s\n,dist=%s", utils.StringInterface(prevs, 3), utils.StringInterface(dist, 3))
+	fmt.Printf("prevs:%v\n", prevs)
 	_, paths := g.getAllPath(source, target, prevs, nil, num, nil)
 	return paths
 }
@@ -92,7 +94,7 @@ func (g *Graph) AllShortestPath(source, target int, cg CostGetter) [][]int {
 * get all the paths by means of a backtracking algorithm
 * @param source: starting vertex
 * @param target: end vertex
-* @param prevs: Previous Vertices in shortest path from
+* @param prevs: Previous vertices in shortest path from
 source to target, which is given by
 allShortestPaths(...).
 * @param path: current path
@@ -106,13 +108,8 @@ func (g *Graph) getAllPath(source, target int, prevs [][]int, path []int, num in
 	if source == target {
 		path = append(path, source)
 		// Print the path vector in the reverse order
-		// in which Vertices push to the vector path
+		// in which vertices push to the vector path
 
-		//fmt.Println("Shortest Path xx:")
-		//for i := len(path) - 1; i >= 0; i-- {
-		//	fmt.Printf("%d  ", path[i])
-		//}
-		//fmt.Println("")
 		newpath := make([]int, len(path))
 		for i := 0; i < len(path); i++ {
 			newpath[len(path)-i-1] = path[i]
@@ -130,7 +127,7 @@ func (g *Graph) getAllPath(source, target int, prevs [][]int, path []int, num in
 	return path, paths
 }
 func (g *Graph) buildCostMatrix() (cost [][]int) {
-	cost = make([][]int, len(g.Vertices))
+	cost = make([][]int, len(g.vertices))
 	for i := 0; i < len(cost); i++ {
 		cost[i] = make([]int, len(cost))
 	}
@@ -139,7 +136,7 @@ func (g *Graph) buildCostMatrix() (cost [][]int) {
 			cost[i][j] = math.MaxInt32
 		}
 	}
-	for k, v := range g.Vertices {
+	for k, v := range g.vertices {
 		for dst, weight := range v.Arcs {
 			cost[k][dst] = weight
 		}
@@ -148,7 +145,7 @@ func (g *Graph) buildCostMatrix() (cost [][]int) {
 }
 
 func DefaultCostGetter(g *Graph, source, target int) int {
-	w, ok := g.Vertices[source].Arcs[target]
+	w, ok := g.vertices[source].Arcs[target]
 	if !ok {
 		return math.MaxInt32
 	}

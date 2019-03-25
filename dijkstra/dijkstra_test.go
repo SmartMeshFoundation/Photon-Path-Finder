@@ -4,96 +4,89 @@ import (
 	"testing"
 )
 
-//func TestGraph_AllShortestPath(t *testing.T) {
-//	v := map[int]Vertex{
-//		0: {
-//			ID: 0,
-//			Arcs: map[int]int{
-//				1: 1,
-//				2: 1,
-//			},
-//		},
-//		1: {
-//			ID: 1,
-//			Arcs: map[int]int{
-//				0: 1,
-//				3: 1,
-//			},
-//		},
-//		2: {
-//			ID: 2,
-//			Arcs: map[int]int{
-//				0: 1,
-//				3: 1,
-//			},
-//		},
-//		3: {
-//			ID: 3,
-//			Arcs: map[int]int{
-//				1: 1,
-//				2: 1,
-//			},
-//		},
-//	}
-//	g := NewGraph(v)
-//	result := g.AllShortestPath(0, 3, DefaultCostGetter)
-//	/*
-//		result:=[[0,1,3],[0,2,3]]
-//	*/
-//	if len(result) != 2 {
-//		t.Error("shoude be two shortest path")
-//	}
-//}
-//
-//func TestGraph_AllShortestPath2(t *testing.T) {
-//	v := map[int]Vertex{
-//		0: {
-//			ID: 0,
-//			Arcs: map[int]int{
-//				1: 1,
-//				2: 1,
-//			},
-//		},
-//		1: {
-//			ID: 1,
-//			Arcs: map[int]int{
-//				0: 1,
-//				3: 1,
-//			},
-//		},
-//		2: {
-//			ID: 2,
-//			Arcs: map[int]int{
-//				0: 1,
-//				3: 1,
-//				4: 1,
-//			},
-//		},
-//		3: {
-//			ID: 3,
-//			Arcs: map[int]int{
-//				1: 1,
-//				2: 1,
-//				4: 1,
-//			},
-//		},
-//		4: {
-//			ID: 4,
-//			Arcs: map[int]int{
-//				2: 1,
-//				3: 1,
-//			},
-//		},
-//	}
-//	g := NewGraph(v)
-//	result := g.AllShortestPath(0, 3, DefaultCostGetter)
-//	/*
-//		result:=[[0,1,3],[0,2,3]]
-//	*/
-//	if len(result) != 2 {
-//		t.Error("shoude be two shortest path")
-//	}
-//}
+func TestGraph_AllShortestPath(t *testing.T) {
+	v := []*Vertex{
+		{
+			ID: 0,
+			Arcs: map[int]int{
+				1: 0,
+				2: 0,
+			},
+		},
+		{
+			ID: 1,
+			Arcs: map[int]int{
+				0: 0,
+				3: 0,
+			},
+		},
+		{
+			ID: 2,
+			Arcs: map[int]int{
+				0: 0,
+				3: 0,
+			},
+		},
+		{
+			ID: 3,
+			Arcs: map[int]int{
+				1: 0,
+				2: 0,
+			},
+		},
+	}
+	g := NewGraph(v)
+	result := g.AllShortestPath(0, 3, DefaultCostGetter)
+	/*
+		result:=[[0,1,3],[0,2,3]]
+	*/
+	if len(result) != 2 {
+		t.Error("shoude be two shortest path")
+	}
+}
+
+func TestGraph_AllShortestPath2(t *testing.T) {
+	w := 1 //w=0 将会导致不能找到所有有效路径,必须保证weight不能为0,最小是1
+	v := []*Vertex{
+		{
+			ID: 0,
+			Arcs: map[int]int{
+				1: w,
+				3: w,
+			},
+		},
+		{
+			ID: 1,
+			Arcs: map[int]int{
+				0: w,
+				2: w,
+			},
+		},
+		{
+			ID: 2,
+			Arcs: map[int]int{
+				1: w,
+				3: w,
+			},
+		},
+		{
+			ID: 3,
+			Arcs: map[int]int{
+				0: w,
+				2: w,
+			},
+		},
+	}
+	g := NewGraph(v)
+	result := g.AllShortestPath(0, 2, DefaultCostGetter)
+	/*
+		result:=[[0,1,2],[0,3,2]]
+	*/
+	if len(result) != 2 {
+		t.Errorf("shoude be two shortest path,result=%v", result)
+	}
+	t.Logf("result=%v", result)
+}
 
 func Benchmark_AllShortestPathMassVertices(b *testing.B) {
 	numNodes := 10000
