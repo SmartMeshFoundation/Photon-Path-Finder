@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
@@ -261,41 +263,88 @@ func TestTokenNetwork_GetPathsBigInt(t *testing.T) {
 func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
-	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
-	tn.decimals = map[common.Address]int{
-		token: 0,
-	}
-	tn.token2TokenNetwork = map[common.Address]common.Address{
-		token: tokenNetwork,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	addr4 := utils.NewRandomAddress()
 	addr5 := utils.NewRandomAddress()
 	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
 		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
-	tn.participantStatus[addr1] = nodeStatus{false, true}
-	tn.participantStatus[addr2] = nodeStatus{false, true}
-	tn.participantStatus[addr3] = nodeStatus{false, true}
-	tn.participantStatus[addr4] = nodeStatus{false, true}
-	tn.participantStatus[addr5] = nodeStatus{false, true}
-	c1 := &channel{
-		Participant1: addr1,
-		Participant2: addr2,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+	tn := buildTestTN([]*channel{
+		{
+			Participant1: addr1,
+			Participant2: addr2,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
 		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+		{
+			Participant1: addr2,
+			Participant2: addr3,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
 		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
-	tn.channelViews[token] = []*channel{c1}
-	tn.channels[c1Id] = c1
+		{
+			Participant1: addr3,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr4,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr2,
+			Participant2: addr4,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+	})
 	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", false)
 	if err != nil {
 		t.Error(err)
@@ -310,24 +359,7 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Error("should no path")
 		return
 	}
-	c2 := &channel{
-		Participant1: addr2,
-		Participant2: addr3,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
-	tn.channelViews[token] = []*channel{c1, c2}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
+
 	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
@@ -342,69 +374,6 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Error("should not path")
 		return
 	}
-
-	c3 := &channel{
-		Participant1: addr3,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c3Id := calcChannelID(token, tokenNetwork, addr3, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-
-	c4 := &channel{
-		Participant1: addr4,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c4Id := calcChannelID(token, tokenNetwork, addr4, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3, c4}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-	tn.channels[c4Id] = c4
-
-	c5 := &channel{
-		Participant1: addr2,
-		Participant2: addr4,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c5Id := calcChannelID(token, tokenNetwork, addr2, addr4)
-	tn.channelViews[token] = []*channel{c1, c2, c3, c4, c5}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-	tn.channels[c4Id] = c4
-	tn.channels[c5Id] = c5
 	//1-2-3-5 or 1-2-4-5
 	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", false)
 	if err != nil {
@@ -424,12 +393,6 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		t.Errorf("path length error,paths=%s", utils.StringInterface(paths[0], 3))
 		return
 	}
-	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(30), 5, "", false)
-	if err == nil {
-		t.Error("should not path")
-		return
-	}
-
 }
 
 func TestTokenNetwork_handleNewChannel(t *testing.T) {
@@ -555,41 +518,75 @@ func TestDeleteSlice(t *testing.T) {
 func TestTokenNetwork_GetPaths2(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
-	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
-	tn.decimals = map[common.Address]int{
-		token: 0,
-	}
-	tn.token2TokenNetwork = map[common.Address]common.Address{
-		token: tokenNetwork,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	addr4 := utils.NewRandomAddress()
 	addr5 := utils.NewRandomAddress()
+	tn := buildTestTN([]*channel{
+		{
+			Participant1: addr1,
+			Participant2: addr2,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr2,
+			Participant2: addr3,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr3,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr2,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(10),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+	})
+
 	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
 		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
-	tn.participantStatus[addr1] = nodeStatus{false, true}
-	tn.participantStatus[addr2] = nodeStatus{false, true}
-	tn.participantStatus[addr3] = nodeStatus{false, true}
-	tn.participantStatus[addr4] = nodeStatus{false, true}
-	tn.participantStatus[addr5] = nodeStatus{false, true}
-	c1 := &channel{
-		Participant1: addr1,
-		Participant2: addr2,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
-	tn.channelViews[token] = []*channel{c1}
-	tn.channels[c1Id] = c1
+
 	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", false)
 	if err != nil {
 		t.Error(err)
@@ -604,24 +601,7 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		t.Error("should no path")
 		return
 	}
-	c2 := &channel{
-		Participant1: addr2,
-		Participant2: addr3,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
-	tn.channelViews[token] = []*channel{c1, c2}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
+
 	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
@@ -637,69 +617,6 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 		return
 	}
 
-	c3 := &channel{
-		Participant1: addr3,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c3Id := calcChannelID(token, tokenNetwork, addr3, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-
-	//c4 := &channel{
-	//	Participant1: addr4,
-	//	Participant2: addr5,
-	//	Participant1Fee: &model.Fee{
-	//		FeePolicy:   model.FeePolicyConstant,
-	//		FeeConstant: big.NewInt(1),
-	//	},
-	//	Participant2Fee: &model.Fee{
-	//		FeePolicy:   model.FeePolicyConstant,
-	//		FeeConstant: big.NewInt(1),
-	//	},
-	//	Participant1Balance: big.NewInt(20),
-	//	Participant2Balance: big.NewInt(20),
-	//}
-	//c4Id := calcChannelID(token, tokenNetwork, addr4, addr5)
-	//tn.channelViews[token] = []*channel{c1, c2, c3, c4}
-	//tn.channels[c2Id] = c2
-	//tn.channels[c1Id] = c1
-	//tn.channels[c3Id] = c3
-	//tn.channels[c4Id] = c4
-
-	c5 := &channel{
-		Participant1: addr2,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(10),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c5Id := calcChannelID(token, tokenNetwork, addr2, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3, c5}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-	//tn.channels[c4Id] = c4
-	tn.channels[c5Id] = c5
-	//1-2-3-5 or 1-2-4-5
 	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", false)
 	if err != nil {
 		t.Error(err)
@@ -730,41 +647,73 @@ func TestTokenNetwork_GetPaths2(t *testing.T) {
 func TestTokenNetwork_GetPaths3(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
-	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
-	tn.decimals = map[common.Address]int{
-		token: 0,
-	}
-	tn.token2TokenNetwork = map[common.Address]common.Address{
-		token: tokenNetwork,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	addr4 := utils.NewRandomAddress()
 	addr5 := utils.NewRandomAddress()
 	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
 		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
-	tn.participantStatus[addr1] = nodeStatus{false, true}
-	tn.participantStatus[addr2] = nodeStatus{false, true}
-	tn.participantStatus[addr3] = nodeStatus{false, true}
-	tn.participantStatus[addr4] = nodeStatus{false, true}
-	tn.participantStatus[addr5] = nodeStatus{false, true}
-	c1 := &channel{
-		Participant1: addr1,
-		Participant2: addr2,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+	tn := buildTestTN([]*channel{
+		{
+			Participant1: addr1,
+			Participant2: addr2,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
 		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+		{
+			Participant1: addr2,
+			Participant2: addr3,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
 		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
-	tn.channelViews[token] = []*channel{c1}
-	tn.channels[c1Id] = c1
+		{
+			Participant1: addr3,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+		{
+			Participant1: addr2,
+			Participant2: addr5,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(10),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: big.NewInt(20),
+			Participant2Balance: big.NewInt(20),
+			Token:               token,
+		},
+	})
 	paths, err := tn.GetPaths(addr1, addr2, token, big.NewInt(10), 3, "", true)
 	if err != nil {
 		t.Error(err)
@@ -779,24 +728,7 @@ func TestTokenNetwork_GetPaths3(t *testing.T) {
 		t.Error("should no path")
 		return
 	}
-	c2 := &channel{
-		Participant1: addr2,
-		Participant2: addr3,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
-	tn.channelViews[token] = []*channel{c1, c2}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
+
 	paths, err = tn.GetPaths(addr1, addr3, token, big.NewInt(3), 5, "", true)
 	if err != nil {
 		t.Error(err)
@@ -812,68 +744,6 @@ func TestTokenNetwork_GetPaths3(t *testing.T) {
 		return
 	}
 
-	c3 := &channel{
-		Participant1: addr3,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c3Id := calcChannelID(token, tokenNetwork, addr3, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-
-	//c4 := &channel{
-	//	Participant1: addr4,
-	//	Participant2: addr5,
-	//	Participant1Fee: &model.Fee{
-	//		FeePolicy:   model.FeePolicyConstant,
-	//		FeeConstant: big.NewInt(1),
-	//	},
-	//	Participant2Fee: &model.Fee{
-	//		FeePolicy:   model.FeePolicyConstant,
-	//		FeeConstant: big.NewInt(1),
-	//	},
-	//	Participant1Balance: big.NewInt(20),
-	//	Participant2Balance: big.NewInt(20),
-	//}
-	//c4Id := calcChannelID(token, tokenNetwork, addr4, addr5)
-	//tn.channelViews[token] = []*channel{c1, c2, c3, c4}
-	//tn.channels[c2Id] = c2
-	//tn.channels[c1Id] = c1
-	//tn.channels[c3Id] = c3
-	//tn.channels[c4Id] = c4
-
-	c5 := &channel{
-		Participant1: addr2,
-		Participant2: addr5,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(10),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: big.NewInt(20),
-		Participant2Balance: big.NewInt(20),
-	}
-	c5Id := calcChannelID(token, tokenNetwork, addr2, addr5)
-	tn.channelViews[token] = []*channel{c1, c2, c3, c5}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
-	tn.channels[c3Id] = c3
-	//tn.channels[c4Id] = c4
-	tn.channels[c5Id] = c5
 	//1-2-3-5 or 1-2-4-5
 	paths, err = tn.GetPaths(addr1, addr5, token, big.NewInt(3), 5, "", true)
 	if err != nil {
@@ -927,59 +797,43 @@ B 200 5000 C
 func TestTokenNetwork_GetPaths4(t *testing.T) {
 	model.SetupTestDB()
 	token := utils.NewRandomAddress()
-	tokenNetwork := utils.NewRandomAddress()
-	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
-	tn.decimals = map[common.Address]int{
-		token: 0,
-	}
-	tn.token2TokenNetwork = map[common.Address]common.Address{
-		token: tokenNetwork,
-	}
 	addr1, addr2, addr3 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress()
 	addr4 := utils.NewRandomAddress()
 	addr5 := utils.NewRandomAddress()
 	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
 		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
-	tn.participantStatus[addr1] = nodeStatus{false, true}
-	tn.participantStatus[addr2] = nodeStatus{false, true}
-	tn.participantStatus[addr3] = nodeStatus{false, true}
-	tn.participantStatus[addr4] = nodeStatus{false, true}
-	tn.participantStatus[addr5] = nodeStatus{false, true}
-	c1 := &channel{
-		Participant1: addr1,
-		Participant2: addr2,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+	tn := buildTestTN([]*channel{
+		{
+			Participant1: addr1,
+			Participant2: addr2,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: strtobigint("400000000000000000000"),
+			Participant2Balance: strtobigint("300000000000000000000"),
+			Token:               token,
 		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
+		{
+			Participant1: addr2,
+			Participant2: addr3,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyConstant,
+				FeeConstant: big.NewInt(1),
+			},
+			Participant1Balance: strtobigint("200000000000000000000"),
+			Participant2Balance: strtobigint("3800000000000000000000"),
+			Token:               token,
 		},
-		Participant1Balance: strtobigint("400000000000000000000"),
-		Participant2Balance: strtobigint("300000000000000000000"),
-	}
-	c1Id := calcChannelID(token, tokenNetwork, addr1, addr2)
-	tn.channelViews[token] = []*channel{c1}
-	tn.channels[c1Id] = c1
-	c2 := &channel{
-		Participant1: addr2,
-		Participant2: addr3,
-		Participant1Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant2Fee: &model.Fee{
-			FeePolicy:   model.FeePolicyConstant,
-			FeeConstant: big.NewInt(1),
-		},
-		Participant1Balance: strtobigint("200000000000000000000"),
-		Participant2Balance: strtobigint("3800000000000000000000"),
-	}
-	c2Id := calcChannelID(token, tokenNetwork, addr2, addr3)
-	tn.channelViews[token] = []*channel{c1, c2}
-	tn.channels[c2Id] = c2
-	tn.channels[c1Id] = c1
+	})
 	paths, err := tn.GetPaths(addr3, addr1, token, strtobigint("200000000000000000000"), 5, "", true)
 	if err != nil {
 		t.Error(err)
@@ -998,4 +852,123 @@ func TestTokenNetwork_GetPaths4(t *testing.T) {
 		t.Error("path error")
 		return
 	}
+}
+
+/*
+测试有多条路径的情况下,由于费用计算精度问题,会导致费用虽然不同,
+但是都在结果列表中,这有可能造成实际收费大的排在前面.
+*/
+func TestTokenNetwork_GetPaths5(t *testing.T) {
+	req := require.New(t)
+	model.SetupTestDB()
+	token := utils.NewRandomAddress()
+	addr1, addr2, addr3, addr4, addr5 := utils.NewRandomAddress(), utils.NewRandomAddress(), utils.NewRandomAddress(),
+		utils.NewRandomAddress(), utils.NewRandomAddress()
+	tn := buildTestTN([]*channel{
+		{
+			Participant1: addr1,
+			Participant2: addr2,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant1Balance: strtobigint("40000000"),
+			Participant2Balance: strtobigint("30000000"),
+			Token:               token,
+		},
+		{
+			Participant1: addr1,
+			Participant2: addr3,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant1Balance: strtobigint("40000000"),
+			Participant2Balance: strtobigint("30000000"),
+			Token:               token,
+		},
+		{
+			Participant1: addr2,
+			Participant2: addr4,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  10000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant1Balance: strtobigint("30000000"),
+			Participant2Balance: strtobigint("30000000"),
+			Token:               token,
+		},
+		{
+			Participant1: addr3,
+			Participant2: addr4,
+			Participant1Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  1000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant2Fee: &model.Fee{
+				FeePolicy:   model.FeePolicyPercent,
+				FeePercent:  1000,
+				FeeConstant: big.NewInt(0),
+			},
+			Participant1Balance: strtobigint("40000000"),
+			Participant2Balance: strtobigint("40000000"),
+			Token:               token,
+		},
+	})
+	tn.decimals[token] = 18 //1token=1^18
+	log.Trace(fmt.Sprintf("addr1=%s,\naddr2=%s,\naddr3=%s,\naddr4=%s,\naddr5=%s", addr1.String(),
+		addr2.String(), addr3.String(), addr4.String(), addr5.String()))
+	/*
+		无论是千分之一还是万分之一,因为基数太小,导致都会被忽略,所以会得到两条路径
+	*/
+	paths, err := tn.GetPaths(addr1, addr4, token, strtobigint("20000000"), 5, "", false)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(paths) != 2 {
+		t.Error("path error")
+		return
+	}
+	req.EqualValues(paths[0].Result, []common.Address{addr2, addr4})
+	req.EqualValues(paths[0].Fee, big.NewInt(2000))
+	req.EqualValues(paths[1].Result, []common.Address{addr3, addr4})
+	req.EqualValues(paths[1].Fee, big.NewInt(20000))
+
+}
+
+func buildTestTN(chs []*channel) *TokenNetwork {
+	tokenNetwork := utils.NewRandomAddress()
+	tn := NewTokenNetwork(nil, tokenNetwork, true, nil)
+	tn.decimals = map[common.Address]int{}
+	tn.token2TokenNetwork = map[common.Address]common.Address{}
+	for _, c := range chs {
+		cid := calcChannelID(c.Token, tokenNetwork, c.Participant1, c.Participant2)
+		tn.channelViews[c.Token] = append(tn.channelViews[c.Token], c)
+		tn.channels[cid] = c
+		tn.participantStatus[c.Participant1] = nodeStatus{false, true}
+		tn.participantStatus[c.Participant2] = nodeStatus{false, true}
+		tn.decimals[c.Token] = 0
+		tn.token2TokenNetwork[c.Token] = tokenNetwork
+	}
+	return tn
 }

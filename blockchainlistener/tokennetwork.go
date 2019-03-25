@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"sync"
 	"time"
 
@@ -349,6 +350,10 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	if _, exist := gPeerToIndex[target]; !exist {
 		return nil, errors.New("There is no suitable path")
 	}
+	//for addr, id := range gPeerToIndex {
+	//	fmt.Printf("addr=%s,id=%d\n", addr.String(), id)
+	//}
+	//djGraph.PrintGraph()
 	xsource := gPeerToIndex[source]
 	xtarget := gPeerToIndex[target]
 	buildtime := time.Now()
@@ -356,10 +361,15 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	if djResult == nil {
 		return nil, errors.New("There is no suitable path")
 	}
+	//log.Trace(fmt.Sprintf("result=%v", djResult))
 	calcpathtime := time.Now()
 	//log.Trace(fmt.Sprintf("result=%s,index=%s", utils.StringInterface(djResult, 5), utils.StringInterface(gPeerToIndex, 3)))
 	//将所有可能的最短路径转换为Address结果,同时计算费用
 	for k, pathSlice := range djResult {
+		//限制返回结果的数量,不要太多
+		if limitPaths > 0 && k >= limitPaths {
+			break
+		}
 		sinPathInfo := &PathResult{}
 		sinPathInfo.PathID = k
 		sinPathInfo.PathHop = len(pathSlice) - 2
@@ -415,6 +425,12 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		sinPathInfo.Result = xaddr
 		pathinfos = append(pathinfos, sinPathInfo)
 	}
+	/*
+		由于计算精度问题,有可能导致计算出来的fee并不一样,最好按照费用大小排序
+	*/
+	sort.Slice(pathinfos, func(i, j int) bool {
+		return pathinfos[i].Fee.Cmp(pathinfos[j].Fee) < 0
+	})
 	log.Info(fmt.Sprintf("buildgraph=%s,path=%s", buildtime.Sub(start), calcpathtime.Sub(buildtime)))
 	return
 }

@@ -182,6 +182,12 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 	if err != nil {
 		return
 	}
+	if c.OpenBlockNumber != partnerBalanceProof.OpenBlockNumber {
+		err = fmt.Errorf("receive UpdateChannelBalanceProof on channel=%s,but open block number not match ,database openblocknumber=%d,balanceproof=%d",
+			c.ChannelID, c.OpenBlockNumber, partnerBalanceProof.OpenBlockNumber,
+		)
+		return
+	}
 	p1, p, err := verifyParticipants(c, participant, partner)
 	if err != nil {
 		return
