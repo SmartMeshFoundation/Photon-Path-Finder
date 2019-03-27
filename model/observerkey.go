@@ -4,17 +4,18 @@ import (
 	"crypto/ecdsa"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/jinzhu/gorm"
 )
 
 type observerKey struct {
-	ID  int
+	gorm.Model
 	Key []byte
 }
 
 //GetObserverKey get or create a key from db
 func GetObserverKey() *ecdsa.PrivateKey {
 	x := &observerKey{
-		ID: 1,
+		Model: gorm.Model{ID: 1},
 	}
 	err := db.Where(x).Find(x).Error
 	if err != nil {

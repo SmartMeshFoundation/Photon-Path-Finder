@@ -46,6 +46,7 @@ func SetUpDB(dbtype, path string) {
 	db.AutoMigrate(&xmpp{})
 	db.AutoMigrate(&observerKey{})
 	db.AutoMigrate(&ChannelParticipantFee{})
+	db.AutoMigrate(&observerKey{})
 	db.FirstOrCreate(lb)
 	params.ObserverKey = GetObserverKey
 	return

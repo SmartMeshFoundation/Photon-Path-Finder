@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
@@ -48,7 +49,7 @@ const (
 由于数据库存储限制,
 */
 type ChannelParticipantInfo struct {
-	ID               int
+	gorm.Model
 	ChannelID        string `gorm:"index"`
 	Participant      string
 	Nonce            uint64
@@ -62,7 +63,7 @@ type ChannelParticipantInfo struct {
 ChannelParticipantFee 存储通道一方的收费信息
 */
 type ChannelParticipantFee struct {
-	ID              int
+	gorm.Model
 	ChannelID       string `gorm:"index"`
 	Participant     string `gorm:"index"`
 	Token           string
@@ -83,6 +84,10 @@ func (c *ChannelParticipantInfo) Fee(token common.Address) *Fee {
 
 //Channel Channel基本信息
 type Channel struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
+
 	ChannelID       string `gorm:"primary_key"`
 	Token           string `gorm:"index"`
 	OpenBlockNumber int64
@@ -139,9 +144,11 @@ func AddChannel(token, participant1, participant2 common.Address, ChannelIdentif
 	c.Status = ChannelStatusOpen
 	c.OpenBlockNumber = blockNumber
 	p1 := &ChannelParticipantInfo{
+		ChannelID:   channelID,
 		Participant: participant1.String(),
 	}
 	p2 := &ChannelParticipantInfo{
+		ChannelID:   channelID,
 		Participant: participant2.String(),
 	}
 	p1, p2 = orderParticipants(p1, p2)

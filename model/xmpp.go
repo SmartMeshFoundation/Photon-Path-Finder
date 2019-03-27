@@ -3,11 +3,14 @@ package model
 import (
 	"fmt"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type xmpp struct {
+	gorm.Model
 	Address      string `gorm:"primary_key"` //地址作为唯一的key,因为在整个网络中我只需关注
 	IsSubScribed bool   //是否已经订阅改地址
 }
