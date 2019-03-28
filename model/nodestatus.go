@@ -5,12 +5,10 @@ import (
 
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/jinzhu/gorm"
 )
 
 //NodeStatus photon account status
 type NodeStatus struct {
-	gorm.Model
 	Address    string `gorm:"primary_key"`
 	DeviceType string
 	IsOnline   bool

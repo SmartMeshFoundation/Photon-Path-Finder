@@ -5,22 +5,20 @@ import (
 
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/jinzhu/gorm"
 )
 
 type tokenNetwork struct {
-	gorm.Model
 	Token        string `gorm:"primary_key"`
 	TokenNetwork string `gorm:"primary_key"`
 	BlockNumber  int64
 }
 
 type latestBlockNumber struct {
-	gorm.Model
+	ID          int
 	BlockNumber int64
 }
 
-var lb = &latestBlockNumber{Model: gorm.Model{ID: 1}}
+var lb = &latestBlockNumber{ID: 1}
 
 //UpdateBlockNumber 更新最新的已经处理过的块数
 func UpdateBlockNumber(blockNumber int64) {

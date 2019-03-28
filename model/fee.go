@@ -11,7 +11,6 @@ import (
 
 //AccountFee 账户的缺省收费
 type AccountFee struct {
-	gorm.Model
 	Account         string `gorm:"primary_key"`
 	FeePolicy       int
 	FeeConstantPart string
@@ -30,7 +29,6 @@ type AccountTokenFee struct {
 
 //TokenFee 针对某种token 的缺省收费,暂不启用
 type TokenFee struct {
-	gorm.Model
 	Token           string `gorm:"primary_key"`
 	FeePolicy       int
 	FeeConstantPart string

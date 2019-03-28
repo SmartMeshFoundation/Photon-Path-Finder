@@ -81,10 +81,6 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 		}
 		var cs2 []*channel
 		for _, c := range cs {
-			if len(c.Participants) != 2 {
-				log.Warn(fmt.Sprintf("ignore wrong data :\n%s", utils.StringInterface(c, 3)))
-				continue
-			}
 			token := common.HexToAddress(c.Token)
 			c2 := &channel{
 				Participant1:        common.HexToAddress(c.Participants[0].Participant),
