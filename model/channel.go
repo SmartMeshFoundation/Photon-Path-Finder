@@ -126,7 +126,11 @@ func GetAllTokenChannels(token common.Address) (cs []*Channel, err error) {
 		return
 	}
 	for _, c := range cs {
-		c.Participants[0], c.Participants[1] = orderParticipants(c.Participants[0], c.Participants[1])
+		if len(c.Participants) == 2 {
+			c.Participants[0], c.Participants[1] = orderParticipants(c.Participants[0], c.Participants[1])
+		} else {
+			log.Warn(fmt.Sprintf("ignore wrong data :\n%s", utils.StringInterface(c, 3)))
+		}
 	}
 	return
 }
