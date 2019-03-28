@@ -4,14 +4,13 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/SmartMeshFoundation/matrix-regservice/params"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/SmartMeshFoundation/Photon/utils"
 
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 

@@ -86,7 +86,7 @@ func (c *ChannelParticipantInfo) Fee(token common.Address) *Fee {
 type Channel struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
+	//DeletedAt *time.Time `sql:"index"` 这个字段会造成通道在Settle之后再次打开的时候,AddChannel报错UNIQUE constraint failed: channels.channel_id
 
 	ChannelID       string `gorm:"primary_key"`
 	Token           string `gorm:"index"`
