@@ -61,7 +61,7 @@ func CloseDB() {
 
 //SetupTestDB for test only
 func SetupTestDB() {
-	dbPath := path.Join(utils.GetHomePath(), "test.db")
+	dbPath := path.Join(os.TempDir(), fmt.Sprintf("test%s.db", utils.RandomString(10)))
 	log.Trace(fmt.Sprintf(dbPath))
 	err := os.Remove(dbPath)
 	if err != nil {

@@ -108,7 +108,6 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 			isMobile: n.DeviceType == "mobile",
 		}
 	}
-
 	return
 }
 
@@ -204,7 +203,8 @@ func (t *TokenNetwork) handleChannelDepositEvent(channelID common.Hash, particip
 	}
 	c2 := t.channels[channelID]
 	if c2 == nil {
-		log.Error(fmt.Sprintf("deposit ,but channel %s not found", channelID.String()))
+		log.Error(fmt.Sprintf("deposit ,but channel %s not found in memory,maybe closed, status=%d",
+			channelID.String(), c.Status))
 		return errors.New("channel not found")
 	}
 	c2.Participant1Balance = c.Participants[0].BalanceValue()

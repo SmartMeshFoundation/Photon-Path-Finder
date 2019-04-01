@@ -394,7 +394,12 @@ func TestTokenNetwork_GetPathsMultiHop(t *testing.T) {
 		return
 	}
 }
-
+func orderParticipants(p1, p2 common.Address) (rp1, rp2 common.Address) {
+	if p1.String() < p2.String() {
+		return p1, p2
+	}
+	return p2, p1
+}
 func TestTokenNetwork_handleNewChannel(t *testing.T) {
 
 	model.SetupTestDB()
@@ -410,6 +415,7 @@ func TestTokenNetwork_handleNewChannel(t *testing.T) {
 	channid := utils.NewRandomHash()
 	p1 := utils.NewRandomAddress()
 	p2 := utils.NewRandomAddress()
+	p1, p2 = orderParticipants(p1, p2)
 	err := tn.handleChannelOpenedEvent(token, channid, p1, p2, 3)
 	if err != nil {
 		t.Error(err)
