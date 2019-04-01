@@ -61,7 +61,7 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		}
 		decimal, err := tokenProxy.Token.Decimals(nil)
 		if err != nil {
-			log.Error(fmt.Sprintf("get decimal error for token %s, this token may don't have decimal field", t.String()))
+			log.Crit(fmt.Sprintf("get decimal error for token %s, this token may don't have decimal field", t.String()))
 		}
 		decimals[t] = int(decimal)
 	}
