@@ -54,7 +54,10 @@ type testPasswordGeter struct {
 }
 
 func (t *testPasswordGeter) GetPassWord() string {
-	pass, _ := xmpppass.CreatePassword(t.key)
+	pass, err := xmpppass.CreatePassword(t.key)
+	if err != nil {
+		panic(err)
+	}
 	return pass
 }
 

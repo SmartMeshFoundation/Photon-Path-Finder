@@ -19,7 +19,10 @@ func GetObserverKey() *ecdsa.PrivateKey {
 	err := db.Where(x).Find(x).Error
 	if err != nil {
 		//第一次启动
-		key, _ := crypto.GenerateKey()
+		key, err := crypto.GenerateKey()
+		if err != nil {
+			panic(err)
+		}
 		x.Key = crypto.FromECDSA(key)
 		err = db.Create(x).Error
 		if err != nil {
