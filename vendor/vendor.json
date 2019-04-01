@@ -506,11 +506,11 @@
 			"revisionTime": "2015-10-09T08:41:29Z"
 		},
 		{
-			"checksumSHA1": "zpyhL6/pJwqnEBj13mdH4k/BhY4=",
-			"origin": "github.com/SmartMeshFoundation/Photon/vendor/github.com/karalabe/hid",
+			"checksumSHA1": "RfDPJ/8nD9mLAR5H2dfj5pd2Gr4=",
 			"path": "github.com/karalabe/hid",
-			"revision": "4c48cb2372be86d8b2e268d36720d9648bd014e1",
-			"revisionTime": "2019-03-29T08:37:56Z"
+			"revision": "93a94ab6671087f0768f1d4e701c0ec14f449df9",
+			"revisionTime": "2017-11-09T11:27:46Z",
+			"tree": true
 		},
 		{
 			"checksumSHA1": "avqi4lkviHdrNJ92cXCwrw9x870=",

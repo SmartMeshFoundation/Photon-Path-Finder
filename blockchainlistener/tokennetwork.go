@@ -9,10 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/SmartMeshFoundation/Photon/log"
 	"github.com/SmartMeshFoundation/Photon/params"
 	"github.com/SmartMeshFoundation/Photon/utils"
-	"github.com/kataras/go-errors"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 
