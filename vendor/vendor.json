@@ -509,8 +509,8 @@
 			"checksumSHA1": "zpyhL6/pJwqnEBj13mdH4k/BhY4=",
 			"origin": "github.com/SmartMeshFoundation/Photon/vendor/github.com/karalabe/hid",
 			"path": "github.com/karalabe/hid",
-			"revision": "f462bc828c3c39a6e6cd10b71eb5c822737e07d3",
-			"revisionTime": "2018-10-30T02:46:48Z"
+			"revision": "4c48cb2372be86d8b2e268d36720d9648bd014e1",
+			"revisionTime": "2019-03-29T08:37:56Z"
 		},
 		{
 			"checksumSHA1": "avqi4lkviHdrNJ92cXCwrw9x870=",
@@ -541,19 +541,6 @@
 			"path": "github.com/mattn/go-sqlite3",
 			"revision": "8a4c825cfc99b620bd78dbeac30348782a3b3eb9",
 			"revisionTime": "2017-07-01T11:48:21Z"
-		},
-		{
-			"checksumSHA1": "Xbl6Po7Qn0SnOcKawupePFzTx+A=",
-			"path": "github.com/nkbai/dijkstra",
-			"revision": "63116249460d256e7afe1db13d150775f9f27bc4",
-			"revisionTime": "2018-02-24T10:11:01Z"
-		},
-		{
-			"checksumSHA1": "MDUKhAgA5XHrSXQCloiPj8Zcmfo=",
-			"origin": "github.com/SmartMeshFoundation/Photon/vendor/github.com/nkbai/log",
-			"path": "github.com/nkbai/log",
-			"revision": "f462bc828c3c39a6e6cd10b71eb5c822737e07d3",
-			"revisionTime": "2018-10-30T02:46:48Z"
 		},
 		{
 			"checksumSHA1": "eVoyhpCbyPg6D3P63EStHNO6iIQ=",
