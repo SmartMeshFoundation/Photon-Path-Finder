@@ -93,9 +93,8 @@ type Channel struct {
 func orderParticipants(p1, p2 *ChannelParticipantInfo) (rp1, rp2 *ChannelParticipantInfo) {
 	if p1.Participant < p2.Participant {
 		return p1, p2
-	} else {
-		return p2, p1
 	}
+	return p2, p1
 }
 
 //GetChannel from db

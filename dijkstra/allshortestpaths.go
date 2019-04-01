@@ -5,11 +5,12 @@ import (
 	"math"
 )
 
+//refer: http://www.linkedin.com/pulse/20140901041720-91330360-find-all-possible-shortest-paths-with-dijkstra-s-algorithm?trk=mp-reader-card
+
+//CostGetter  how to calc weght from source to target
 type CostGetter func(g *Graph, source, target int) (weight int)
 
-//refer: http://www.linkedin.com/pulse/20140901041720-91330360-find-all-possible-shortest-paths-with-dijkstra-s-algorithm?trk=mp-reader-card
-/**
-* Computes all shortest paths between 2 vertices using the
+/*AllShortestPath Computes all shortest paths between 2 vertices using the
 * Dijkstra's shortest path algorithm.
 *
 * @param source: starting vertex from which to find the shortest paths.
@@ -144,6 +145,7 @@ func (g *Graph) buildCostMatrix() (cost [][]int) {
 	return
 }
 
+//DefaultCostGetter default cost getter
 func DefaultCostGetter(g *Graph, source, target int) int {
 	w, ok := g.vertices[source].Arcs[target]
 	if !ok {

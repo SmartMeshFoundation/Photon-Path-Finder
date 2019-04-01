@@ -259,7 +259,7 @@ func (x *XMPPConnection) send(msg *xmpp.Chat) error {
 	return nil
 }
 
-//Close this connection
+//Stop close this connection
 func (x *XMPPConnection) Stop() {
 	x.changeStatus(netshare.Closed)
 	close(x.closed)

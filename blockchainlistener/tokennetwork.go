@@ -82,7 +82,7 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 		}
 		var cs2 []*channel
 		for _, c := range cs {
-			token := common.HexToAddress(c.Token)
+			//token := common.HexToAddress(c.Token)
 			c2 := &channel{
 				Participant1:        common.HexToAddress(c.Participants[0].Participant),
 				Participant2:        common.HexToAddress(c.Participants[1].Participant),
@@ -148,7 +148,7 @@ func (t *TokenNetwork) handleTokenNetworkAdded(token common.Address, blockNumber
 	t.token2TokenNetwork[token] = utils.EmptyAddress
 	t.decimals[token] = int(decimal)
 	err = model.AddTokeNetwork(token, utils.EmptyAddress, blockNumber)
-	return nil
+	return
 }
 
 func (t *TokenNetwork) handleChannelSettled(channelID common.Hash) (err error) {
@@ -552,6 +552,7 @@ func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress c
 	return model.UpdateChannelFeeRate(channelID, peerAddress, c.Token, fee)
 }
 
+//Stop stop TokenNetwork service
 func (t *TokenNetwork) Stop() {
 	t.transport.Stop()
 }
