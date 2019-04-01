@@ -203,7 +203,7 @@ func (m *MatrixObserver) onHandlePresenceChange(event *gomatrix.Event) {
 	}
 	deviceType, _ := event.ViewContent("status_msg") //newest network status
 	// 如果deviceType为空,说明是历史消息,直接忽略
-	if deviceType == "" {
+	if strings.TrimSpace(deviceType) == "" {
 		return
 	}
 	address := m.userIDToAddress(event.Sender)
