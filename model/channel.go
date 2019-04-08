@@ -158,7 +158,6 @@ type BalanceProof struct {
 	OpenBlockNumber int64       `json:"open_block_number"`
 	AdditionalHash  common.Hash `json:"addition_hash"`
 	Signature       []byte      `json:"signature"`
-	ExtraHash       common.Hash `json:"extra_hash"`
 }
 
 func verifyParticipants(c *Channel, participant1, participant2 common.Address) (p1, p2 *ChannelParticipantInfo, err error) {
