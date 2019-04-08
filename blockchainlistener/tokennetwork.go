@@ -135,10 +135,11 @@ func (t *TokenNetwork) handleChannelOpenedEvent(tokenAddress common.Address, cha
 	}
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
-	cs, ok := t.channelViews[tokenAddress]
+	_, ok := t.decimals[tokenAddress]
 	if !ok {
 		panic(fmt.Sprintf("uknown token %s", tokenAddress.String()))
 	}
+	cs := t.channelViews[tokenAddress]
 	cs = append(cs, c2)
 	t.channelViews[tokenAddress] = cs
 	t.channels[channelID] = c2
