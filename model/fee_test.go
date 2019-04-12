@@ -3,7 +3,9 @@ package model
 import (
 	"math/big"
 	"reflect"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
@@ -71,4 +73,35 @@ func TestGetAccountTokenFee(t *testing.T) {
 		t.Error(err)
 		return
 	}
+}
+
+func TestGetAccountTokenFeeSqlite(t *testing.T) {
+	SetupTestDB()
+	a := utils.NewRandomAddress()
+	token := utils.NewRandomAddress()
+	fee, err := GetAccountTokenFee(a, token)
+	if err == nil {
+		t.Error("should not found")
+		return
+	}
+	fee = &Fee{}
+	fee.FeePolicy = FeePolicyConstant
+	fee.FeePercent = 0
+	fee.FeeConstant = big.NewInt(30)
+	wg:=sync.WaitGroup{
+	}
+	n:=100
+	wg.Add(n)
+	start:=time.Now()
+	for i:=0;i<n;i++{
+		go func(){
+			err = UpdateAccountTokenFee(a, token, fee)
+			if err != nil {
+				panic(err)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	t.Logf("write %d cost %s",n,time.Since(start))
 }

@@ -28,6 +28,11 @@ func SetUpDB(dbtype, path string) {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	if dbtype=="sqlite3"{
+		//由于sqlite多线程访问性能很低,测试的时候用sqlite都会效率很低
+		db.DB().SetMaxIdleConns(1)
+		db.DB().SetMaxOpenConns(1)
+	}
 	//if params.DebugMode {
 	//	db = db.Debug()
 	//	db.LogMode(true)
