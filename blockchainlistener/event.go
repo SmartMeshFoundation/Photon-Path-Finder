@@ -3,6 +3,7 @@ package blockchainlistener
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/SmartMeshFoundation/Photon/notify"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 	"github.com/SmartMeshFoundation/Photon/log"
@@ -42,12 +43,12 @@ func (dbXMPPWrapper) XMPPUnMarkAddr(addr common.Address) {
 // NewChainEvents create chain events
 func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address, useMatrix bool) *ChainEvents { //, db *models.ModelDB
 	log.Info(fmt.Sprintf("Token Network registry address=%s", tokenNetworkRegistryAddress.String()))
-	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client)
+	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client,&notify.Handler{},&mockTxInfoDao{})
 	if err != nil {
 		log.Crit(err.Error())
 	}
-	registry := bcs.Registry(tokenNetworkRegistryAddress, true)
-	if registry == nil {
+	_,err = bcs.Registry(tokenNetworkRegistryAddress, true)
+	if err != nil {
 		log.Crit("Register token network error : cannot get registry")
 	}
 
@@ -61,14 +62,14 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 		}
 		decimal, err := tokenProxy.Token.Decimals(nil)
 		if err != nil {
-			log.Crit(fmt.Sprintf("get decimal error for token %s, this token may don't have decimal field", t.String()))
+			log.Crit(fmt.Sprintf("get decimal error for token %s, this token may don't have decimal field,err=%s", t.String(), err))
 		}
 		decimals[t] = int(decimal)
 	}
 	//logrus.in
 	ce := &ChainEvents{
 		client:       client,
-		be:           blockchain.NewBlockChainEvents(client, bcs),
+		be:           blockchain.NewBlockChainEvents(client, bcs,&mockChainEventRecordDao{}),
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
