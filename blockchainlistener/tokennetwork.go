@@ -299,25 +299,26 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 	gPeerToIndex := make(map[common.Address]int)
 	gIndex := -1
 	//作图，作图是把本次计算不符合上述条件的移除掉
+	t.nodeLock.Lock()
 	for _, c := range cs {
 		p1Balance := c.Participant1Balance
 		p2Balance := c.Participant2Balance
-		t.nodeLock.Lock()
+
 		//忽略所有不在线的节点
 		if !t.participantStatus[c.Participant1].isOnline {
-			t.nodeLock.Unlock()
 			continue
 		}
 		if !t.participantStatus[c.Participant2].isOnline {
-			t.nodeLock.Unlock()
 			continue
 		}
 		//手机节点不能作为路由中间结点
 		if t.participantStatus[c.Participant1].isMobile && c.Participant1 != source && c.Participant1 != target {
-			t.nodeLock.Unlock()
 			continue
 		}
-		t.nodeLock.Unlock()
+		//通道双方只要有一个是手机并且既不是发起方也不是接收方,都应该 跳过
+		if t.participantStatus[c.Participant2].isMobile && c.Participant2 != source && c.Participant2 != target {
+			continue
+		}
 		//只要有一个节点余额够,那么至少应该加入一条边
 		if p1Balance.Cmp(value) < 0 && p2Balance.Cmp(value) < 0 {
 			continue
@@ -349,6 +350,7 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 			djGraph.AddEdge(gPeerToIndex[c.Participant2], gPeerToIndex[c.Participant1], weight)
 		}
 	}
+	t.nodeLock.Unlock()
 	if _, exist := gPeerToIndex[source]; !exist {
 		return nil, errors.New("There is no suitable path")
 	}
