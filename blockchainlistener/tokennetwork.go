@@ -557,7 +557,33 @@ func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress c
 	}
 	return model.UpdateChannelFeeRate(channelID, peerAddress, c.Token, fee)
 }
-
+//UpdateAccountFee  update acount's all channel feerate,保持内存与数据库中收费信息的一致
+func (t *TokenNetwork) UpdateAccountFee(peerAddress common.Address, req *model.SetAllFeeRateRequest)   {
+	getFee:= func(channelID common.Hash,token common.Address) *model.Fee {
+		f,ok:=req.ChannelsFee[channelID]
+		if ok{
+			return f.Fee
+		}
+		f,ok=req.TokensFee[token]
+		if ok{
+			return f.Fee
+		}
+		return req.AccountFee.Fee
+	}
+	t.viewlock.Lock()
+	defer t.viewlock.Unlock()
+	for cid,c:=range t.channels{
+		if c.Participant1==peerAddress{
+			c.Participant1Fee=getFee(cid,c.Token)
+			continue
+		}
+		if c.Participant2==peerAddress{
+			c.Participant2Fee=getFee(cid,c.Token)
+			continue
+		}
+	}
+	return
+}
 //Stop stop TokenNetwork service
 func (t *TokenNetwork) Stop() {
 	t.transport.Stop()

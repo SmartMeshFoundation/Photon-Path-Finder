@@ -2,7 +2,6 @@ package rest
 
 import (
 	"fmt"
-	"math/big"
 	"net/http"
 
 	"github.com/SmartMeshFoundation/Photon/log"
@@ -15,22 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// SetFeeRateRequest is the json request for setChannelRate
-type SetFeeRateRequest struct {
-	FeeConstant *big.Int `json:"fee_constant"`
-	FeePercent  int64    `json:"fee_percent"`
-	Signature   []byte   `json:"signature"`
-	fee         *model.Fee
-}
-
-//SetAllFeeRateRequest is json request for all fee rate
-type SetAllFeeRateRequest struct {
-	AccountFee  *SetFeeRateRequest                    `json:"account_fee"`
-	TokensFee   map[common.Address]*SetFeeRateRequest `json:"token_fee_map"`
-	ChannelsFee map[common.Hash]*SetFeeRateRequest    `json:"channel_fee_map"`
-}
-
-func verifyAndGetFeePolicy(req *SetFeeRateRequest) (policy int, err error) {
+func verifyAndGetFeePolicy(req *model.SetFeeRateRequest) (policy int, err error) {
 	policy = model.FeePolicyConstant
 	if req.FeePercent > 0 {
 		policy = model.FeePolicyPercent
@@ -52,7 +36,7 @@ func verifyAndGetFeePolicy(req *SetFeeRateRequest) (policy int, err error) {
 func setChannelRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 	channel := common.HexToHash(r.PathParam("channel"))
-	var req SetFeeRateRequest
+	var req model.SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -106,7 +90,7 @@ func getChannelRate(w rest.ResponseWriter, r *rest.Request) {
 func setTokenRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 	token := common.HexToAddress(r.PathParam("token"))
-	var req SetFeeRateRequest
+	var req model.SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -156,7 +140,7 @@ func getTokenRate(w rest.ResponseWriter, r *rest.Request) {
 func setAccountRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 
-	var req SetFeeRateRequest
+	var req model.SetFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -199,7 +183,7 @@ func getAccountRate(w rest.ResponseWriter, r *rest.Request) {
 	}
 	return
 }
-func verifySetFeeRate(f *SetFeeRateRequest, peerAddress common.Address) (fee *model.Fee, err error) {
+func verifySetFeeRate(f *model.SetFeeRateRequest, peerAddress common.Address) (fee *model.Fee, err error) {
 	err = verifySinatureSetFeeRate(f, peerAddress)
 	if err != nil {
 		return
@@ -218,7 +202,7 @@ func verifySetFeeRate(f *SetFeeRateRequest, peerAddress common.Address) (fee *mo
 func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 	peerAddress := common.HexToAddress(r.PathParam("peer"))
 
-	var req SetAllFeeRateRequest
+	var req model.SetAllFeeRateRequest
 	err := r.DecodeJsonPayload(&req)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -231,21 +215,21 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 	log.Trace(fmt.Sprintf("req=%s", utils.StringInterface(req, 3)))
 	//validate json-input
 	if req.AccountFee != nil {
-		req.AccountFee.fee, err = verifySetFeeRate(req.AccountFee, peerAddress)
+		req.AccountFee.Fee, err = verifySetFeeRate(req.AccountFee, peerAddress)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
 	for t, f := range req.TokensFee {
-		req.TokensFee[t].fee, err = verifySetFeeRate(f, peerAddress)
+		req.TokensFee[t].Fee, err = verifySetFeeRate(f, peerAddress)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
 	for c, f := range req.ChannelsFee {
-		req.ChannelsFee[c].fee, err = verifySetFeeRate(f, peerAddress)
+		req.ChannelsFee[c].Fee, err = verifySetFeeRate(f, peerAddress)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -259,26 +243,27 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 	}
 	//save fee rate to db
 	if req.AccountFee != nil {
-		err = model.UpdateAccountDefaultFeePolicy(peerAddress, req.AccountFee.fee)
+		err = model.UpdateAccountDefaultFeePolicy(peerAddress, req.AccountFee.Fee)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 	for t, f := range req.TokensFee {
-		err = model.UpdateAccountTokenFee(peerAddress, t, f.fee)
+		err = model.UpdateAccountTokenFee(peerAddress, t, f.Fee)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 	for c, f := range req.ChannelsFee {
-		err = tn.UpdateChannelFeeRate(c, peerAddress, f.fee)
+		err = tn.UpdateChannelFeeRate(c, peerAddress, f.Fee)
 		if err != nil {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
+	tn.UpdateAccountFee(peerAddress,&req)
 	err = w.WriteJson(&req)
 	if err != nil {
 		log.Error(fmt.Sprintf("write json err %s", err))

@@ -65,7 +65,7 @@ func verifyBalanceProofSignature(bpr *balanceProofRequest, participant common.Ad
 }
 
 // verifySinatureSetFeeRate verify Fee_rate sinature
-func verifySinatureSetFeeRate(sfr *SetFeeRateRequest, peerAddress common.Address) (err error) {
+func verifySinatureSetFeeRate(sfr *model.SetFeeRateRequest, peerAddress common.Address) (err error) {
 	tmpBuf := new(bytes.Buffer)
 	err = binary.Write(tmpBuf, binary.BigEndian, sfr.FeePercent)
 	_, err = tmpBuf.Write(utils.BigIntTo32Bytes(sfr.FeeConstant))
