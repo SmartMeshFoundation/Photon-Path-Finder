@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"    //for gorm
 	_ "github.com/jinzhu/gorm/dialects/postgres" //for gorm
 	_ "github.com/jinzhu/gorm/dialects/sqlite"   //for gorm
 )
@@ -30,8 +29,8 @@ func SetUpDB(dbtype, path string) {
 	}
 	if dbtype=="sqlite3"{
 		//由于sqlite多线程访问性能很低,测试的时候用sqlite都会效率很低
-		db.DB().SetMaxIdleConns(1)
-		db.DB().SetMaxOpenConns(1)
+		//db.DB().SetMaxIdleConns(1)
+		//db.DB().SetMaxOpenConns(1)
 	}
 	//if params.DebugMode {
 	//	db = db.Debug()
@@ -70,7 +69,7 @@ func SetupTestDB() {
 	log.Trace(fmt.Sprintf(dbPath))
 	err := os.Remove(dbPath)
 	if err != nil {
-		//ignore
+		log.Error(fmt.Sprintf("remove err %s",err))
 	}
 	SetUpDB("sqlite3", dbPath)
 }

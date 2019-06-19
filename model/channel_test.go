@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/SmartMeshFoundation/matrix-regservice/params"
+	"github.com/SmartMeshFoundation/Photon-Path-Finder/params"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -462,4 +462,16 @@ func TestUpdateChannelFeeRate(t *testing.T) {
 	assert.EqualValues(t, fee.FeePolicy, FeePolicyCombined)
 	assert.EqualValues(t, fee.FeePercent, 10)
 	assert.EqualValues(t, fee.FeeConstant, big.NewInt(50))
+
+	err=DeleteAccountAllFeeRate(participant)
+	if err!=nil{
+		t.Error(err)
+		return
+	}
+	//删除后应该是缺省的
+	fee = GetAccountFeePolicy(participant)
+	if fee.FeePolicy != params.DefaultFeePolicy ||
+		fee.FeePercent != params.DefaultFeePercentPart {
+		t.Error("not equal default")
+	}
 }

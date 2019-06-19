@@ -224,6 +224,9 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	/*
+	针对setAllFeeRate,按照约定,每次费率更新都是全量更新,所以必须删除所有历史记录
+	 */
 	log.Trace(fmt.Sprintf("peer=%s", peerAddress.String()))
 	log.Trace(fmt.Sprintf("req=%s", utils.StringInterface(req, 3)))
 	//validate json-input
@@ -247,6 +250,12 @@ func setAllFeeRate(w rest.ResponseWriter, r *rest.Request) {
 			rest.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+	}
+	//务必先删除所有的记录,否则记录就变成只能增加修改,不能删除了.
+	err=model.DeleteAccountAllFeeRate(peerAddress)
+	if err!=nil{
+		rest.Error(w,err.Error(),http.StatusBadRequest)
+		return
 	}
 	//save fee rate to db
 	if req.AccountFee != nil {

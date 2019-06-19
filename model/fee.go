@@ -111,3 +111,26 @@ func UpdateAccountTokenFee(account, token common.Address, fee *Fee) (err error) 
 	}
 	return db.Create(atf).Error
 }
+//DeleteAccountAllFeeRate 删除账户所有收费记录
+func DeleteAccountAllFeeRate(account common.Address) (err error){
+	tx:=db.Begin()
+	if err!=nil{
+		tx.Rollback()
+	}
+	tx2:=tx.Where("account=?",account.String()).Delete(&AccountFee{})
+	if tx2.Error!=nil{
+		err=tx2.Error
+		return
+	}
+	tx2=tx.Where("account=?",account.String()).Delete(&AccountTokenFee{})
+	if tx2.Error!=nil{
+		err=tx2.Error
+		return
+	}
+	tx2=tx.Where("participant=?",account.String()).Delete(&ChannelParticipantFee{})
+	if tx2.Error!=nil{
+		err=tx2.Error
+		return
+	}
+	return tx.Commit().Error
+}

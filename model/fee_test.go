@@ -39,6 +39,17 @@ func TestGetAccountFeePolicy(t *testing.T) {
 		t.Error("not equal")
 		return
 	}
+	err=DeleteAccountAllFeeRate(a)
+	if err!=nil{
+		t.Error(err)
+		return
+	}
+	//删除后应该是缺省的
+	fee = GetAccountFeePolicy(a)
+	if fee.FeePolicy != params.DefaultFeePolicy ||
+		fee.FeePercent != params.DefaultFeePercentPart {
+		t.Error("not equal default")
+	}
 }
 
 func TestGetAccountTokenFee(t *testing.T) {
@@ -71,6 +82,17 @@ func TestGetAccountTokenFee(t *testing.T) {
 	err = UpdateAccountTokenFee(a, token, fee)
 	if err != nil {
 		t.Error(err)
+		return
+	}
+	err=DeleteAccountAllFeeRate(a)
+	if err!=nil{
+		t.Error(err)
+		return
+	}
+	//删除后应该是缺省的
+	fee,err = GetAccountTokenFee(a,token)
+	if err==nil{
+		t.Error("must not found")
 		return
 	}
 }
