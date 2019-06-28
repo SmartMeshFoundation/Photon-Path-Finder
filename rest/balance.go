@@ -43,11 +43,8 @@ func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	err = tn.UpdateBalance(peerAddress, partner, req.LockedAmount, req.BalanceProof)
-	if err != nil {
-		rest.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if req.BalanceProof!=nil && req.BalanceProof.Nonce>0 {
+		ce.HandleReceiveUserUpdateBalanceProof(peerAddress, partner, req.LockedAmount, req.BalanceProof)
 	}
 	err = w.WriteJson(nil)
 	if err != nil {

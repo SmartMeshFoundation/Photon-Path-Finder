@@ -342,10 +342,12 @@ func updateBalance(p1, p2 *ChannelParticipantInfo) (err error) {
 		那么会造成有网一方也不能提交. 这会造成不必要的麻烦.
 	*/
 	if p1Balance.Cmp(utils.BigInt0) < 0 {
+		log.Error(fmt.Sprintf("p1 %s balance is negative  %s,channel=%s", p1.Participant, p1Balance,p1.ChannelID))
 		p1.Balance = utils.BigInt0.String()
 		//return fmt.Errorf("p1 %s balance is negative  %s", p1.Participant, p1Balance)
 	}
 	if p2Balance.Cmp(utils.BigInt0) < 0 {
+		log.Error(fmt.Sprintf("p2 %s balance is negative  %s,channel=%s", p2.Participant, p2Balance,p2.ChannelID))
 		p2.Balance = utils.BigInt0.String()
 		//return fmt.Errorf("p2 %s balance is negative %s", p2.Participant, p2Balance)
 	}

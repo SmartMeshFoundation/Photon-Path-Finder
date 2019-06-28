@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/SmartMeshFoundation/Photon/notify"
+	"math/big"
 
 	"github.com/SmartMeshFoundation/Photon-Path-Finder/model"
 	"github.com/SmartMeshFoundation/Photon/log"
@@ -19,15 +20,28 @@ import (
 
 //ChainEvents block chain operations
 type ChainEvents struct {
-	client       *helper.SafeEthClient
-	be           *blockchain.Events
-	bcs          *rpc.BlockChainService
-	key          *ecdsa.PrivateKey
-	quitChan     chan struct{}
-	stopped      bool
-	TokenNetwork *TokenNetwork
+	client            *helper.SafeEthClient
+	be                *blockchain.Events
+	bcs               *rpc.BlockChainService
+	key               *ecdsa.PrivateKey
+	quitChan          chan struct{}
+	updateBalanceChan chan *userRequestUpdateBalanceProof
+	stopped           bool
+	TokenNetwork      *TokenNetwork
 }
 type dbXMPPWrapper struct {
+}
+
+/*
+userRequestUpdateBalanceProof 将用户的update balance proof请求
+合并到statechange中处理,避免加锁
+
+*/
+type userRequestUpdateBalanceProof struct {
+	participant         common.Address
+	partner             common.Address
+	lockedAmount        *big.Int
+	partnerBalanceProof *model.BalanceProof
 }
 
 func (dbXMPPWrapper) XMPPIsAddrSubed(addr common.Address) bool {
@@ -43,11 +57,11 @@ func (dbXMPPWrapper) XMPPUnMarkAddr(addr common.Address) {
 // NewChainEvents create chain events
 func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNetworkRegistryAddress common.Address, useMatrix bool) *ChainEvents { //, db *models.ModelDB
 	log.Info(fmt.Sprintf("Token Network registry address=%s", tokenNetworkRegistryAddress.String()))
-	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client,&notify.Handler{},&mockTxInfoDao{})
+	bcs, err := rpc.NewBlockChainService(key, tokenNetworkRegistryAddress, client, &notify.Handler{}, &mockTxInfoDao{})
 	if err != nil {
 		log.Crit(err.Error())
 	}
-	_,err = bcs.Registry(tokenNetworkRegistryAddress, true)
+	_, err = bcs.Registry(tokenNetworkRegistryAddress, true)
 	if err != nil {
 		log.Crit("Register token network error : cannot get registry")
 	}
@@ -69,10 +83,11 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	//logrus.in
 	ce := &ChainEvents{
 		client:       client,
-		be:           blockchain.NewBlockChainEvents(client, bcs,&mockChainEventRecordDao{}),
+		be:           blockchain.NewBlockChainEvents(client, bcs, &mockChainEventRecordDao{}),
 		bcs:          bcs,
 		key:          key,
 		quitChan:     make(chan struct{}),
+		updateBalanceChan:make(chan *userRequestUpdateBalanceProof,10),
 		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix, decimals),
 	}
 
@@ -88,9 +103,11 @@ func (ce *ChainEvents) Start() error {
 
 // Stop service
 func (ce *ChainEvents) Stop() {
+	ce.stopped=true
 	ce.be.Stop()
 	ce.TokenNetwork.Stop()
 	close(ce.quitChan)
+	close(ce.updateBalanceChan)
 }
 
 // loop loop
@@ -103,9 +120,26 @@ func (ce *ChainEvents) loop() {
 				return
 			}
 			ce.handleStateChange(st)
+		case st, ok := <-ce.updateBalanceChan:
+			if !ok {
+				log.Trace("receive updatebalance")
+			}
+			ce.handleStateChange(st)
 		case <-ce.quitChan:
 			return
 		}
+	}
+}
+//HandleReceiveUserUpdateBalanceProof process the update balance proof request.
+func (ce *ChainEvents) HandleReceiveUserUpdateBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *model.BalanceProof) {
+	if ce.stopped{
+		return
+	}
+	ce.updateBalanceChan<-&userRequestUpdateBalanceProof{
+		participant:participant,
+		partner:partner,
+		lockedAmount:lockedAmount,
+		partnerBalanceProof:partnerBalanceProof,
 	}
 }
 
@@ -129,6 +163,12 @@ func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 		ce.handleChannelSettled(st2)
 	case *mediatedtransfer.ContractCooperativeSettledStateChange:
 		ce.handleChannelCooperativeSettled(st2)
+	case *userRequestUpdateBalanceProof:
+		//合并到一个线程中去处理updateBalance,否则可能存在更新channel数据冲突问题
+		err:=ce.TokenNetwork.UpdateBalance(st2.participant,st2.partner,st2.lockedAmount,st2.partnerBalanceProof)
+		if err!=nil{
+			log.Error(fmt.Sprintf("UpdateBalance err %s",err))
+		}
 	default:
 		log.Trace(fmt.Sprintf("unkown statechange %s", utils.StringInterface(st, 3)))
 	}
