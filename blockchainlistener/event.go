@@ -38,10 +38,11 @@ userRequestUpdateBalanceProof 将用户的update balance proof请求
 
 */
 type userRequestUpdateBalanceProof struct {
-	participant         common.Address
-	partner             common.Address
-	lockedAmount        *big.Int
-	partnerBalanceProof *model.BalanceProof
+	participant            common.Address
+	partner                common.Address
+	lockedAmount           *big.Int
+	partnerBalanceProof    *model.BalanceProof
+	ignoreMediatedTransfer bool
 }
 
 func (dbXMPPWrapper) XMPPIsAddrSubed(addr common.Address) bool {
@@ -82,13 +83,13 @@ func NewChainEvents(key *ecdsa.PrivateKey, client *helper.SafeEthClient, tokenNe
 	}
 	//logrus.in
 	ce := &ChainEvents{
-		client:       client,
-		be:           blockchain.NewBlockChainEvents(client, bcs, &mockChainEventRecordDao{}),
-		bcs:          bcs,
-		key:          key,
-		quitChan:     make(chan struct{}),
-		updateBalanceChan:make(chan *userRequestUpdateBalanceProof,10),
-		TokenNetwork: NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix, decimals),
+		client:            client,
+		be:                blockchain.NewBlockChainEvents(client, bcs, &mockChainEventRecordDao{}),
+		bcs:               bcs,
+		key:               key,
+		quitChan:          make(chan struct{}),
+		updateBalanceChan: make(chan *userRequestUpdateBalanceProof, 10),
+		TokenNetwork:      NewTokenNetwork(token2TokenNetwork, tokenNetworkRegistryAddress, useMatrix, decimals),
 	}
 
 	return ce
@@ -103,7 +104,7 @@ func (ce *ChainEvents) Start() error {
 
 // Stop service
 func (ce *ChainEvents) Stop() {
-	ce.stopped=true
+	ce.stopped = true
 	ce.be.Stop()
 	ce.TokenNetwork.Stop()
 	close(ce.quitChan)
@@ -130,16 +131,18 @@ func (ce *ChainEvents) loop() {
 		}
 	}
 }
+
 //HandleReceiveUserUpdateBalanceProof process the update balance proof request.
-func (ce *ChainEvents) HandleReceiveUserUpdateBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *model.BalanceProof) {
-	if ce.stopped{
+func (ce *ChainEvents) HandleReceiveUserUpdateBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *model.BalanceProof, ignoreMediatedTransfer bool) {
+	if ce.stopped {
 		return
 	}
-	ce.updateBalanceChan<-&userRequestUpdateBalanceProof{
-		participant:participant,
-		partner:partner,
-		lockedAmount:lockedAmount,
-		partnerBalanceProof:partnerBalanceProof,
+	ce.updateBalanceChan <- &userRequestUpdateBalanceProof{
+		participant:            participant,
+		partner:                partner,
+		lockedAmount:           lockedAmount,
+		partnerBalanceProof:    partnerBalanceProof,
+		ignoreMediatedTransfer: ignoreMediatedTransfer,
 	}
 }
 
@@ -165,9 +168,9 @@ func (ce *ChainEvents) handleStateChange(st transfer.StateChange) {
 		ce.handleChannelCooperativeSettled(st2)
 	case *userRequestUpdateBalanceProof:
 		//合并到一个线程中去处理updateBalance,否则可能存在更新channel数据冲突问题
-		err:=ce.TokenNetwork.UpdateBalance(st2.participant,st2.partner,st2.lockedAmount,st2.partnerBalanceProof)
-		if err!=nil{
-			log.Error(fmt.Sprintf("UpdateBalance err %s",err))
+		err := ce.TokenNetwork.UpdateBalance(st2.participant, st2.partner, st2.lockedAmount, st2.partnerBalanceProof, st2.ignoreMediatedTransfer)
+		if err != nil {
+			log.Error(fmt.Sprintf("UpdateBalance err %s", err))
 		}
 	default:
 		log.Trace(fmt.Sprintf("unkown statechange %s", utils.StringInterface(st, 3)))

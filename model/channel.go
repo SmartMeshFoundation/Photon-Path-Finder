@@ -48,14 +48,15 @@ const (
 由于数据库存储限制,
 */
 type ChannelParticipantInfo struct {
-	ID               int
-	ChannelID        string `gorm:"index"`
-	Participant      string
-	Nonce            uint64
-	Balance          string
-	Deposit          string
-	LockedAmount     string
-	TransferedAmount string
+	ID                     int
+	ChannelID              string `gorm:"index"`
+	Participant            string
+	Nonce                  uint64
+	Balance                string
+	Deposit                string
+	LockedAmount           string
+	TransferedAmount       string
+	IgnoreMediatedTransfer bool
 }
 
 /*
@@ -175,7 +176,7 @@ func verifyParticipants(c *Channel, participant1, participant2 common.Address) (
 }
 
 //UpdateChannelBalanceProof update balance proof
-func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *BalanceProof) (c *Channel, err error) {
+func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *BalanceProof, ignoreMediatedTransfer bool) (c *Channel, err error) {
 	c, err = GetChannel(partnerBalanceProof.ChannelID.String())
 	if err != nil {
 		return
@@ -209,6 +210,7 @@ func UpdateChannelBalanceProof(participant, partner common.Address, lockedAmount
 	p.Nonce = partnerBalanceProof.Nonce
 	p.TransferedAmount = bigIntToString(partnerBalanceProof.TransferAmount)
 	p.LockedAmount = bigIntToString(lockedAmount)
+	p.IgnoreMediatedTransfer = ignoreMediatedTransfer
 	err = updateBalance(p, p1)
 	//没必要再来查一次了,c中的就已经是最新的了
 	//c, err = GetChannel(partnerBalanceProof.ChannelID.String())
@@ -342,12 +344,12 @@ func updateBalance(p1, p2 *ChannelParticipantInfo) (err error) {
 		那么会造成有网一方也不能提交. 这会造成不必要的麻烦.
 	*/
 	if p1Balance.Cmp(utils.BigInt0) < 0 {
-		log.Error(fmt.Sprintf("p1 %s balance is negative  %s,channel=%s", p1.Participant, p1Balance,p1.ChannelID))
+		log.Error(fmt.Sprintf("p1 %s balance is negative  %s,channel=%s", p1.Participant, p1Balance, p1.ChannelID))
 		p1.Balance = utils.BigInt0.String()
 		//return fmt.Errorf("p1 %s balance is negative  %s", p1.Participant, p1Balance)
 	}
 	if p2Balance.Cmp(utils.BigInt0) < 0 {
-		log.Error(fmt.Sprintf("p2 %s balance is negative  %s,channel=%s", p2.Participant, p2Balance,p2.ChannelID))
+		log.Error(fmt.Sprintf("p2 %s balance is negative  %s,channel=%s", p2.Participant, p2Balance, p2.ChannelID))
 		p2.Balance = utils.BigInt0.String()
 		//return fmt.Errorf("p2 %s balance is negative %s", p2.Participant, p2Balance)
 	}

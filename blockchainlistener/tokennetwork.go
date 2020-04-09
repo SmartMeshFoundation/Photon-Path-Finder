@@ -32,8 +32,9 @@ type channel struct {
 	Token               common.Address
 }
 type nodeStatus struct {
-	isMobile bool
-	isOnline bool
+	isMobile               bool
+	isOnline               bool
+	ignoreMediatedTransfer bool
 }
 
 // TokenNetwork token network view
@@ -104,8 +105,9 @@ func NewTokenNetwork(token2TokenNetwork map[common.Address]common.Address, token
 	nodes := model.GetAllNodes()
 	for _, n := range nodes {
 		twork.participantStatus[common.HexToAddress(n.Address)] = nodeStatus{
-			isOnline: n.IsOnline,
-			isMobile: n.DeviceType == "mobile",
+			isOnline:               n.IsOnline,
+			isMobile:               n.DeviceType == "mobile",
+			ignoreMediatedTransfer: false, // 默认false,节点提交balance的时候来更新
 		}
 	}
 	return
@@ -244,8 +246,8 @@ func (t *TokenNetwork) handleChannelWithdrawEvent(channelID common.Hash,
 }
 
 // UpdateBalance Update Balance
-func (t *TokenNetwork) UpdateBalance(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *model.BalanceProof) (err error) {
-	c, err := model.UpdateChannelBalanceProof(participant, partner, lockedAmount, partnerBalanceProof)
+func (t *TokenNetwork) UpdateBalance(participant, partner common.Address, lockedAmount *big.Int, partnerBalanceProof *model.BalanceProof, ignoreMediatedTransfer bool) (err error) {
+	c, err := model.UpdateChannelBalanceProof(participant, partner, lockedAmount, partnerBalanceProof, ignoreMediatedTransfer)
 	if err != nil {
 		return
 	}
@@ -255,6 +257,12 @@ func (t *TokenNetwork) UpdateBalance(participant, partner common.Address, locked
 	}
 	c2.Participant1Balance = c.Participants[0].BalanceValue()
 	c2.Participant2Balance = c.Participants[1].BalanceValue()
+	ns, ok := t.participantStatus[participant]
+	if !ok {
+		log.Error(fmt.Sprintf("can not find node status of %s", participant.String()))
+		return
+	}
+	ns.ignoreMediatedTransfer = ignoreMediatedTransfer
 	return
 }
 
@@ -317,6 +325,13 @@ func (t *TokenNetwork) GetPaths(source common.Address, target common.Address, to
 		}
 		//通道双方只要有一个是手机并且既不是发起方也不是接收方,都应该 跳过
 		if t.participantStatus[c.Participant2].isMobile && c.Participant2 != source && c.Participant2 != target {
+			continue
+		}
+		//通道双方只要有一个启用了ignoreMediatedTransfer参数,且既不是发送方也不是接收方,都应该跳过
+		if t.participantStatus[c.Participant1].ignoreMediatedTransfer && c.Participant1 != source && c.Participant1 != target {
+			continue
+		}
+		if t.participantStatus[c.Participant2].ignoreMediatedTransfer && c.Participant2 != source && c.Participant2 != target {
 			continue
 		}
 		//只要有一个节点余额够,那么至少应该加入一条边
@@ -557,33 +572,35 @@ func (t *TokenNetwork) UpdateChannelFeeRate(channelID common.Hash, peerAddress c
 	}
 	return model.UpdateChannelFeeRate(channelID, peerAddress, c.Token, fee)
 }
+
 //UpdateAccountFee  update acount's all channel feerate,保持内存与数据库中收费信息的一致
-func (t *TokenNetwork) UpdateAccountFee(peerAddress common.Address, req *model.SetAllFeeRateRequest)   {
-	getFee:= func(channelID common.Hash,token common.Address) *model.Fee {
-		f,ok:=req.ChannelsFee[channelID]
-		if ok{
+func (t *TokenNetwork) UpdateAccountFee(peerAddress common.Address, req *model.SetAllFeeRateRequest) {
+	getFee := func(channelID common.Hash, token common.Address) *model.Fee {
+		f, ok := req.ChannelsFee[channelID]
+		if ok {
 			return f.Fee
 		}
-		f,ok=req.TokensFee[token]
-		if ok{
+		f, ok = req.TokensFee[token]
+		if ok {
 			return f.Fee
 		}
 		return req.AccountFee.Fee
 	}
 	t.viewlock.Lock()
 	defer t.viewlock.Unlock()
-	for cid,c:=range t.channels{
-		if c.Participant1==peerAddress{
-			c.Participant1Fee=getFee(cid,c.Token)
+	for cid, c := range t.channels {
+		if c.Participant1 == peerAddress {
+			c.Participant1Fee = getFee(cid, c.Token)
 			continue
 		}
-		if c.Participant2==peerAddress{
-			c.Participant2Fee=getFee(cid,c.Token)
+		if c.Participant2 == peerAddress {
+			c.Participant2Fee = getFee(cid, c.Token)
 			continue
 		}
 	}
 	return
 }
+
 //Stop stop TokenNetwork service
 func (t *TokenNetwork) Stop() {
 	t.transport.Stop()

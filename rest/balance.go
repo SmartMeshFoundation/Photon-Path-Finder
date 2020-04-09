@@ -21,6 +21,9 @@ type balanceProofRequest struct {
 	BalanceSignature []byte              `json:"balance_signature"`
 	ProofSigner      common.Address      `json:"proof_signer"`
 	LockedAmount     *big.Int            `json:"lock_amount"`
+	// 如果节点启动参数中开启了ignore-mediatednode-request参数,那么该节点将不接收MediatedTransfer交易,此时需要报告给pfs,以免pfs把自己当中间节点来计算路由
+	// 该参数没必要纳入签名
+	IgnoreMediatedTransfer bool `json:"ignore_mediated_transfer"`
 }
 
 // UpdateBalanceProof handle the request with balance proof,implements GET and POST /balance
@@ -43,8 +46,8 @@ func UpdateBalanceProof(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if req.BalanceProof!=nil && req.BalanceProof.Nonce>0 {
-		ce.HandleReceiveUserUpdateBalanceProof(peerAddress, partner, req.LockedAmount, req.BalanceProof)
+	if req.BalanceProof != nil && req.BalanceProof.Nonce > 0 {
+		ce.HandleReceiveUserUpdateBalanceProof(peerAddress, partner, req.LockedAmount, req.BalanceProof, req.IgnoreMediatedTransfer)
 	}
 	err = w.WriteJson(nil)
 	if err != nil {
