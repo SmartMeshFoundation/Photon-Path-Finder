@@ -346,6 +346,7 @@ func (m *MatrixObserver) joinDiscoveryRoom() (err error) {
 	return nil
 }
 
+//	userIDToAddress to guide user's address(aabb..) by userid(@0xaabb..@transport.smartmesh.cn)
 func (m *MatrixObserver) userIDToAddress(userID string) common.Address {
 	//check grammar of user ID
 	_match := ValidUserIDRegex.MatchString(userID)

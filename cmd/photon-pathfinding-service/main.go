@@ -37,7 +37,7 @@ func init() {
 	)
 }
 
-//StartMain entry point of Photon app
+//StartMain entry point of Photon-Pathfinding-Service
 func StartMain() {
 	fmt.Printf("os.args=%q\n", os.Args)
 	app := cli.NewApp()
@@ -98,6 +98,7 @@ func StartMain() {
 	}
 }
 
+// mainCtx init main() with some parameters and start listening events on chain
 func mainCtx(ctx *cli.Context) error {
 	var err error
 	fmt.Printf("Welcom to Photon Path Finder,version %s\n", ctx.App.Version)
@@ -142,6 +143,8 @@ func mainCtx(ctx *cli.Context) error {
 	rest.Start(ce, ce.TokenNetwork)
 	return nil
 }
+
+// config listening service port and registry address(contract works on)
 func config(ctx *cli.Context) {
 
 	params.Port = ctx.Int("port")

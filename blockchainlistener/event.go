@@ -207,6 +207,7 @@ func (ce *ChainEvents) handleTokenAddedStateChange(st2 *mediatedtransfer.Contrac
 	}
 }
 
+//handleBlockNumber the event of notice newest block number on chain
 func (ce *ChainEvents) handleBlockNumber(n int64) {
 	model.UpdateBlockNumber(n)
 }
